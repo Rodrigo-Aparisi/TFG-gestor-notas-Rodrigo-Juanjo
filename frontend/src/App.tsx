@@ -6,7 +6,6 @@ import Header from './components/Layout/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Notes from './pages/Notes';
-import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -14,20 +13,11 @@ function App() {
       <Router>
         <div className="app">
           <Header />
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="/notes"
-                element={
-                  <PrivateRoute>
-                    <Notes />
-                  </PrivateRoute>
-                }
-              />
-            </Routes>
-          </main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/notes" element={<Notes />} />
+          </Routes>
         </div>
       </Router>
     </Provider>
