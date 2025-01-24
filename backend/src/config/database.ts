@@ -10,3 +10,12 @@ export const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: parseInt(process.env.DB_PORT || '5432')
 });
+
+// Probar la conexión
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('Error al conectar a la base de datos:', err);
+  }
+  console.log('Conexión a la base de datos establecida correctamente');
+  release();
+});
