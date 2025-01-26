@@ -30,8 +30,8 @@ body{
     border-radius: 10px;
     box-shadow: 0 0 20px var(--yellow);
     overflow: hidden;
+    z-index: 1;
 }
-
 
 .wrapper .form-box{
     position: absolute;
@@ -41,11 +41,13 @@ body{
     display: flex;
     justify-content: center;
     flex-direction: column;
+    z-index: 2;
 }
 
 .wrapper .form-box.login{
     left: 0;
     padding: 0 60px 0 40px;
+    pointer-events: auto;
 }
 
 .form-box h2{
@@ -72,6 +74,7 @@ body{
     width: 100%;
     height: 50px;
     margin: 25px 0;
+    z-index: 3;
 }
 
 .input-box input{
@@ -86,6 +89,10 @@ body{
     border-bottom: 2px solid var(--black);
     transition: .5s;
     padding-right: 23px;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto !important;
+    padding-top: 20px;
 }
 
 .input-box input:focus,
@@ -95,22 +102,22 @@ body{
 
 .input-box label{
     position: absolute;
-    top: 50%;
+    top: 0;
     left: 0;
-    transform: translateY(-50%);
-    font-size: 16px;
+    transform: translateY(0);
+    font-size: 14px;
     color: var(--black);
     pointer-events: none;
     transition: 0.5s;
 }
 
-
 .input-box input:focus~label,
 .input-box input:valid~label{
-    top: -5px;
+    top: 0;
+    font-size: 12px;
     color: var(--lightBulue);
+    transform: translateY(0);
 }
-
 
 .input-box i{
     position: absolute;
@@ -138,6 +145,9 @@ form button{
     font-size: 16px;
     font-weight: 600;
     transition: .3s;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto !important;
 }
 
 form button:hover{
@@ -155,6 +165,8 @@ form .linkTxt{
     color: blue;
     text-decoration: none;
     font-weight: 600;
+    cursor: pointer;
+    pointer-events: auto !important;
 }
 
 .wrapper .form-box.login .animation{
@@ -165,18 +177,12 @@ form .linkTxt{
     transition-delay: calc(.1s * var(--j));
 }
 
-
 .wrapper.active .form-box.login .animation{
     transform: translateX(-120%);
     opacity: 0;
     filter: blur(10px);
     transition-delay: calc(.1s * var(--i));
 }
-
-
-
-
-
 
 .wrapper .info-text{
     position: absolute;
@@ -192,7 +198,6 @@ form .linkTxt{
     right: 0;
     text-align: right;
     padding: 0 40px 60px 70px;
-
 }
 
 .wrapper .info-text h2{
@@ -207,7 +212,6 @@ form .linkTxt{
     color: var(--black);
 }
 
-
 .wrapper .info-text.login .animation{
     transform: translateX(0);
     opacity: 1;
@@ -215,6 +219,7 @@ form .linkTxt{
     transition: 0.7s ease;
     transition-delay: calc(.1s * var(--j));
 }
+
 .wrapper.active .info-text.login .animation{
     transform: translateX(120px);
     opacity: 0;
@@ -222,10 +227,6 @@ form .linkTxt{
     transition: 0.7s ease;
     transition-delay: calc(.1s * var(--i));
 }
-
-
-
-
 
 .wrapper .rotate-bg{
     position: absolute;
@@ -238,6 +239,7 @@ form .linkTxt{
     transform-origin: bottom right;
     transition: 1.5s ease;
     transition-delay: 1.6s;
+    z-index: 0;
 }
 
 .wrapper.active .rotate-bg{
@@ -245,16 +247,26 @@ form .linkTxt{
     transition-delay: 0.5s;
 }
 
-
 .wrapper .form-box.register{
     padding: 0 40px 0 60px;
     right: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    visibility: hidden;
 }
 
 .wrapper.active .form-box.register{
     pointer-events: auto;
+    opacity: 1;
+    z-index: 2;
+    visibility: visible;
 }
 
+.wrapper.active .form-box.register input,
+.wrapper.active .form-box.register button {
+    pointer-events: auto;
+}
 
 .wrapper .form-box.register .animation{
     transform: translateX(120%);
@@ -262,6 +274,7 @@ form .linkTxt{
     filter: blur(10px);
     transition: .7s ease;
     transition-delay: calc(.1s * var(--j));
+    pointer-events: none;
 }
 
 .wrapper.active .form-box.register .animation{
@@ -269,9 +282,8 @@ form .linkTxt{
     opacity: 1;
     filter: blur(0);
     transition-delay: calc(.1s * var(--i));
+    pointer-events: auto;
 }
-
-
 
 .wrapper .info-text.register{
     left: 0;
@@ -283,7 +295,6 @@ form .linkTxt{
 .wrapper.active .info-text.register{
     pointer-events: auto;
 }
-
 
 .wrapper .info-text.register .animation{
     transform: translateX(-120%);
@@ -300,9 +311,6 @@ form .linkTxt{
     transition-delay: calc(.1s * var(--i));
 }
 
-
-
-
 .wrapper .rotate-bg2{
     position: absolute;
     top: 100%;
@@ -314,9 +322,32 @@ form .linkTxt{
     transform-origin: bottom left;
     transition: 1.5s ease;
     transition-delay: 0.5s;
+    z-index: 0;
 }
 
 .wrapper.active .rotate-bg2{
     transform: rotate(-11deg) skewY(-40deg);
     transition-delay: 1.2s;
+}
+
+.error-message {
+    color: #ff3333;
+    text-align: center;
+    margin: 10px 0;
+    font-size: 0.9em;
+}
+
+/* Asegura que los elementos interactivos funcionen */
+.form-box input,
+.form-box button,
+.form-box a {
+    cursor: pointer;
+    pointer-events: auto !important;
+}
+
+/* Mejora la visibilidad del formulario activo */
+.wrapper.active .form-box.register {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
 }
