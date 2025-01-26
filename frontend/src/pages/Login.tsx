@@ -1,13 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/auth.ts';
 import '../styles/style.css';
 
+// Interfaces
+interface LoginData {
+  email: string;
+  password: string;
+}
+
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+}
+
 const Login: React.FC = () => {
-  const [credentials, setCredentials] = useState({
+  const navigate = useNavigate();
+
+  // Estados
+  const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
   });
 
+  const [registerData, setRegisterData] = useState<RegisterData>({
+    username: '',
+    email: '',
+    password: ''
+  });
+
+  const [error, setError] = useState<string>('');
+
+  // Efecto para la animación
   useEffect(() => {
     const wrapper = document.querySelector('.wrapper') as HTMLElement;
     const registerLink = document.querySelector('.register-link') as HTMLElement;
@@ -16,17 +41,68 @@ const Login: React.FC = () => {
     if (registerLink && loginLink && wrapper) {
       registerLink.onclick = () => {
         wrapper.classList.add('active');
+        setError('');
       };
 
       loginLink.onclick = () => {
         wrapper.classList.remove('active');
+        setError('');
       };
     }
   }, []);
 
+  // Manejadores de cambios
+  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoginData({
+      ...loginData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRegisterData({
+      ...registerData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // Función de login usando el servicio
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Lógica de login aquí
+    setError('');
+
+    try {
+      await authService.login(loginData);
+      navigate('/notes');
+    } catch (error: any) {
+      setError(error.message || 'Error en el inicio de sesión');
+    }
+  };
+
+  // Función de registro usando el servicio
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      await authService.register(registerData);
+      alert('Registro exitoso');
+      
+      // Limpiar formulario
+      setRegisterData({
+        username: '',
+        email: '',
+        password: ''
+      });
+
+      // Cambiar a vista de login
+      const wrapper = document.querySelector('.wrapper') as HTMLElement;
+      if (wrapper) {
+        wrapper.classList.remove('active');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Error en el registro');
+    }
   };
 
   return (
@@ -34,118 +110,114 @@ const Login: React.FC = () => {
       <span className="rotate-bg"></span>
       <span className="rotate-bg2"></span>
 
-      {/* Formulario de login */}
+      {/* Formulario de Login */}
       <div className="form-box login">
-        <h2
-          className="title animation"
-          style={{ "--i": 0, "--j": 21 } as React.CSSProperties}
-        >
+        <h2 className="title animation" style={{ "--i": 0, "--j": 21 } as React.CSSProperties}>
           Inicio de Sesión
         </h2>
 
         <form onSubmit={handleLogin}>
-          <div
-            className="input-box animation"
-            style={{ "--i": 1, "--j": 22 } as React.CSSProperties}
-          >
-            <input type="text" id="login-username" required />
-            <label htmlFor="login-username">Usuario</label>
+          <div className="input-box animation" style={{ "--i": 1, "--j": 22 } as React.CSSProperties}>
+            <input
+              type="email"
+              name="email"
+              value={loginData.email}
+              onChange={handleLoginChange}
+              required
+            />
+            <label>Email</label>
             <i className="bx bxs-user"></i>
           </div>
 
-          <div
-            className="input-box animation"
-            style={{ "--i": 2, "--j": 23 } as React.CSSProperties}
-          >
-            <input type="password" id="login-password" required />
-            <label htmlFor="login-password">Contraseña</label>
+          <div className="input-box animation" style={{ "--i": 2, "--j": 23 } as React.CSSProperties}>
+            <input
+              type="password"
+              name="password"
+              value={loginData.password}
+              onChange={handleLoginChange}
+              required
+            />
+            <label>Contraseña</label>
             <i className="bx bxs-lock-alt"></i>
           </div>
 
-          <button
-            type="submit"
-            className="btn animation"
-            style={{ "--i": 3, "--j": 24 } as React.CSSProperties}
+          {error && <div className="error-message animation" style={{ "--i": 3, "--j": 24 } as React.CSSProperties}>
+            {error}
+          </div>}
+
+          <button 
+            type="submit" 
+            className="btn animation" 
+            style={{ "--i": 4, "--j": 25 } as React.CSSProperties}
           >
-            Inicio de Sesión  
+            Iniciar Sesión
           </button>
 
-          <div
-            className="linkTxt animation"
-            style={{ "--i": 5, "--j": 25 } as React.CSSProperties}
-          >
+          <div className="linkTxt animation" style={{ "--i": 5, "--j": 26 } as React.CSSProperties}>
             <p>
               ¿No tienes cuenta?{" "}
-              <a href="#" className="register-link">Registrate</a>
+              <a href="#" className="register-link">Regístrate</a>
             </p>
           </div>
         </form>
       </div>
 
-      <div className="info-text login">
-        <h2
-          className="animation"
-          style={{ "--i": 0, "--j": 20 } as React.CSSProperties}
-        >
-          Bienvenido/a de vuelta!
-        </h2>
-        <p
-          className="animation"
-          style={{ "--i": 1, "--j": 21 } as React.CSSProperties}
-        >
-          Es un placer tenerte aquí de nuevo.
-        </p>
-      </div>
-
       {/* Formulario de Registro */}
       <div className="form-box register">
-        <h2
-          className="title animation"
-          style={{ "--i": 17, "--j": 0 } as React.CSSProperties}
-        >
+        <h2 className="title animation" style={{ "--i": 17, "--j": 0 } as React.CSSProperties}>
           Registro
         </h2>
 
-        <form>
-          <div
-            className="input-box animation"
-            style={{ "--i": 18, "--j": 1 } as React.CSSProperties}
-          >
-            <input type="text" id="register-username" required />
-            <label htmlFor="register-username">Usuario</label>
+        <form onSubmit={handleRegister}>
+          <div className="input-box animation" style={{ "--i": 18, "--j": 1 } as React.CSSProperties}>
+            <input
+              type="text"
+              name="username"
+              value={registerData.username}
+              onChange={handleRegisterChange}
+              required
+            />
+            <label>Usuario</label>
             <i className="bx bxs-user"></i>
           </div>
 
-          <div
-            className="input-box animation"
-            style={{ "--i": 19, "--j": 2 } as React.CSSProperties}
-          >
-            <input type="email" id="register-email" required />
-            <label htmlFor="register-email">Correo</label>
+          <div className="input-box animation" style={{ "--i": 19, "--j": 2 } as React.CSSProperties}>
+            <input
+              type="email"
+              name="email"
+              value={registerData.email}
+              onChange={handleRegisterChange}
+              required
+            />
+            <label>Email</label>
             <i className="bx bxs-envelope"></i>
           </div>
 
-          <div
-            className="input-box animation"
-            style={{ "--i": 20, "--j": 3 } as React.CSSProperties}
-          >
-            <input type="password" id="register-password" required />
-            <label htmlFor="register-password">Contraseña</label>
+          <div className="input-box animation" style={{ "--i": 20, "--j": 3 } as React.CSSProperties}>
+            <input
+              type="password"
+              name="password"
+              value={registerData.password}
+              onChange={handleRegisterChange}
+              required
+            />
+            <label>Contraseña</label>
             <i className="bx bxs-lock-alt"></i>
           </div>
 
-          <button
-            type="submit"
-            className="btn animation"
-            style={{ "--i": 21, "--j": 4 } as React.CSSProperties}
-          >
-            Registro
-          </button>
+          {error && <div className="error-message animation" style={{ "--i": 21, "--j": 4 } as React.CSSProperties}>
+            {error}
+          </div>}
 
-          <div
-            className="linkTxt animation"
+          <button 
+            type="submit" 
+            className="btn animation" 
             style={{ "--i": 22, "--j": 5 } as React.CSSProperties}
           >
+            Registrarse
+          </button>
+
+          <div className="linkTxt animation" style={{ "--i": 23, "--j": 6 } as React.CSSProperties}>
             <p>
               ¿Ya tienes cuenta?{" "}
               <a href="#" className="login-link">Iniciar Sesión</a>
@@ -154,18 +226,22 @@ const Login: React.FC = () => {
         </form>
       </div>
 
-      <div className="info-text register">
-        <h2
-          className="animation"
-          style={{ "--i": 17, "--j": 0 } as React.CSSProperties}
-        >
-          Bienvenido/a!
+      {/* Textos informativos */}
+      <div className="info-text login">
+        <h2 className="animation" style={{ "--i": 0, "--j": 20 } as React.CSSProperties}>
+          ¡Bienvenido de nuevo!
         </h2>
-        <p
-          className="animation"
-          style={{ "--i": 18, "--j": 1 } as React.CSSProperties}
-        >
-          Lorem ipsum dolor sit amet consectetur adipisicing elit.
+        <p className="animation" style={{ "--i": 1, "--j": 21 } as React.CSSProperties}>
+          Nos alegra verte otra vez.
+        </p>
+      </div>
+
+      <div className="info-text register">
+        <h2 className="animation" style={{ "--i": 17, "--j": 0 } as React.CSSProperties}>
+          ¡Bienvenido!
+        </h2>
+        <p className="animation" style={{ "--i": 18, "--j": 1 } as React.CSSProperties}>
+          Únete a nuestra comunidad.
         </p>
       </div>
     </div>

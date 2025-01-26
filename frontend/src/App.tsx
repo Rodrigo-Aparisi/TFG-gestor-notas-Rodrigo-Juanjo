@@ -6,6 +6,7 @@ import Header from './components/Layout/Header.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Notes from './pages/Notes.tsx';
+import PrivateRoute from './components/PrivateRoute.tsx';
 
 function App() {
   return (
@@ -16,7 +17,11 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/notes" element={<Notes />} />
+            <Route path="/notes" element={
+              <PrivateRoute>
+                <Notes />
+              </PrivateRoute>
+            } />
           </Routes>
         </div>
       </Router>
