@@ -44,23 +44,34 @@ export class NoteController {
       const { id } = req.params;
       const { title, content } = req.body;
       const userId = req.user.id;
-
-      const result = await pool.query(
-        'UPDATE notes SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
-        [title, content, id, userId]
+  
+      // Primero verifico si la nota existe y pertenece al usuario
+      const noteExists = await pool.query(
+        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        [id, userId]
       );
-
-      if (result.rows.length === 0) {
+  
+      if (noteExists.rows.length === 0) {
         res.status(404).json({ error: 'Nota no encontrada' });
         return;
       }
-
-      res.json({
+  
+      // Realizo la actualización
+      const result = await pool.query(
+        'UPDATE notes SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
+        [title || noteExists.rows[0].title, content || noteExists.rows[0].content, id, userId]
+      );
+  
+      res.status(200).json({
         message: 'Nota actualizada exitosamente',
         note: result.rows[0]
       });
     } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar la nota' });
+      console.error('Error al actualizar nota:', error);
+      res.status(500).json({ 
+        error: 'Error al actualizar la nota',
+        details: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
   }
 
