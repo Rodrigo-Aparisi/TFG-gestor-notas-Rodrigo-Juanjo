@@ -17,6 +17,13 @@ interface RegisterData {
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  
+  // Verificar autenticación al cargar
+  useEffect(() => {
+    if (authService.isAuthenticated()) {
+      navigate('/notes', { replace: true });
+    }
+  }, []);
 
   // Estados
   const [loginData, setLoginData] = useState<LoginData>({
@@ -72,12 +79,16 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      await authService.login(loginData);
-      navigate('/notes');
+      const response = await authService.login(loginData);
+      if (response.token) {
+        navigate('/notes', { replace: true });
+      }
     } catch (error: any) {
       setError(error.message || 'Error en el inicio de sesión');
+      console.error('Login error:', error);
     }
   };
+  
 
   // Función de registro usando el servicio
   const handleRegister = async (e: React.FormEvent) => {
@@ -85,20 +96,22 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      await authService.register(registerData);
-      alert('Registro exitoso');
-      
-      // Limpiar formulario
-      setRegisterData({
-        username: '',
-        email: '',
-        password: ''
-      });
+      const response = await authService.register(registerData);
+      if (response) {
+        alert('Registro exitoso');
+        
+        // Limpiar formulario
+        setRegisterData({
+          username: '',
+          email: '',
+          password: ''
+        });
 
-      // Cambiar a vista de login
-      const wrapper = document.querySelector('.wrapper') as HTMLElement;
-      if (wrapper) {
-        wrapper.classList.remove('active');
+        // Cambiar a vista de login
+        const wrapper = document.querySelector('.wrapper') as HTMLElement;
+        if (wrapper) {
+          wrapper.classList.remove('active');
+        }
       }
     } catch (error: any) {
       setError(error.message || 'Error en el registro');
