@@ -18,7 +18,7 @@ interface RegisterData {
 const Login: React.FC = () => {
   const navigate = useNavigate();
   
-  // Verificar autenticación al cargar
+  // Verificar autenticación solo una vez al montar
   useEffect(() => {
     if (authService.isAuthenticated()) {
       navigate('/notes', { replace: true });
@@ -80,12 +80,11 @@ const Login: React.FC = () => {
 
     try {
       const response = await authService.login(loginData);
-      if (response.token) {
+      if (response && response.token) {
         navigate('/notes', { replace: true });
       }
     } catch (error: any) {
       setError(error.message || 'Error en el inicio de sesión');
-      console.error('Login error:', error);
     }
   };
   

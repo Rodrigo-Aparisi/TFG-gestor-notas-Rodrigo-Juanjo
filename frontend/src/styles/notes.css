@@ -45,15 +45,6 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
   }
   
-  .note-card input,
-  .note-card textarea {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    padding: 8px;
-  }
-  
   .note-card textarea {
     min-height: 100px;
     resize: vertical;
@@ -81,4 +72,58 @@
     margin: 10px 0;
     font-size: 0.9em;
   }
+
+
+  .feedback-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 4px;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .note-card input,
+  .note-card textarea {
+    width: 100%;
+    border: 1px solid transparent;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: transparent;
+  }
+  
+  .note-card input:focus,
+  .note-card textarea:focus {
+    border-color: #ddd;
+    outline: none;
+  }
+  
+  .note-card button {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .note-card:hover button {
+    opacity: 1;
+  }
+  
   
