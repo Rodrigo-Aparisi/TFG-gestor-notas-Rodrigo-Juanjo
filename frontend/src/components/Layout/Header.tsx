@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Añadido Link
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice.ts';
@@ -15,16 +15,25 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="header">
-      <nav>
-        <div className="logo">Gestor de Notas</div>
+    <header className="header" role="banner">
+      <nav aria-label="Navegación principal">
+        <Link to="/" className="logo" aria-label="Ir a la página principal">
+          Gestor de Notas
+        </Link>
         {user ? (
           <div className="user-menu">
             <span>Bienvenido, {user.username}</span>
-            <button onClick={handleLogout}>Cerrar Sesión</button>
+            <button onClick={handleLogout} aria-label="Cerrar sesión">
+              Cerrar Sesión
+            </button>
           </div>
         ) : (
-          <button onClick={() => navigate('/login')}>Iniciar Sesión</button>
+          <button 
+            onClick={() => navigate('/login')}
+            aria-label="Iniciar sesión"
+          >
+            Iniciar Sesión
+          </button>
         )}
       </nav>
     </header>
