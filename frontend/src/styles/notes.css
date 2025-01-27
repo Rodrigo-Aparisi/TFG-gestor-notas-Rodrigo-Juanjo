@@ -1,0 +1,84 @@
+.notes-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .create-note {
+    background: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    margin-bottom: 20px;
+  }
+  
+  .create-note input,
+  .create-note textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    margin-bottom: 10px;
+    font-size: 16px;
+    padding: 8px;
+  }
+  
+  .create-note textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  
+  .note-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .note-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  }
+  
+  .note-card input,
+  .note-card textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 8px;
+  }
+  
+  .note-card textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  button {
+    background: #f1c40f;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-weight: 600;
+  }
+  
+  button:hover {
+    opacity: 0.9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .error-message {
+    color: #ff3333;
+    text-align: center;
+    margin: 10px 0;
+    font-size: 0.9em;
+  }
+  
