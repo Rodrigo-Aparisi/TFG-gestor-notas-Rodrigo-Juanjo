@@ -1,3 +1,83 @@
+:root{
+  --dorado: #ffc600;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #1a1a1a;
+  z-index: 1000;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px var(--dorado);
+  border-bottom: 2px solid var(--dorado);
+}
+
+
+.header nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  color: var(--dorado);
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.logo:hover {
+  color: var(--dorado);
+  text-decoration: none;
+}
+
+.logo:active, 
+.logo:visited {
+  text-decoration: none;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: white;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--dorado);
+  color: #282c34;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: var(--dorado);
+}
+
+/* Ajuste para el contenido principal */
+.main-content {
+  margin-top: 80px;
+  padding: 20px;
+  flex: 1;
+}
+
+/* Estilos originales de Create React App */
 .App {
   text-align: center;
 }

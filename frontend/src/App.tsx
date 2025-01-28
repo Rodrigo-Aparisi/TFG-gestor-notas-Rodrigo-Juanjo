@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from './store';
-import Header from './components/Layout/Header';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Notes from './pages/Notes';
-import PrivateRoute from './components/PrivateRoute';
+import { store } from './store/index.ts';
+import Header from './components/Layout/Header.tsx';
+import Home from './pages/Home.tsx';
+import Login from './pages/Login.tsx';
+import Notes from './pages/Notes.tsx';
+import PrivateRoute from './components/PrivateRoute.tsx';
+import './App.css';
 
 function App() {
   return (
