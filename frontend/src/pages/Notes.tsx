@@ -8,11 +8,11 @@ import '../styles/notes.css';
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
+  const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const navigate = useNavigate();
 
-  // Cargar notas solo una vez al montar el componente
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -21,9 +21,8 @@ const Notes: React.FC = () => {
       } catch (err) {
         const error = err as Error;
         console.error('Error loading notes:', error.message);
-        // Solo navegar si es un error de autenticación
         if ((err as any)?.response?.status === 401) {
-          authService.logout(); // Limpiar el token
+          authService.logout();
           navigate('/login', { replace: true });
         }
       }
@@ -31,17 +30,6 @@ const Notes: React.FC = () => {
 
     fetchNotes();
   }, [navigate]);
-
-  const loadNotes = async () => {
-    try {
-      const response = await noteService.getNotes();
-      setNotes(response.notes || []);
-    } catch (err) {
-      const error = err as Error;
-      console.error('Error loading notes:', error.message);
-      navigate('/login', { replace: true });
-    }
-  };
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -53,7 +41,7 @@ const Notes: React.FC = () => {
       showFeedback('El título es requerido');
       return;
     }
-  
+
     setIsLoading(true);
     try {
       const result = await noteService.createNote({
@@ -61,7 +49,6 @@ const Notes: React.FC = () => {
         content: newNote.content.trim()
       });
       
-      // Asegúrate de que la estructura coincida con la respuesta del servidor
       if (result && result.note) {
         setNotes(prevNotes => [result.note, ...prevNotes]);
         setNewNote({ title: '', content: '' });
@@ -74,23 +61,81 @@ const Notes: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
+    setEditingNote(prev => {
+      // Obtener la nota original
+      const originalNote = notes.find(note => note.id === id);
+      // Obtener el estado previo de la nota en edición
+      const prevNoteState = prev[id] || {
+        title: originalNote?.title || '',
+        content: originalNote?.content || ''
+      };
+  
+      // Crear nuevo estado para esta nota
+      const updatedNoteState = {
+        ...prevNoteState,
+        [field]: value
+      };
+  
+      // Retornar el nuevo estado completo
+      return {
+        ...prev,
+        [id]: updatedNoteState
+      };
+    });
+  };
+  
   
 
-  const handleUpdateNote = async (id: string, updateFields: { title?: string; content?: string }) => {
+  const handleUpdateNote = async (id: string, field: 'title' | 'content') => {
+    const editedNote = editingNote[id];
+    if (!editedNote) return;
+
+    const originalNote = notes.find(note => note.id === id);
+    if (!originalNote) return;
+
+    // Verifica si el valor ha cambiado
+    if (editedNote[field] === originalNote[field]) return;
+
+    // Validación para el título
+    if (field === 'title' && editedNote.title.trim() === '') {
+      showFeedback('El título no puede estar vacío');
+      // Restaura el valor original
+      setEditingNote(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          title: originalNote.title
+        }
+      }));
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await noteService.updateNote(id, updateFields);
+      const updateData = { [field]: editedNote[field] };
+      const response = await noteService.updateNote(id, updateData);
       
-      setNotes(prevNotes => 
-        prevNotes.map(note => 
-          note.id === id ? response.note : note
-        )
-      );
-      
-      showFeedback('Nota actualizada exitosamente');
+      if (response && response.note) {
+        setNotes(prevNotes => 
+          prevNotes.map(note => 
+            note.id === id ? response.note : note
+          )
+        );
+        showFeedback('Nota actualizada');
+      }
     } catch (error) {
       console.error('Error al actualizar nota:', error);
       showFeedback('Error al actualizar la nota');
+      // Restaura el valor original en caso de error
+      setEditingNote(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [field]: originalNote[field]
+        }
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -138,14 +183,14 @@ const Notes: React.FC = () => {
           <div key={note.id} className="note-card">
             <input
               type="text"
-              value={note.title}
-              onChange={e => handleUpdateNote(note.id, { title: e.target.value })}
-              onBlur={e => handleUpdateNote(note.id, { title: e.target.value })}
+              value={editingNote[note.id]?.title ?? note.title}
+              onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+              onBlur={() => handleUpdateNote(note.id, 'title')}
             />
             <textarea
-              value={note.content || ''}
-              onChange={e => handleUpdateNote(note.id, { content: e.target.value })}
-              onBlur={e => handleUpdateNote(note.id, { content: e.target.value })}
+              value={editingNote[note.id]?.content ?? note.content}
+              onChange={e => handleNoteChange(note.id, 'content', e.target.value)}
+              onBlur={() => handleUpdateNote(note.id, 'content')}
             />
             <button onClick={() => handleDeleteNote(note.id)}>Eliminar</button>
           </div>
