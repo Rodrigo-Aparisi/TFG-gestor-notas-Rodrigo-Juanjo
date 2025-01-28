@@ -33,11 +33,10 @@ const Notes: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Ajustar altura de todos los textareas al cargar o cambiar las notas
-    document.querySelectorAll('textarea').forEach(textarea => {
-      autoResizeTextarea(textarea);
+    document.querySelectorAll('.note-card textarea').forEach(textarea => {
+      autoResizeTextarea(textarea as HTMLTextAreaElement);
     });
-  }, [notes, newNote.content]);
+  }, [notes]);
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -86,6 +85,14 @@ const Notes: React.FC = () => {
         }
       };
     });
+
+    // Si el campo es content, ajustar altura del textarea
+    if (field === 'content') {
+      const textarea = document.querySelector(`[data-note-id="${id}"] textarea`);
+      if (textarea) {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      }
+    }
   };
 
   const handleUpdateNote = async (id: string, field: 'title' | 'content') => {
@@ -163,8 +170,8 @@ const Notes: React.FC = () => {
   };
 
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
-    element.style.height = 'auto';
-    element.style.height = element.scrollHeight + 'px';
+    element.style.height = 'auto'; // Resetear altura
+    element.style.height = `${element.scrollHeight}px`; // Ajustar a contenido
   };
 
   return (
@@ -229,8 +236,8 @@ const Notes: React.FC = () => {
                   autoResizeTextarea(e.target);
                 }}
                 onBlur={() => handleUpdateNote(note.id, 'content')}
-                onClick={e => e.stopPropagation()}
                 onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                onClick={e => e.stopPropagation()}
               />
             </div>
             <button 
