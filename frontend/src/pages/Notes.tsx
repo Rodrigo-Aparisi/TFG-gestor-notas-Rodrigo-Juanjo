@@ -11,6 +11,7 @@ const Notes: React.FC = () => {
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +31,13 @@ const Notes: React.FC = () => {
 
     fetchNotes();
   }, [navigate]);
+
+  useEffect(() => {
+    // Ajustar altura de todos los textareas al cargar o cambiar las notas
+    document.querySelectorAll('textarea').forEach(textarea => {
+      autoResizeTextarea(textarea);
+    });
+  }, [notes, newNote.content]);
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -64,29 +72,21 @@ const Notes: React.FC = () => {
 
   const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
     setEditingNote(prev => {
-      // Obtener la nota original
       const originalNote = notes.find(note => note.id === id);
-      // Obtener el estado previo de la nota en edición
       const prevNoteState = prev[id] || {
         title: originalNote?.title || '',
         content: originalNote?.content || ''
       };
-  
-      // Crear nuevo estado para esta nota
-      const updatedNoteState = {
-        ...prevNoteState,
-        [field]: value
-      };
-  
-      // Retornar el nuevo estado completo
+
       return {
         ...prev,
-        [id]: updatedNoteState
+        [id]: {
+          ...prevNoteState,
+          [field]: value
+        }
       };
     });
   };
-  
-  
 
   const handleUpdateNote = async (id: string, field: 'title' | 'content') => {
     const editedNote = editingNote[id];
@@ -95,13 +95,10 @@ const Notes: React.FC = () => {
     const originalNote = notes.find(note => note.id === id);
     if (!originalNote) return;
 
-    // Verifica si el valor ha cambiado
     if (editedNote[field] === originalNote[field]) return;
 
-    // Validación para el título
     if (field === 'title' && editedNote.title.trim() === '') {
       showFeedback('El título no puede estar vacío');
-      // Restaura el valor original
       setEditingNote(prev => ({
         ...prev,
         [id]: {
@@ -128,7 +125,6 @@ const Notes: React.FC = () => {
     } catch (error) {
       console.error('Error al actualizar nota:', error);
       showFeedback('Error al actualizar la nota');
-      // Restaura el valor original en caso de error
       setEditingNote(prev => ({
         ...prev,
         [id]: {
@@ -146,16 +142,40 @@ const Notes: React.FC = () => {
       await noteService.deleteNote(id);
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
       showFeedback('Nota eliminada');
+      if (focusedNoteId === id) {
+        setFocusedNoteId(null);
+        document.body.style.overflow = '';
+      }
     } catch (error) {
       console.error('Error deleting note:', error);
       showFeedback('Error al eliminar la nota');
     }
   };
 
+  const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
+    setFocusedNoteId(id);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleBlur = () => {
+    setFocusedNoteId(null);
+    document.body.style.overflow = '';
+  };
+
+  const autoResizeTextarea = (element: HTMLTextAreaElement) => {
+    element.style.height = 'auto';
+    element.style.height = element.scrollHeight + 'px';
+  };
+
   return (
     <div className="notes-container">
       {feedback && <div className="feedback-message">{feedback}</div>}
       
+      <div 
+        className={`overlay ${focusedNoteId ? 'active' : ''}`}
+        onClick={handleBlur}
+      />
+
       <div className="create-note">
         <input
           type="text"
@@ -167,7 +187,11 @@ const Notes: React.FC = () => {
         <textarea
           placeholder="Contenido de la nota..."
           value={newNote.content}
-          onChange={e => setNewNote(prev => ({ ...prev, content: e.target.value }))}
+          onChange={e => {
+            setNewNote(prev => ({ ...prev, content: e.target.value }));
+            autoResizeTextarea(e.target);
+          }}
+          onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
         />
         <button 
           onClick={handleCreateNote}
@@ -180,19 +204,44 @@ const Notes: React.FC = () => {
 
       <div className="notes-grid">
         {notes.map(note => (
-          <div key={note.id} className="note-card">
-            <input
-              type="text"
-              value={editingNote[note.id]?.title ?? note.title}
-              onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-              onBlur={() => handleUpdateNote(note.id, 'title')}
-            />
-            <textarea
-              value={editingNote[note.id]?.content ?? note.content}
-              onChange={e => handleNoteChange(note.id, 'content', e.target.value)}
-              onBlur={() => handleUpdateNote(note.id, 'content')}
-            />
-            <button onClick={() => handleDeleteNote(note.id)}>Eliminar</button>
+          <div 
+            key={note.id}
+            data-note-id={note.id}
+            className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+            onClick={(e) => {
+              if (!focusedNoteId) {
+                handleFocus(note.id, e);
+              }
+            }}
+          >
+            <div className="note-content">
+              <input
+                type="text"
+                value={editingNote[note.id]?.title ?? note.title}
+                onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+                onBlur={() => handleUpdateNote(note.id, 'title')}
+                onClick={e => e.stopPropagation()}
+              />
+              <textarea
+                value={editingNote[note.id]?.content ?? note.content}
+                onChange={e => {
+                  handleNoteChange(note.id, 'content', e.target.value);
+                  autoResizeTextarea(e.target);
+                }}
+                onBlur={() => handleUpdateNote(note.id, 'content')}
+                onClick={e => e.stopPropagation()}
+                onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+              />
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteNote(note.id);
+              }}
+              className="delete-button"
+            >
+              Eliminar
+            </button>
           </div>
         ))}
       </div>
