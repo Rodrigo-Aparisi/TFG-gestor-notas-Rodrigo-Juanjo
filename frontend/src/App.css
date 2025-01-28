@@ -1,5 +1,5 @@
 :root{
-  --yellow: #f1c40f;
+  --dorado: #ffc600;
 }
 
 .app {
@@ -16,8 +16,10 @@
   background-color: #1a1a1a;
   z-index: 1000;
   padding: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px var(--dorado);
+  border-bottom: 2px solid var(--dorado);
 }
+
 
 .header nav {
   display: flex;
@@ -29,7 +31,7 @@
 }
 
 .logo {
-  color: var(--yellow);
+  color: var(--dorado);
   font-size: 1.5rem;
   font-weight: bold;
   text-decoration: none;
@@ -38,7 +40,7 @@
 }
 
 .logo:hover {
-  color: var(--yellow);
+  color: var(--dorado);
   text-decoration: none;
 }
 
@@ -58,14 +60,14 @@ button {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
-  background-color: var(--yellow);
+  background-color: var(--dorado);
   color: #282c34;
   cursor: pointer;
   font-weight: bold;
 }
 
 button:hover {
-  background-color: var(--yellow);
+  background-color: var(--dorado);
 }
 
 /* Ajuste para el contenido principal */
