@@ -7,6 +7,7 @@ import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Notes from './pages/Notes.tsx';
 import PrivateRoute from './components/PrivateRoute.tsx';
+import './App.css';
 
 function App() {
   return (
@@ -14,15 +15,17 @@ function App() {
       <Router>
         <div className="app">
           <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/notes" element={
-              <PrivateRoute>
-                <Notes />
-              </PrivateRoute>
-            } />
-          </Routes>
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/notes" element={
+                <PrivateRoute>
+                  <Notes />
+                </PrivateRoute>
+              } />
+            </Routes>
+          </main>
         </div>
       </Router>
     </Provider>
