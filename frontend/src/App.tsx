@@ -14,19 +14,21 @@ function App() {
       <Router>
         <div className="app">
           <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route 
-              path="/notes" 
-              element={
-                <PrivateRoute>
-                  <Notes />
-                </PrivateRoute>
-              } 
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route 
+                path="/notes" 
+                element={
+                  <PrivateRoute>
+                    <Notes />
+                  </PrivateRoute>
+                } 
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </Provider>
