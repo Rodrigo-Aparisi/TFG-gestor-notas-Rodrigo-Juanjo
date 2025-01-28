@@ -1,3 +1,4 @@
+// Notes.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { noteService } from '../services/api';
@@ -86,7 +87,6 @@ const Notes: React.FC = () => {
       };
     });
 
-    // Si el campo es content, ajustar altura del textarea
     if (field === 'content') {
       const textarea = document.querySelector(`[data-note-id="${id}"] textarea`);
       if (textarea) {
@@ -169,9 +169,19 @@ const Notes: React.FC = () => {
     document.body.style.overflow = '';
   };
 
+  const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
+    event.stopPropagation();
+    if (focusedNoteId === id) {
+      handleBlur();
+    } else {
+      setFocusedNoteId(id);
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
-    element.style.height = 'auto'; // Resetear altura
-    element.style.height = `${element.scrollHeight}px`; // Ajustar a contenido
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
   };
 
   return (
@@ -221,6 +231,10 @@ const Notes: React.FC = () => {
               }
             }}
           >
+            <div 
+              className="focus-indicator"
+              onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+            />
             <div className="note-content">
               <input
                 type="text"

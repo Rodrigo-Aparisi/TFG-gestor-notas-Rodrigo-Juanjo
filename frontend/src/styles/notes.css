@@ -1,3 +1,4 @@
+/* notes.css */
 /* === RESET Y CONFIGURACIÓN BÁSICA === */
 html, body {
   margin: 0;
@@ -50,7 +51,7 @@ html, body {
 
 .create-note textarea {
   width: 100%;
-  min-height: 20px; /* Altura mínima inicial */
+  min-height: 20px;
   resize: none;
   overflow: hidden;
   height: auto;
@@ -82,7 +83,7 @@ html, body {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 1;
   display: flex;
@@ -95,6 +96,41 @@ html, body {
   align-self: start;
   flex: 0 0 calc(33.333% - 10px);
   min-width: 300px;
+  transform-origin: center center;
+}
+
+/* Focus Indicator */
+.focus-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  background-color: transparent;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  border-bottom-left-radius: 8px;
+  z-index: 2;
+}
+
+.note-card:hover .focus-indicator {
+  background-color: #f1c40f;
+}
+
+.note-card.focused .focus-indicator {
+  background-color: #f1c40f;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 30px;
+  height: 30px;
+  z-index: 1001;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 0px;
+}
+
+.focus-indicator:hover {
+  background-color: #e1b40f !important;
 }
 
 .note-card .note-content {
@@ -130,8 +166,9 @@ html, body {
 .note-card textarea {
   width: 100%;
   min-height: 20px;
+  max-height: 70vh;
   resize: none;
-  overflow: hidden;
+  overflow: auto;
   height: auto;
   line-height: 1.5;
   font-size: 14px;
@@ -143,6 +180,7 @@ html, body {
   overflow-wrap: break-word;
   white-space: pre-wrap;
 }
+
 .note-card:hover textarea {
   margin-bottom: 35px;
 }
@@ -150,34 +188,32 @@ html, body {
 /* === ESTADOS FOCUSED === */
 .note-card.focused {
   position: fixed;
-  width: 90%;
-  max-width: 800px;
-  height: auto;
-  max-height: 90vh;
+  width: 800px;
+  max-height: 95vh;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) !important;
   z-index: 1000;
-  padding: 30px;
+  padding: 40px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow-y: auto;
+  display: flex;
   flex-direction: column;
-  align-items: center;
+  background: #fff;
+  overflow: visible;
 }
 
 .note-card.focused .note-content {
-  width: 90%;
-  max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 20px;
+  overflow: visible;
 }
 
 .note-card.focused input {
   text-align: center;
   font-size: 1.5em;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   width: 100%;
   white-space: normal;
   text-overflow: clip;
@@ -185,35 +221,20 @@ html, body {
 }
 
 .note-card.focused textarea {
-  min-height: 200px;
-  height: auto;
-  margin-bottom: 60px;
-  overflow-y: auto;
-  font-size: 1.1em;
-  max-height: calc(80vh - 150px);
-  padding: 15px;
+  max-height: 70vh;
+  resize: none;
+  overflow: auto;
+  padding: 20px;
   width: 100%;
   border-radius: 8px;
   background-color: #f8f9fa;
-}
-
-.note-card.focused::before {
-  content: '';
-  display: block;
-  padding-bottom: 100%;
-  grid-area: 1 / 1 / 2 / 2;
-}
-
-.note-card.focused::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: -1;
-  pointer-events: none;
+  font-size: 1.2em;
+  line-height: 1.6;
+  margin-bottom: 45px;
+  transition: height 0.2s ease;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* === BOTONES === */
@@ -238,20 +259,6 @@ button:focus {
   outline-offset: 2px;
 }
 
-.note-card button {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-}
-
-.note-card:hover button,
-.note-card.focused button,
-.delete-button {
-  opacity: 1;
-}
-
 /* === BOTÓN DE ELIMINAR === */
 .delete-button {
   position: absolute;
@@ -273,46 +280,18 @@ button:focus {
   background: #c0392b;
 }
 
+.note-card:hover .delete-button,
 .note-card.focused .delete-button {
-  position: absolute;
-  bottom: 30px;
-  right: 30px;
   opacity: 1;
 }
 
-/* === ESTADOS Y EFECTOS === */
-.note-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.note-card input:focus,
-.note-card textarea:focus {
-  border-color: #f1c40f;
-  background: rgba(255, 255, 255, 0.95);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
-}
-
-/* === MENSAJES === */
-.error-message {
-  color: #ff3333;
-  text-align: center;
-  margin: 10px 0;
-  font-size: 0.9em;
-}
-
-.feedback-message {
-  position: fixed;
-  top: 20px;
+.note-card.focused .delete-button {
+  position: absolute;
+  bottom: 20px;
   right: 20px;
+  margin: 0;
   padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border-radius: 4px;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease-in;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-size: 0.9em;
 }
 
 /* === OVERLAY === */
@@ -338,6 +317,20 @@ button:focus {
 .loading {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* === FEEDBACK === */
+.feedback-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* === SCROLLBAR PERSONALIZADO === */
@@ -371,47 +364,16 @@ button:focus {
   }
 }
 
-@keyframes expandNote {
-  from {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes shrinkNote {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -60%);
-  }
-}
-
 /* === RESPONSIVE === */
 @media (max-width: 1200px) {
   .note-card {
-    flex: 0 0 calc(50% - 10px); /* 2 columnas en pantallas medianas */
+    flex: 0 0 calc(50% - 10px);
   }
 }
 
 @media (max-width: 768px) {
   .note-card {
-    flex: 1 1 100%; /* Una columna en móviles */
+    flex: 1 1 100%;
     max-width: none;
   }
 }
