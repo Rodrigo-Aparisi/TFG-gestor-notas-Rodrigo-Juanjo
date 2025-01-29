@@ -41,10 +41,27 @@ const Notes: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    document.querySelectorAll('.note-card textarea').forEach(textarea => {
+    const textareas = document.querySelectorAll('.note-card textarea');
+    textareas.forEach((textarea) => {
       autoResizeTextarea(textarea as HTMLTextAreaElement);
     });
-  }, [notes]);
+  }, [notes, breakpointColumns, focusedNoteId]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const textareas = document.querySelectorAll('.note-card textarea');
+      textareas.forEach((textarea) => {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      });
+    };
+  
+    window.addEventListener('resize', handleResize);
+  
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -174,7 +191,15 @@ const Notes: React.FC = () => {
   const handleBlur = () => {
     setFocusedNoteId(null);
     document.body.style.overflow = '';
+    
+    setTimeout(() => {
+      const textareas = document.querySelectorAll('.note-card textarea');
+      textareas.forEach((textarea) => {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      });
+    }, 0);
   };
+  
 
   const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
@@ -187,9 +212,17 @@ const Notes: React.FC = () => {
   };
 
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
+    if (!element) return;
+  
+    // Restablece la altura antes de recalcular
     element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
-  };
+  
+    // Calcula y aplica la nueva altura respetando límites
+    const newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.7);
+    element.style.height = `${newHeight}px`;
+  };  
+  
+  
 
   return (
     <div className="notes-container">
@@ -256,14 +289,18 @@ const Notes: React.FC = () => {
               />
               <textarea
                 value={editingNote[note.id]?.content ?? note.content}
-                onChange={e => {
+                onChange={(e) => {
                   handleNoteChange(note.id, 'content', e.target.value);
-                  autoResizeTextarea(e.target);
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
                 }}
-                onBlur={() => handleUpdateNote(note.id, 'content')}
-                onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                onClick={e => e.stopPropagation()}
+                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                onBlur={(e) => {
+                  handleUpdateNote(note.id, 'content');
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
+                }}
+                onClick={(e) => e.stopPropagation()}
               />
+
             </div>
             <button 
               onClick={(e) => {
