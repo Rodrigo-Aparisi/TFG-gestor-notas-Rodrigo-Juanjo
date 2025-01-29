@@ -1,10 +1,10 @@
-// Notes.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note } from '../types';
 import '../styles/notes.css';
+import Masonry from 'react-masonry-css';
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -14,6 +14,13 @@ const Notes: React.FC = () => {
   const [feedback, setFeedback] = useState('');
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const breakpointColumns = {
+    default: 4, // Número de columnas en pantallas grandes
+    1100: 3,    // 3 columnas en pantallas medianas
+    768: 2,     // 2 columnas en tablets
+    480: 1      // 1 columna en móviles
+  };
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -219,7 +226,11 @@ const Notes: React.FC = () => {
         </button>
       </div>
 
-      <div className="notes-grid">
+      <Masonry
+        breakpointCols={breakpointColumns}
+        className="masonry-grid"
+        columnClassName="masonry-grid_column"
+      >
         {notes.map(note => (
           <div 
             key={note.id}
@@ -265,7 +276,7 @@ const Notes: React.FC = () => {
             </button>
           </div>
         ))}
-      </div>
+      </Masonry>
     </div>
   );
 };

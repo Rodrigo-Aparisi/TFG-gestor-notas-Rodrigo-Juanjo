@@ -1,4 +1,3 @@
-/* notes.css */
 /* === RESET Y CONFIGURACIÓN BÁSICA === */
 html, body {
   margin: 0;
@@ -65,38 +64,31 @@ html, body {
 }
 
 /* === GRID Y TARJETAS === */
-.notes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 450px);
-  column-gap: 10px;
-  row-gap: 0;
-  width: 100%;
-  position: relative;
-  padding: 0 10px;
-  grid-auto-flow: dense;
-  justify-content: center;
-  align-content: start;
-  grid-auto-rows: min-content;
+/* Contenedor principal de Masonry */
+.masonry-grid {
+  display: flex;
+  margin-left: -15px;
+  width: auto;
+}
+
+/* Columnas de Masonry */
+.masonry-grid_column {
+  padding-left: 15px;
+  background-clip: padding-box;
+}
+
+/* Ajuste de las tarjetas dentro de las columnas */
+.masonry-grid_column > .note-card {
+  margin-bottom: 15px;
 }
 
 .note-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 20px;
-  width: 450px;
-  height: min-content;
-  margin: 5px 0;
-  align-self: start;
-  flex: 0 0 calc(33.333% - 10px);
-  min-width: 300px;
-  transform-origin: center center;
+  position: relative; /* Asegura que los elementos hijos puedan posicionarse dentro de la tarjeta */
+  padding: 10px; /* Opcional: espacio interno */
+  border: 1px solid #ccc; /* Opcional: diseño de la tarjeta */
+  border-radius: 5px; /* Opcional: esquinas redondeadas */
+  background-color: var(--white); /* Fondo de la tarjeta */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Opcional: sombra */
 }
 
 /* Focus Indicator */
@@ -261,19 +253,16 @@ button:focus {
 
 /* === BOTÓN DE ELIMINAR === */
 .delete-button {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: #ff4757;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  margin-top: auto;
-  z-index: 2;
+  position: absolute; /* Permite posicionarlo dentro de la tarjeta */
+  top: 10px; /* Espaciado desde la parte superior */
+  right: 10px; /* Espaciado desde la derecha */
+  background-color: #ff4d4d; /* Color de fondo del botón */
+  color: white; /* Color del texto */
+  border: none; /* Sin bordes */
+  border-radius: 5px; /* Bordes redondeados */
+  padding: 5px 10px; /* Espaciado interno */
+  cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+  transition: background-color 0.3s ease; /* Animación para el color de fondo */
 }
 
 .delete-button:hover {
@@ -372,8 +361,7 @@ button:focus {
 }
 
 @media (max-width: 768px) {
-  .note-card {
-    flex: 1 1 100%;
-    max-width: none;
+  .notes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Columnas más pequeñas en móviles */
   }
 }
