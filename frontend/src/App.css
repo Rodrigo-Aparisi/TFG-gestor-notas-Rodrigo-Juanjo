@@ -16,8 +16,7 @@
   background-color: #1a1a1a;
   z-index: 1000;
   padding: 1rem 0;
-  box-shadow: 0 2px 4px var(--dorado);
-  border-bottom: 2px solid var(--dorado);
+  border-bottom: 3px solid var(--dorado);
 }
 
 
@@ -132,6 +131,7 @@ html, body {
 #root {
   height: 100%;
   width: 100%;
+  background-color: #282c34;
 }
 
 .app {
