@@ -83,12 +83,13 @@ html, body {
 }
 
 .note-card {
-  position: relative; /* Asegura que los elementos hijos puedan posicionarse dentro de la tarjeta */
-  padding: 10px; /* Opcional: espacio interno */
-  border: 1px solid #ccc; /* Opcional: diseño de la tarjeta */
-  border-radius: 5px; /* Opcional: esquinas redondeadas */
-  background-color: var(--white); /* Fondo de la tarjeta */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Opcional: sombra */
+  position: relative;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: var(--white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 25vh;
 }
 
 /* Focus Indicator */
@@ -174,7 +175,7 @@ html, body {
 }
 
 .note-card:hover textarea {
-  margin-bottom: 35px;
+  margin-bottom: 50px;
 }
 
 /* === ESTADOS FOCUSED === */
@@ -253,16 +254,19 @@ button:focus {
 
 /* === BOTÓN DE ELIMINAR === */
 .delete-button {
-  position: absolute; /* Permite posicionarlo dentro de la tarjeta */
-  top: 10px; /* Espaciado desde la parte superior */
-  right: 10px; /* Espaciado desde la derecha */
-  background-color: #ff4d4d; /* Color de fondo del botón */
-  color: white; /* Color del texto */
-  border: none; /* Sin bordes */
-  border-radius: 5px; /* Bordes redondeados */
-  padding: 5px 10px; /* Espaciado interno */
-  cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
-  transition: background-color 0.3s ease; /* Animación para el color de fondo */
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  margin-top: auto;
+  z-index: 2;
 }
 
 .delete-button:hover {
@@ -362,6 +366,6 @@ button:focus {
 
 @media (max-width: 768px) {
   .notes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Columnas más pequeñas en móviles */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
