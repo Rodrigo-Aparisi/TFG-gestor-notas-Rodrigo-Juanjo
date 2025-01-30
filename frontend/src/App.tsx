@@ -6,6 +6,7 @@ import Header from './components/Layout/Header.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Notes from './pages/Notes.tsx';
+import Account from './pages/account.tsx';
 import PrivateRoute from './components/PrivateRoute.tsx';
 import './App.css';
 
@@ -19,14 +20,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
-              <Route 
-                path="/notes" 
-                element={
-                  <PrivateRoute>
-                    <Notes />
-                  </PrivateRoute>
-                } 
-              />
+              <Route path="/account" element={<Account />} /> 
+              <Route path= "/notes" element={<Notes />}/>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

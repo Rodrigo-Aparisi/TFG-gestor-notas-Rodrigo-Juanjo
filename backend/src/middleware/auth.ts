@@ -1,43 +1,47 @@
-// Importaciones necesarias
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-// Extender el tipo Request de Express para incluir user
 declare global {
   namespace Express {
     interface Request {
-      user?: any;  // Permite almacenar el usuario en el objeto request
+      user?: any;
     }
   }
 }
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Obtener el token del header Authorization
-    // Authorization: Bearer <token>
     const token = req.headers.authorization?.split(' ')[1];
+    console.log('Token recibido:', token ? 'Sí' : 'No');
 
-    // Verificar si existe el token
     if (!token) {
-      return res.status(401).json({ error: 'Access denied' });
+      return res.status(401).json({ error: 'Access denied - No token' });
     }
 
-    // Verificar que existe la clave secreta
     const secret = process.env.JWT_SECRET;
     if (!secret) {
+      console.error('JWT_SECRET no definido');
       throw new Error('JWT_SECRET is not defined');
     }
 
-    // Verificar el token
     const verified = jwt.verify(token, secret);
+    console.log('Token verificado:', verified);
     
-    // Guardar el usuario verificado en el request
+    // Asegurarse de que el ID esté presente
+    if (!verified || typeof verified !== 'object' || !verified.id) {
+      console.error('Token válido pero sin ID de usuario');
+      return res.status(401).json({ error: 'Invalid token structure' });
+    }
+
     req.user = verified;
+    console.log('Usuario establecido en req:', req.user);
     
-    // Continuar con la siguiente función
     next();
   } catch (error) {
-    // Si hay error, devolver 403 Forbidden
-    res.status(403).json({ error: 'Invalid token' });
+    console.error('Error en autenticación:', error);
+    res.status(403).json({ 
+      error: 'Invalid token',
+      details: error instanceof Error ? error.message : 'Error desconocido'
+    });
   }
 };

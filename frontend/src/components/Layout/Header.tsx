@@ -34,13 +34,13 @@ const Header: React.FC = () => {
               </button>
               <div className="dropdown-menu" id="user-dropdown" role="menu">
                 <button 
-                  onClick={() => navigate('/cuenta')}
+                  onClick={() => navigate('/account')}
                   role="menuitem"
                 >
                   Cuenta
                 </button>
                 <button 
-                  onClick={() => navigate('/configuracion')}
+                  onClick={() => navigate('/settings')}
                   role="menuitem"
                 >
                   Configuración
