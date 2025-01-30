@@ -1,10 +1,10 @@
-// Notes.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note } from '../types';
 import '../styles/notes.css';
+import Masonry from 'react-masonry-css';
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -14,6 +14,13 @@ const Notes: React.FC = () => {
   const [feedback, setFeedback] = useState('');
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const breakpointColumns = {
+    default: 5, // Número de columnas en pantallas grandes
+    1100: 3,    // 3 columnas en pantallas medianas
+    768: 2,     // 2 columnas en tablets
+    480: 1      // 1 columna en móviles
+  };
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -34,10 +41,27 @@ const Notes: React.FC = () => {
   }, [navigate]);
 
   useEffect(() => {
-    document.querySelectorAll('.note-card textarea').forEach(textarea => {
+    const textareas = document.querySelectorAll('.note-card textarea');
+    textareas.forEach((textarea) => {
       autoResizeTextarea(textarea as HTMLTextAreaElement);
     });
-  }, [notes]);
+  }, [notes, breakpointColumns, focusedNoteId]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const textareas = document.querySelectorAll('.note-card textarea');
+      textareas.forEach((textarea) => {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      });
+    };
+  
+    window.addEventListener('resize', handleResize);
+  
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -167,7 +191,15 @@ const Notes: React.FC = () => {
   const handleBlur = () => {
     setFocusedNoteId(null);
     document.body.style.overflow = '';
+    
+    setTimeout(() => {
+      const textareas = document.querySelectorAll('.note-card textarea');
+      textareas.forEach((textarea) => {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      });
+    }, 0);
   };
+  
 
   const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
@@ -180,9 +212,17 @@ const Notes: React.FC = () => {
   };
 
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
+    if (!element) return;
+  
+    // Restablece la altura antes de recalcular
     element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
-  };
+  
+    // Calcula y aplica la nueva altura respetando límites
+    const newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.7);
+    element.style.height = `${newHeight}px`;
+  };  
+  
+  
 
   return (
     <div className="notes-container">
@@ -193,7 +233,26 @@ const Notes: React.FC = () => {
         onClick={handleBlur}
       />
 
-      <div className="create-note">
+          <div 
+              className="create-note"
+              onMouseEnter={e => {
+                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+                  if (textarea) {
+                      textarea.style.opacity = '1';
+                      textarea.style.height = 'auto';
+                      if (textarea.value.trim() === '') {
+                          textarea.setAttribute('placeholder', 'Contenido de la nota...');
+                      }
+                  }
+              }}
+              onMouseLeave={e => {
+                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+                  if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
+                      textarea.style.opacity = '0';
+                      textarea.style.height = '0px';
+                  }
+              }}
+          >        
         <input
           type="text"
           placeholder="Título"
@@ -202,13 +261,32 @@ const Notes: React.FC = () => {
           required
         />
         <textarea
-          placeholder="Contenido de la nota..."
-          value={newNote.content}
-          onChange={e => {
-            setNewNote(prev => ({ ...prev, content: e.target.value }));
-            autoResizeTextarea(e.target);
-          }}
-          onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+            placeholder="Contenido de la nota..."
+            value={newNote.content}
+            onChange={e => {
+                setNewNote(prev => ({ ...prev, content: e.target.value }));
+                const textarea = e.target as HTMLTextAreaElement;
+                textarea.style.opacity = '1';
+                
+                if (e.target.value.trim() === '') {
+                    textarea.style.height = 'auto';
+                    textarea.setAttribute('placeholder', 'Contenido de la nota...');
+                } else {
+                    textarea.style.height = 'auto';
+                    autoResizeTextarea(textarea);
+                }
+            }}
+            onBlur={e => {
+                if (newNote.content.trim() === '') {
+                    e.target.style.opacity = '0';
+                    e.target.style.height = '0px';
+                    e.target.setAttribute('placeholder', 'Contenido de la nota...');
+                }
+            }}
+            onFocus={e => {
+                e.target.style.opacity = '1';
+                e.target.style.height = 'auto';
+            }}
         />
         <button 
           onClick={handleCreateNote}
@@ -219,7 +297,11 @@ const Notes: React.FC = () => {
         </button>
       </div>
 
-      <div className="notes-grid">
+      <Masonry
+        breakpointCols={breakpointColumns}
+        className="masonry-grid"
+        columnClassName="masonry-grid_column"
+      >
         {notes.map(note => (
           <div 
             key={note.id}
@@ -245,14 +327,18 @@ const Notes: React.FC = () => {
               />
               <textarea
                 value={editingNote[note.id]?.content ?? note.content}
-                onChange={e => {
+                onChange={(e) => {
                   handleNoteChange(note.id, 'content', e.target.value);
-                  autoResizeTextarea(e.target);
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
                 }}
-                onBlur={() => handleUpdateNote(note.id, 'content')}
-                onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                onClick={e => e.stopPropagation()}
+                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                onBlur={(e) => {
+                  handleUpdateNote(note.id, 'content');
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
+                }}
+                onClick={(e) => e.stopPropagation()}
               />
+
             </div>
             <button 
               onClick={(e) => {
@@ -265,7 +351,7 @@ const Notes: React.FC = () => {
             </button>
           </div>
         ))}
-      </div>
+      </Masonry>
     </div>
   );
 };
