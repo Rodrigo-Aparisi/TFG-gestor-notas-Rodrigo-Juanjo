@@ -16,7 +16,7 @@ const Notes: React.FC = () => {
   const navigate = useNavigate();
 
   const breakpointColumns = {
-    default: 4, // Número de columnas en pantallas grandes
+    default: 5, // Número de columnas en pantallas grandes
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
@@ -233,7 +233,26 @@ const Notes: React.FC = () => {
         onClick={handleBlur}
       />
 
-      <div className="create-note">
+          <div 
+              className="create-note"
+              onMouseEnter={e => {
+                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+                  if (textarea) {
+                      textarea.style.opacity = '1';
+                      textarea.style.height = 'auto';
+                      if (textarea.value.trim() === '') {
+                          textarea.setAttribute('placeholder', 'Contenido de la nota...');
+                      }
+                  }
+              }}
+              onMouseLeave={e => {
+                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+                  if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
+                      textarea.style.opacity = '0';
+                      textarea.style.height = '0px';
+                  }
+              }}
+          >        
         <input
           type="text"
           placeholder="Título"
@@ -242,13 +261,32 @@ const Notes: React.FC = () => {
           required
         />
         <textarea
-          placeholder="Contenido de la nota..."
-          value={newNote.content}
-          onChange={e => {
-            setNewNote(prev => ({ ...prev, content: e.target.value }));
-            autoResizeTextarea(e.target);
-          }}
-          onInput={e => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+            placeholder="Contenido de la nota..."
+            value={newNote.content}
+            onChange={e => {
+                setNewNote(prev => ({ ...prev, content: e.target.value }));
+                const textarea = e.target as HTMLTextAreaElement;
+                textarea.style.opacity = '1';
+                
+                if (e.target.value.trim() === '') {
+                    textarea.style.height = 'auto';
+                    textarea.setAttribute('placeholder', 'Contenido de la nota...');
+                } else {
+                    textarea.style.height = 'auto';
+                    autoResizeTextarea(textarea);
+                }
+            }}
+            onBlur={e => {
+                if (newNote.content.trim() === '') {
+                    e.target.style.opacity = '0';
+                    e.target.style.height = '0px';
+                    e.target.setAttribute('placeholder', 'Contenido de la nota...');
+                }
+            }}
+            onFocus={e => {
+                e.target.style.opacity = '1';
+                e.target.style.height = 'auto';
+            }}
         />
         <button 
           onClick={handleCreateNote}
