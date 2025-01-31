@@ -5,7 +5,7 @@
     --black: #000; 
     --lightBlue: #17a;
     --dorado: #ffc600;
-    /*dorado:f1bf28*/
+    /*dorado secundario:f1bf28*/
 }
 
 *{
@@ -27,10 +27,6 @@ body{
     position: relative;
     width: 100%;
     height: 100%;
-    background: var(--white);
-    border: 2px solid var(--white);
-    border-radius: 10px;
-    box-shadow: 0 0 20px var(--white);
     overflow: hidden;
     z-index: 1;
     background-color: rgba(0, 0, 0, 0);
@@ -355,7 +351,6 @@ form .linkTxt{
     font-size: 0.9em;
 }
 
-/* Asegura que los elementos interactivos funcionen */
 .form-box input,
 .form-box button,
 .form-box a {
@@ -363,9 +358,128 @@ form .linkTxt{
     pointer-events: auto !important;
 }
 
-/* Mejora la visibilidad del formulario activo */
 .wrapper.active .form-box.register {
     visibility: visible;
     opacity: 1;
     transform: translateX(0);
+}
+
+/* Media Queries para Responsividad */
+@media screen and (max-width: 850px) {
+    .wrapper {
+        width: 90%;
+        height: auto;
+        min-height: 450px;
+    }
+
+    .wrapper .form-box {
+        width: 100%;
+        padding: 40px 30px;
+        position: relative;
+    }
+
+    .wrapper .info-text {
+        display: none;
+    }
+
+    .wrapper .rotate-bg,
+    .wrapper .rotate-bg2 {
+        display: none;
+    }
+
+    .wrapper .form-box.login {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .wrapper .form-box.login,
+    .wrapper .form-box.register {
+        transform: none;
+        transition: opacity 0.5s ease;
+    }
+
+    .wrapper.active .form-box.login {
+        transform: none;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .wrapper .form-box.register {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .wrapper.active .form-box.register {
+        transform: none;
+    }
+
+    .wrapper .form-box.login .animation,
+    .wrapper .form-box.register .animation,
+    .wrapper.active .form-box.login .animation,
+    .wrapper.active .form-box.register .animation {
+        transform: none;
+        transition: opacity 0.5s ease;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .wrapper {
+        width: 95%;
+        margin: 20px auto;
+    }
+
+    .form-box h2 {
+        font-size: 24px;
+    }
+
+    .input-box {
+        margin: 20px 0;
+    }
+
+    .input-box input {
+        font-size: 14px;
+    }
+
+    .input-box label {
+        font-size: 13px;
+    }
+
+    form button {
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .linkTxt {
+        font-size: 13px;
+    }
+
+    .error-message {
+        font-size: 0.8em;
+    }
+}
+
+@media screen and (max-height: 600px) {
+    .wrapper {
+        margin: 20px auto;
+        height: auto;
+        min-height: 450px;
+    }
+}
+
+@media screen and (max-width: 350px) {
+    .wrapper {
+        width: 100%;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .form-box h2 {
+        font-size: 20px;
+    }
+
+    .input-box {
+        margin: 15px 0;
+    }
 }

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
+import accountRoutes from './routes/accountRoutes';
 
 // Configurar variables de entorno
 dotenv.config();
@@ -15,6 +16,7 @@ const app = express();
 // Middleware básico
 app.use(cors());          // Permite peticiones CORS
 app.use(express.json());  // Parsea JSON en el body
+app.use('/api/account', accountRoutes);
 
 // Configurar conexión a base de datos
 const pool = new Pool({

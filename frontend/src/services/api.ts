@@ -1,6 +1,20 @@
 import axios from 'axios';
 import { authService } from './auth';
 import { Reminder } from '../types';
+import { User } from '../types';
+
+// Interfaces para el servicio de cuenta
+interface UpdateUserData {
+  username: string;
+  email: string;
+  currentPassword: string;
+  newPassword?: string;
+}
+
+interface UpdateResponse {
+  user: User;
+  message: string;
+}
 
 // Crear instancia de axios
 const api = axios.create({
@@ -78,7 +92,6 @@ export const noteService = {
       throw new Error('Error inesperado al actualizar la nota');
     }
   },
-  
 
   deleteNote: async (id: string) => {
     try {
@@ -118,6 +131,45 @@ export const calendarService = {
 
   async deleteReminder(id: string): Promise<void> {
     await axios.delete(`${api}/reminders/${id}`);
+
+// Servicios de cuenta
+export const accountService = {
+  updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
+    try {
+      const response = await api.put<UpdateResponse>('/account/update', userData);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Contraseña actual incorrecta');
+        } else if (error.response?.status === 404) {
+          throw new Error('Usuario no encontrado');
+        } else if (error.response?.status === 500) {
+          throw new Error('Error del servidor al actualizar el usuario');
+        }
+        throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
+      }
+      throw new Error('Error inesperado al actualizar el usuario');
+    }
+  },
+
+  getProfile: async (): Promise<User> => {
+    try {
+      const response = await api.get('/account/profile');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      throw error;
+    }
+  },
+
+  deleteAccount: async (password: string): Promise<void> => {
+    try {
+      await api.delete('/account/delete', { data: { password } });
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
   }
 };
 
