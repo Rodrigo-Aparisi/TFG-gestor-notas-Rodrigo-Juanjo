@@ -2,7 +2,7 @@
   --dorado: #ffc600;
   --background-dark: #282c34;
   --background-darker: #1a1a1a;
-  --background-black: #000000;
+  --background-black: #221e19;
   --shadow-color: rgba(0, 0, 0, 0.3);
   --header-height: 80px;
 }
@@ -65,7 +65,9 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   overflow: visible !important;
+  height: var(--header-height);
 }
+
 
 /* Logo */
 .logo {
@@ -264,5 +266,51 @@ button:hover {
 
   .user-menu-button {
     min-width: 100px;
+  }
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav-icons {
+  display: flex;
+  gap: 1rem;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: var(--dorado);
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover {
+  color: #e6b000;
+  background-color: rgba(255, 198, 0, 0.1);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .nav-left {
+    gap: 1rem;
+  }
+
+  .nav-icons {
+    gap: 0.5rem;
+  }
+
+  .icon-button {
+    font-size: 1rem;
+    padding: 0.4rem;
   }
 }
