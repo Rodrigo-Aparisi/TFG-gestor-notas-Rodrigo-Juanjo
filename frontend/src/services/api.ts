@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
+import { Reminder } from '../types';
 import { User } from '../types';
 
 // Interfaces para el servicio de cuenta
@@ -17,7 +18,7 @@ interface UpdateResponse {
 
 // Crear instancia de axios
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.REACT_APP_api || 'http://localhost:3001/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -101,6 +102,35 @@ export const noteService = {
     }
   }
 };
+
+
+export const calendarService = {
+  async getReminders(date: Date): Promise<{ reminders: Reminder[] }> {
+    const response = await axios.get(`${api}/reminders`, {
+      params: { date: date.toISOString() }
+    });
+    return response.data;
+  },
+
+  async createReminder(reminderData: {
+    title: string;
+    description: string;
+    dateTime: Date;
+  }): Promise<{ reminder: Reminder }> {
+    const response = await axios.post(`${api}/reminders`, reminderData);
+    return response.data;
+  },
+
+  async updateReminder(
+    id: string,
+    reminderData: Partial<Reminder>
+  ): Promise<{ reminder: Reminder }> {
+    const response = await axios.put(`${api}/reminders/${id}`, reminderData);
+    return response.data;
+  },
+
+  async deleteReminder(id: string): Promise<void> {
+    await axios.delete(`${api}/reminders/${id}`);
 
 // Servicios de cuenta
 export const accountService = {
