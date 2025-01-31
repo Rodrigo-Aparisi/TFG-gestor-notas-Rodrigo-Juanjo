@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { store } from '../store';
 import { setUser, setToken, logout as logoutAction } from '../store/slices/authSlice';
-import { User } from '../types'; // Asegúrate de que este tipo existe
+import { User } from '../types';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
@@ -18,9 +18,21 @@ interface RegisterData {
   password: string;
 }
 
+interface UpdateUserData {
+  username: string;
+  email: string;
+  currentPassword: string;
+  newPassword?: string;
+}
+
 interface AuthResponse {
   token: string;
-  user: User; // Usar el tipo User de tu aplicación
+  user: User;
+}
+
+interface UpdateResponse {
+  user: User;
+  message?: string;
 }
 
 export const authService = {
@@ -28,11 +40,9 @@ export const authService = {
     try {
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       if (response.data && response.data.token) {
-        // Guardar en localStorage
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Actualizar Redux - asegurarnos de que user cumple con el tipo User
         store.dispatch(setUser(response.data.user));
         store.dispatch(setToken(response.data.token));
       }
@@ -48,6 +58,25 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Error en el registro');
+    }
+  },
+
+  updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
+    try {
+      const response = await api.put<UpdateResponse>('/auth/update', userData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        store.dispatch(setUser(response.data.user));
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
     }
   },
 
