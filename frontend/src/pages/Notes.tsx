@@ -16,7 +16,7 @@ const Notes: React.FC = () => {
   const navigate = useNavigate();
 
   const breakpointColumns = {
-    default: 5, // Número de columnas en pantallas grandes
+    default: 4, // Número de columnas en pantallas grandes
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
@@ -61,6 +61,15 @@ const Notes: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+  
+  useEffect(() => {
+    if (focusedNoteId) {
+      const focusedTextarea = document.querySelector('.note-card.focused textarea');
+      if (focusedTextarea) {
+        autoResizeTextarea(focusedTextarea as HTMLTextAreaElement);
+      }
+    }
+  }, [focusedNoteId]);
   
 
   const showFeedback = (message: string) => {
@@ -186,7 +195,16 @@ const Notes: React.FC = () => {
   const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
     setFocusedNoteId(id);
     document.body.style.overflow = 'hidden';
+    
+    // Añade un pequeño delay para permitir que la transición CSS se complete
+    setTimeout(() => {
+      const textarea = document.querySelector('.note-card.focused textarea');
+      if (textarea) {
+        autoResizeTextarea(textarea as HTMLTextAreaElement);
+      }
+    }, 300);
   };
+  
 
   const handleBlur = () => {
     setFocusedNoteId(null);
@@ -213,14 +231,33 @@ const Notes: React.FC = () => {
 
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
     if (!element) return;
-  
-    // Restablece la altura antes de recalcular
+    
+    // Guarda el valor actual de scroll
+    const scrollPos = element.scrollTop;
+    
+    // Restablece la altura
     element.style.height = 'auto';
-  
-    // Calcula y aplica la nueva altura respetando límites
-    const newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.7);
+    
+    // Calcula la nueva altura
+    let newHeight;
+    const parentNote = element.closest('.note-card');
+    const isFocused = parentNote?.classList.contains('focused');
+    
+    if (isFocused) {
+      // Para notas focused, usa un porcentaje más alto del viewport
+      newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.6);
+    } else {
+      // Para notas normales, ajusta al contenido
+      newHeight = element.scrollHeight;
+    }
+    
+    // Aplica la nueva altura
     element.style.height = `${newHeight}px`;
-  };  
+    
+    // Restaura la posición del scroll
+    element.scrollTop = scrollPos;
+  };
+  
   
   
 
@@ -239,7 +276,7 @@ const Notes: React.FC = () => {
                   const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
                   if (textarea) {
                       textarea.style.opacity = '1';
-                      textarea.style.height = 'auto';
+                      autoResizeTextarea(textarea);
                       if (textarea.value.trim() === '') {
                           textarea.setAttribute('placeholder', 'Contenido de la nota...');
                       }
@@ -249,8 +286,8 @@ const Notes: React.FC = () => {
                   const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
                   if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
                       textarea.style.opacity = '0';
-                      textarea.style.height = '0px';
-                  }
+                      autoResizeTextarea(textarea);
+                    }
               }}
           >        
         <input
@@ -269,24 +306,37 @@ const Notes: React.FC = () => {
                 textarea.style.opacity = '1';
                 
                 if (e.target.value.trim() === '') {
-                    textarea.style.height = 'auto';
                     textarea.setAttribute('placeholder', 'Contenido de la nota...');
+                    autoResizeTextarea(textarea);
+
                 } else {
-                    textarea.style.height = 'auto';
                     autoResizeTextarea(textarea);
                 }
             }}
             onBlur={e => {
+              const textarea = e.target as HTMLTextAreaElement;
+
                 if (newNote.content.trim() === '') {
                     e.target.style.opacity = '0';
-                    e.target.style.height = '0px';
+                    autoResizeTextarea(textarea);
                     e.target.setAttribute('placeholder', 'Contenido de la nota...');
+                } else {
+                  autoResizeTextarea(textarea);
                 }
             }}
             onFocus={e => {
                 e.target.style.opacity = '1';
                 e.target.style.height = 'auto';
             }}
+
+            onClick={e => {
+
+            }}
+
+            onMouseLeave={e => {
+              const textarea = e.target as HTMLTextAreaElement;
+              autoResizeTextarea(textarea);
+          }}
         />
         <button 
           onClick={handleCreateNote}
