@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
 import { setUser, logout } from '../store/slices/authSlice';
 import { accountService } from '../services/accountService';
+import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from 'react-icons/ai';
 import '../styles/account.css';
 
 const Account: React.FC = () => {
@@ -14,11 +15,18 @@ const Account: React.FC = () => {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmNewPassword: false
+  });
+
   const [userData, setUserData] = useState({
     username: user?.username || '',
     email: user?.email || '',
     currentPassword: '',
-    newPassword: ''
+    newPassword: '',
+    confirmNewPassword: ''
   });
 
   useEffect(() => {
@@ -48,12 +56,15 @@ const Account: React.FC = () => {
         throw new Error('Debes introducir tu contraseña actual para realizar cambios');
       }
 
+      if (userData.newPassword && userData.newPassword !== userData.confirmNewPassword) {
+        throw new Error('Las contraseñas nuevas no coinciden');
+      }
+
       const response = await accountService.updateUser(userData);
       
       if (response.user) {
         dispatch(setUser(response.user));
         
-        // Verificar si se cambió el email o la contraseña
         const requiresRelogin = 
           userData.email !== user?.email || 
           userData.newPassword;
@@ -70,8 +81,14 @@ const Account: React.FC = () => {
           setUserData(prev => ({
             ...prev,
             currentPassword: '',
-            newPassword: ''
+            newPassword: '',
+            confirmNewPassword: ''
           }));
+          setShowPasswords({
+            currentPassword: false,
+            newPassword: false,
+            confirmNewPassword: false
+          });
         }
       }
     } catch (error: any) {
@@ -97,26 +114,36 @@ const Account: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Nombre de usuario</label>
-            <input
-              type="text"
-              name="username"
-              value={userData.username}
-              onChange={handleChange}
-              disabled={!isEditing}
-              required
-            />
+            <div className="input-container">
+              <input
+                type="text"
+                name="username"
+                value={userData.username}
+                onChange={handleChange}
+                disabled={!isEditing}
+                required
+              />
+              <span className="account-icon">
+                <AiOutlineUser />
+              </span>
+            </div>
           </div>
 
           <div className="form-group">
             <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={userData.email}
-              onChange={handleChange}
-              disabled={!isEditing}
-              required
-            />
+            <div className="input-container">
+              <input
+                type="email"
+                name="email"
+                value={userData.email}
+                onChange={handleChange}
+                disabled={!isEditing}
+                required
+              />
+              <span className="account-icon">
+                <AiOutlineMail />
+              </span>
+            </div>
             {isEditing && userData.email !== user.email && (
               <small className="warning-text">
                 Cambiar el email requerirá volver a iniciar sesión
@@ -128,26 +155,76 @@ const Account: React.FC = () => {
             <>
               <div className="form-group">
                 <label>Contraseña actual</label>
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={userData.currentPassword}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="password-input-container">
+                  <input
+                    type={showPasswords.currentPassword ? "text" : "password"}
+                    name="currentPassword"
+                    value={userData.currentPassword}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span 
+                    className="password-toggle"
+                    onClick={() => setShowPasswords(prev => ({
+                      ...prev,
+                      currentPassword: !prev.currentPassword
+                    }))}
+                  >
+                    {showPasswords.currentPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+                  </span>
+                </div>
               </div>
 
               <div className="form-group">
                 <label>Nueva contraseña (opcional)</label>
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={userData.newPassword || ''}
-                  onChange={handleChange}
-                />
+                <div className="password-input-container">
+                  <input
+                    type={showPasswords.newPassword ? "text" : "password"}
+                    name="newPassword"
+                    value={userData.newPassword}
+                    onChange={handleChange}
+                  />
+                  <span 
+                    className="password-toggle"
+                    onClick={() => setShowPasswords(prev => ({
+                      ...prev,
+                      newPassword: !prev.newPassword
+                    }))}
+                  >
+                    {showPasswords.newPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+                  </span>
+                </div>
                 {userData.newPassword && (
                   <small className="warning-text">
                     Cambiar la contraseña requerirá volver a iniciar sesión
+                  </small>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Confirmar nueva contraseña</label>
+                <div className="password-input-container">
+                  <input
+                    type={showPasswords.confirmNewPassword ? "text" : "password"}
+                    name="confirmNewPassword"
+                    value={userData.confirmNewPassword}
+                    onChange={handleChange}
+                    required={!!userData.newPassword}
+                  />
+                  <span 
+                    className="password-toggle"
+                    onClick={() => setShowPasswords(prev => ({
+                      ...prev,
+                      confirmNewPassword: !prev.confirmNewPassword
+                    }))}
+                  >
+                    {showPasswords.confirmNewPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+                  </span>
+                </div>
+                {userData.newPassword && userData.confirmNewPassword && 
+                 userData.newPassword !== userData.confirmNewPassword && (
+                  <small className="warning-text">
+                    Las contraseñas no coinciden
                   </small>
                 )}
               </div>
@@ -180,7 +257,13 @@ const Account: React.FC = () => {
                       username: user.username,
                       email: user.email,
                       currentPassword: '',
-                      newPassword: ''
+                      newPassword: '',
+                      confirmNewPassword: ''
+                    });
+                    setShowPasswords({
+                      currentPassword: false,
+                      newPassword: false,
+                      confirmNewPassword: false
                     });
                   }}
                   className="cancel-button"
