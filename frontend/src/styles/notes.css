@@ -19,7 +19,7 @@ html, body {
 .notes-container {
   width: 100%;
   min-height: 100%;
-  padding: 10px;
+  padding: 20px;
   margin: 0;
   position: relative;
   display: flex;
@@ -50,9 +50,8 @@ html, body {
 
 .create-note textarea {
   width: 100%;
-  height: 0px;
   resize: none;
-  overflow: hidden;
+  overflow: auto;
   line-height: 1.5;
   padding: 8px;
   border: none;
@@ -80,7 +79,7 @@ html, body {
 .create-note:hover textarea,
 .create-note textarea:focus {
   min-height: 0px;
-  height: 50px;
+  height: auto;
   opacity: 1;
 }
 
@@ -91,7 +90,7 @@ html, body {
 .masonry-grid {
   display: flex;
   margin-left: -15px;
-  width: auto;
+  width: 100%;
 }
 
 /* Columnas de Masonry */
@@ -107,12 +106,15 @@ html, body {
 
 .note-card {
   position: relative;
-  padding: 10px;
+  padding: 15px;
   border: 1px solid #ccc;
   border-radius: 8px;
   background-color: var(--white);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 35vh;
+  width: 100%;
+  margin-bottom: 15px;
+  break-inside: avoid;
+  transition: transform 0.2s ease;
 }
 
 /* Focus Indicator */
@@ -182,10 +184,8 @@ html, body {
 .note-card textarea {
   width: 100%;
   min-height: 10px;
-  max-height: 70vh;
   resize: none;
   overflow: auto;
-  height: auto;
   line-height: 1.5;
   font-size: 14px;
   padding: 8px 0;
@@ -196,13 +196,30 @@ html, body {
   overflow-wrap: break-word;
   white-space: pre-wrap;
   margin-bottom: 35px;
+/*  Max de altura
+  max-height: 70vh;
+  height: auto; */
 }
 
 /* === ESTADOS FOCUSED === */
 .note-card.focused {
   position: fixed;
+  width: min(800px, 90vw);
+  height: auto;
+  max-height: 90vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important;
+  z-index: 1000;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: auto;
+
+  /*position: fixed;
   width: 800px;
-  max-height: 95vh;
+  max-height: 90vh;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) !important;
@@ -213,14 +230,24 @@ html, body {
   flex-direction: column;
   background: #fff;
   overflow: visible;
+  margin: 0;  */
 }
 
 .note-card.focused .note-content {
   width: 100%;
+  height: auto;
+  max-height: calc(90vh - 140px);
   display: flex;
   flex-direction: column;
   gap: 20px;
   overflow: visible;
+  flex: 1;
+
+  /*width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: visible;*/
 }
 
 .note-card.focused input {
@@ -234,7 +261,7 @@ html, body {
 }
 
 .note-card.focused textarea {
-  max-height: 70vh;
+  max-height: 50vh;
   resize: none;
   overflow: auto;
   padding: 20px;
