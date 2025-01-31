@@ -131,6 +131,8 @@ export const calendarService = {
 
   async deleteReminder(id: string): Promise<void> {
     await axios.delete(`${api}/reminders/${id}`);
+  }
+};
 
 // Servicios de cuenta
 export const accountService = {
