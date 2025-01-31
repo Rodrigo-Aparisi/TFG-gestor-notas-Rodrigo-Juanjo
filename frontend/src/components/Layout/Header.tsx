@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
+import { FaCalendar } from 'react-icons/fa';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -18,9 +19,29 @@ const Header: React.FC = () => {
   return (
     <header className="header" role="banner">
       <nav aria-label="Navegación principal">
-        <Link to="/" className="logo" aria-label="Ir a la página principal">
-          Gestor de Notas
-        </Link>
+      <div className="nav-left">
+          <Link to="/" className="logo" aria-label="Ir a la página principal">
+            Gestor de Notas
+          </Link>
+          {isAuthenticated && (
+            <div className="nav-icons">
+              <button 
+                className="icon-button"
+                onClick={() => navigate('/notes')}
+                aria-label="Ir a notas"
+              >
+                <i className="fas fa-sticky-note"></i>
+              </button>
+              <button 
+                className="icon-button"
+                onClick={() => navigate('/calendar')}
+                aria-label="Ir a calendario"
+              >
+                <FaCalendar />
+              </button>
+            </div>
+          )}
+        </div>
         <div className="auth-container">
           {isAuthenticated && user ? (
             <div className="user-menu-container">

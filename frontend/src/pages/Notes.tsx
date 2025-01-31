@@ -16,7 +16,7 @@ const Notes: React.FC = () => {
   const navigate = useNavigate();
 
   const breakpointColumns = {
-    default: 5, // Número de columnas en pantallas grandes
+    default: 4, // Número de columnas en pantallas grandes
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
