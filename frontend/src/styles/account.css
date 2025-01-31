@@ -50,6 +50,72 @@
   cursor: not-allowed;
 }
 
+/* Estilos para los contenedores de input */
+.input-container,
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-container input,
+.password-input-container input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+/* Estilos para los iconos de usuario y email */
+.account-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dorado);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.account-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.form-group input:disabled + .account-icon {
+  color: rgba(255, 198, 0, 0.5);
+}
+
+/* Estilos para los iconos de contraseña */
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--dorado);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.password-toggle:hover {
+  color: var(--dorado-hover, #ffd700);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.form-group input:disabled + .password-toggle {
+  color: rgba(255, 198, 0, 0.5);
+  cursor: not-allowed;
+}
+
 .button-group {
   display: flex;
   gap: 1rem;
@@ -123,6 +189,7 @@
   border-radius: 0 4px 4px 0;
 }
 
+/* Media Queries */
 @media (max-width: 768px) {
   .account-container {
     padding: 1rem;
@@ -143,5 +210,51 @@
   .warning-text {
     font-size: 0.8em;
     padding: 0.4rem;
+  }
+
+  .account-icon svg,
+  .password-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .account-container {
+    padding: 0.5rem;
+  }
+
+  .account-card {
+    padding: 1rem;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .form-group input {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .button-group button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media screen and (max-width: 350px) {
+  .wrapper {
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .form-group h2 {
+    font-size: 20px;
+  }
+
+  .input-box {
+    margin: 15px 0;
   }
 }

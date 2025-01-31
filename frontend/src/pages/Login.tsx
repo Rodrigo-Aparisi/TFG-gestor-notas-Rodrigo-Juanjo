@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/auth.ts";
+import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from 'react-icons/ai';
 import "../styles/login.css";
 
 // Interfaces
@@ -18,7 +19,6 @@ interface RegisterData {
 const Login: React.FC = () => {
   const navigate = useNavigate();
 
-  // Verificar autenticación solo una vez al montar
   useEffect(() => {
     if (authService.isAuthenticated()) {
       navigate("/notes", { replace: true });
@@ -37,6 +37,11 @@ const Login: React.FC = () => {
     password: "",
   });
 
+  const [showPasswords, setShowPasswords] = useState({
+    loginPassword: false,
+    registerPassword: false
+  });
+
   const [error, setError] = useState<string>("");
 
   // Efecto para la animación
@@ -51,16 +56,23 @@ const Login: React.FC = () => {
       registerLink.onclick = () => {
         wrapper.classList.add("active");
         setError("");
+        setShowPasswords({
+          loginPassword: false,
+          registerPassword: false
+        });
       };
 
       loginLink.onclick = () => {
         wrapper.classList.remove("active");
         setError("");
+        setShowPasswords({
+          loginPassword: false,
+          registerPassword: false
+        });
       };
     }
   }, []);
 
-  // Manejadores de cambios
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({
       ...loginData,
@@ -75,7 +87,6 @@ const Login: React.FC = () => {
     });
   };
 
-  // Función de login usando el servicio
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -90,7 +101,6 @@ const Login: React.FC = () => {
     }
   };
 
-  // Función de registro usando el servicio
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -99,15 +109,11 @@ const Login: React.FC = () => {
       const response = await authService.register(registerData);
       if (response) {
         alert("Registro exitoso");
-
-        // Limpiar formulario
         setRegisterData({
           username: "",
           email: "",
           password: "",
         });
-
-        // Cambiar a vista de login
         const wrapper = document.querySelector(".wrapper") as HTMLElement;
         if (wrapper) {
           wrapper.classList.remove("active");
@@ -146,22 +152,32 @@ const Login: React.FC = () => {
                 required
               />
               <label>Email</label>
-              <i className="bx bxs-user"></i>
+              <span className="input-icon">
+                <AiOutlineMail />
+              </span>
             </div>
 
             <div
-              className="input-box animation"
+              className="input-box animation password-field"
               style={{ "--i": 2, "--j": 23 } as React.CSSProperties}
             >
               <input
-                type="password"
+                type={showPasswords.loginPassword ? "text" : "password"}
                 name="password"
                 value={loginData.password}
                 onChange={handleLoginChange}
                 required
               />
               <label>Contraseña</label>
-              <i className="bx bxs-lock-alt"></i>
+              <span 
+                className="login-password-toggle"
+                onClick={() => setShowPasswords(prev => ({
+                  ...prev,
+                  loginPassword: !prev.loginPassword
+                }))}
+              >
+                {showPasswords.loginPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+              </span>
             </div>
 
             {error && (
@@ -217,7 +233,9 @@ const Login: React.FC = () => {
                 required
               />
               <label>Usuario</label>
-              <i className="bx bxs-user"></i>
+              <span className="input-icon">
+                <AiOutlineUser />
+              </span>
             </div>
 
             <div
@@ -232,22 +250,32 @@ const Login: React.FC = () => {
                 required
               />
               <label>Email</label>
-              <i className="bx bxs-envelope"></i>
+              <span className="input-icon">
+                <AiOutlineMail />
+              </span>
             </div>
 
             <div
-              className="input-box animation"
+              className="input-box animation password-field"
               style={{ "--i": 20, "--j": 3 } as React.CSSProperties}
             >
               <input
-                type="password"
+                type={showPasswords.registerPassword ? "text" : "password"}
                 name="password"
                 value={registerData.password}
                 onChange={handleRegisterChange}
                 required
               />
               <label>Contraseña</label>
-              <i className="bx bxs-lock-alt"></i>
+              <span 
+                className="login-password-toggle"
+                onClick={() => setShowPasswords(prev => ({
+                  ...prev,
+                  registerPassword: !prev.registerPassword
+                }))}
+              >
+                {showPasswords.registerPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+              </span>
             </div>
 
             {error && (
