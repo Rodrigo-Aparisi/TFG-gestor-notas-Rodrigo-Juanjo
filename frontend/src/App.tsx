@@ -8,6 +8,7 @@ import Login from './pages/Login.tsx';
 import Notes from './pages/Notes.tsx';
 import PrivateRoute from './components/PrivateRoute.tsx';
 import './App.css';
+import Calendar from './pages/Calendar.tsx';
 
 function App() {
   return (
@@ -24,6 +25,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <Notes />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/calendar" 
+                element={
+                  <PrivateRoute>
+                    <Calendar />
                   </PrivateRoute>
                 } 
               />

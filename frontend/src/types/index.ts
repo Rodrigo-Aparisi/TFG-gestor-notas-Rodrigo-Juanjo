@@ -14,3 +14,10 @@ export interface Note {
   created_at: Date;
   updated_at: Date;
 }
+
+export interface Reminder {
+  id: string;
+  title: string;
+  description: string;
+  dateTime: Date;
+}
