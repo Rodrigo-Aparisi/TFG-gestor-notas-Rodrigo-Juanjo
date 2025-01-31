@@ -6,6 +6,7 @@ import '../styles/calendar.css';
 const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
   const [newReminder, setNewReminder] = useState({
     title: '',
     description: '',
@@ -29,7 +30,7 @@ const Calendar: React.FC = () => {
   const generateCalendarDays = (): React.ReactElement => {
     const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-    const startingDayIndex = firstDay.getDay();
+    const startingDayIndex = (firstDay.getDay() + 6) % 7;
     const daysInMonth = lastDay.getDate();
     
     const days: React.ReactElement[] = [];
@@ -87,35 +88,88 @@ const Calendar: React.FC = () => {
     }
   };
   
-  
+  const getWeekDays = (date: Date) => {
+    const start = new Date(date);
+    start.setDate(date.getDate() - date.getDay() + 1);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        days.push(day);
+    }
+    return days;
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setCurrentWeekStart(date);
+  };
+
+  const generateWeekDays = () => {
+    const weekDays = getWeekDays(selectedDate);
+    return (
+      <div className="weekdays-container">
+        {weekDays.map((date, index) => (
+          <div key={index} className="weekday-item">
+            <div className="weekday-header">
+              <span className="weekday-name">
+                {date.toLocaleDateString('es-ES', { weekday: 'short' })}
+              </span>
+              <span className="weekday-number">{date.getDate()}</span>
+            </div>
+            <div className="weekday-reminders">
+              {reminders
+                .filter(reminder => 
+                  new Date(reminder.dateTime).toDateString() === date.toDateString()
+                )
+                .map(reminder => (
+                  <div key={reminder.id} className="reminder-pill">
+                    {reminder.title}
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="calendar-container">
       <div className="calendar-header">
-        <button onClick={() => setSelectedDate(new Date(selectedDate.setMonth(selectedDate.getMonth() - 1)))}>
-          Anterior
-        </button>
-        <h2>{selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
-        <button onClick={() => setSelectedDate(new Date(selectedDate.setMonth(selectedDate.getMonth() + 1)))}>
-          Siguiente
-        </button>
+          <button onClick={() => {
+              const newDate = new Date(selectedDate);
+              newDate.setMonth(newDate.getMonth() - 1);
+              setSelectedDate(newDate);
+          }}>
+              <span>◀</span> {new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })}
+          </button>
+          
+          <h2>{selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
+          
+          <button onClick={() => {
+              const newDate = new Date(selectedDate);
+              newDate.setMonth(newDate.getMonth() + 1);
+              setSelectedDate(newDate);
+          }}>
+              {new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })} <span>▶</span>
+          </button>
       </div>
 
-      <div className="calendar-grid">
-        {/* Días de la semana */}
-        <div className="weekdays">
-            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
-            <div key={day} className="weekday">{day}</div>
-            ))}
+      <div className="main-content">
+        <div className="calendar-section">
+          {generateWeekDays()}
+          <div className="calendar-grid">
+            {generateCalendarDays()}
+          </div>
         </div>
         
-        {/* Días del mes */}
-        <div className="days">
-            {generateCalendarDays()}
-        </div>
-    </div>
-
-    <div className="reminder-form">
+        
+        {/* Formulario de recordatorio */}
+        <div className="reminder-form">
         <input
             type="text"
             placeholder="Título del recordatorio"
@@ -138,19 +192,12 @@ const Calendar: React.FC = () => {
             onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
         />
         <button onClick={handleCreateReminder}>Crear Recordatorio</button>
-    </div>
-    
-      <div className="reminders-list">
-        {reminders.map(reminder => (
-          <div key={reminder.id} className="reminder-card">
-            <h3>{reminder.title}</h3>
-            <p>{reminder.description}</p>
-            <span>{new Date(reminder.dateTime).toLocaleString()}</span>
-          </div>
-        ))}
+        </div>
       </div>
     </div>
   );
 };
 
 export default Calendar;
+
+

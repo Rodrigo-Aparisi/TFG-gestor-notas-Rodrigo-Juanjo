@@ -1,108 +1,239 @@
 .calendar-container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  grid-template-areas: 
+      "header header"
+      "calendar form";
+  grid-template-columns: auto 450px;
+  align-items: start;
+}
   
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  margin-bottom: 30px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.calendar-header h2 {
+  color: #ffffff; /* Color claro para el título */
+  font-size: 2rem;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.calendar-header button {
+  background: transparent;
+  border: 1px solid var(--dorado);
+  color: var(--dorado);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-header button:hover {
+  background: var(--dorado);
+  color: var(--background-dark);
+}
+
+.calendar-grid {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+  background: #ffffff1a;
+  color: var(--dorado);
+  grid-area: calendar;
+  grid-template-columns: auto 450px;
+}
+
+.month-nav {
+  background: transparent;
+  border: 1px solid var(--dorado);
+  color: var(--dorado);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.week-navigator {
+  background: #ffffff1a;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.weekday-cell {
+  background: var(--background-dark);
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.weekday-name {
+  color: var(--dorado);
+  text-transform: uppercase;
+  font-size: 0.9em;
+}
+
+.weekday-number {
+  color: var(--dorado);
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.reminder-form {
+  width: 450px;
+  border-radius: 8px;
+  padding: 20px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin: 20px auto;
+  min-width: 450px;
+  grid-area: form;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+  border-right: 1px solid var(--dorado);
+}
+
+.weekday {
+  text-align: center;
+  font-weight: bold;
+  padding: 10px;
+  color: var(--dorado);
+  border-left: 1px solid var(--dorado);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  padding: 10px;
+}
+
+.day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  position: relative;
+  background: #ffffff0d;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.day:hover {
+  background: #ffffff1a;
+}
+
+.day.empty {
+  background-color: #f5f5f5;
+  cursor: default;
+}
+
+.day.today {
+  background-color: #e8f5e9;
+  border: 2px solid var(--dorado);
+}
+
+.day.selected {
+  background: var(--dorado);
+  color: var(--background-dark);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+
+.day-number {
+  font-size: 1.1em;
+  font-weight: 500;
+}
+
+.reminder-indicator {
+  width: 6px;
+  height: 6px;
+  background-color: #f1c40f;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 4px;
+}
+
+.reminder-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reminder-form input,
+.reminder-form textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  margin-bottom: 15px;
+  font-size: 16px;
+  padding: 12px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.reminder-form textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.reminder-form input[type="date"],
+.reminder-form input[type="time"] {
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #f8f9fa;
+}
+
+.reminder-form button {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.reminder-form button:hover {
+  background: #e6b000;
+}
   
-  .calendar-grid {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 20px;
-  }
-  
-  .weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  
-  .weekday {
-    text-align: center;
-    font-weight: bold;
-    padding: 10px;
-  }
-  
-  .days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    padding: 10px;
-  }
-  
-  .day {
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    position: relative;
-  }
-  
-  .day:hover {
-    background-color: #f5f5f5;
-  }
-  
-  .day.empty {
-    background-color: #f5f5f5;
-    cursor: default;
-  }
-  
-  .day.today {
-    background-color: #e8f5e9;
-  }
-  
-  .day.selected {
-    background-color: #f1c40f;
-    color: white;
-  }
-  
-  
-  .day-number {
-    font-size: 1.1em;
-    font-weight: 500;
-  }
-  
-  .reminder-indicator {
-    width: 6px;
-    height: 6px;
-    background-color: #f1c40f;
-    border-radius: 50%;
-    position: absolute;
-    bottom: 4px;
-  }
-  
-  .reminder-form {
-    margin-top: 20px;
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .reminder-card {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .calendar-days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    width: 100%;
-  }
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  width: 100%;
+}
