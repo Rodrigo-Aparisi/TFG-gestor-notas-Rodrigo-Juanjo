@@ -19,5 +19,7 @@ export interface Reminder {
   id: string;
   title: string;
   description: string;
-  dateTime: Date;
+  dateTime: string;
+  userId: string;
+  status_id?: number;
 }
