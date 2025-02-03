@@ -68,7 +68,6 @@ body {
   height: var(--header-height);
 }
 
-
 /* Logo */
 .logo {
   color: var(--dorado);
@@ -174,7 +173,7 @@ button:hover {
 
 .dropdown-menu button:hover {
   background-color: var(--dorado);
-  color: var(--background-darker);
+  color: var(--background-dark);
 }
 
 /* Contenido principal */
