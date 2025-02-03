@@ -106,31 +106,31 @@ export const noteService = {
 
 export const calendarService = {
   async getReminders(date: Date): Promise<{ reminders: Reminder[] }> {
-    const response = await axios.get(`${api}/reminders`, {
-      params: { date: date.toISOString() }
-    });
-    return response.data;
+    try {
+      const response = await axios.get(api, {
+        params: {
+          date: date.toISOString()
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching reminders:', error);
+      throw error;
+    }
   },
 
-  async createReminder(reminderData: {
+  async createReminder(data: {
     title: string;
     description: string;
     dateTime: Date;
   }): Promise<{ reminder: Reminder }> {
-    const response = await axios.post(`${api}/reminders`, reminderData);
-    return response.data;
-  },
-
-  async updateReminder(
-    id: string,
-    reminderData: Partial<Reminder>
-  ): Promise<{ reminder: Reminder }> {
-    const response = await axios.put(`${api}/reminders/${id}`, reminderData);
-    return response.data;
-  },
-
-  async deleteReminder(id: string): Promise<void> {
-    await axios.delete(`${api}/reminders/${id}`);
+    try {
+      const response = await axios.post(api, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      throw error;
+    }
   }
 };
 

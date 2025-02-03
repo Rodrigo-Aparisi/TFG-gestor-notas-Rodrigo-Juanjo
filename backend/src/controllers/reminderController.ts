@@ -4,34 +4,37 @@ import { Reminder } from '../models/reminder';
 export const reminderController = {
   async getReminders(req: Request, res: Response) {
     try {
-      const { date } = req.query;
+      const date = new Date(req.query.date as string);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+
       const reminders = await Reminder.find({
         userId: req.user.id,
         dateTime: {
-          $gte: new Date(date as string),
-          $lt: new Date(new Date(date as string).setDate(new Date(date as string).getDate() + 1))
+          $gte: date,
+          $lt: endDate
         }
-      }).sort({ dateTime: 1 });
+      });
       
       res.json({ reminders });
     } catch (error) {
+      console.error('Error al obtener recordatorios:', error);
       res.status(500).json({ error: 'Error al obtener recordatorios' });
     }
   },
 
   async createReminder(req: Request, res: Response) {
     try {
-      const { title, description, dateTime } = req.body;
-      const reminder = new Reminder({
+      const reminderData = {
+        ...req.body,
         userId: req.user.id,
-        title,
-        description,
-        dateTime: new Date(dateTime)
-      });
-      
-      await reminder.save();
+        dateTime: new Date(req.body.dateTime)
+      };
+
+      const reminder = await Reminder.create(reminderData);
       res.json({ reminder });
     } catch (error) {
+      console.error('Error al crear recordatorio:', error);
       res.status(500).json({ error: 'Error al crear recordatorio' });
     }
   },
@@ -39,10 +42,14 @@ export const reminderController = {
   async updateReminder(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const updateData = {
+        ...req.body,
+        dateTime: new Date(req.body.dateTime)
+      };
+
       const reminder = await Reminder.findOneAndUpdate(
         { _id: id, userId: req.user.id },
-        req.body,
-        { new: true }
+        updateData
       );
       
       if (!reminder) {
@@ -51,6 +58,7 @@ export const reminderController = {
       
       res.json({ reminder });
     } catch (error) {
+      console.error('Error al actualizar recordatorio:', error);
       res.status(500).json({ error: 'Error al actualizar recordatorio' });
     }
   },
@@ -58,9 +66,18 @@ export const reminderController = {
   async deleteReminder(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      await Reminder.findOneAndDelete({ _id: id, userId: req.user.id });
+      const reminder = await Reminder.findOneAndDelete({ 
+        _id: id, 
+        userId: req.user.id 
+      });
+
+      if (!reminder) {
+        return res.status(404).json({ error: 'Recordatorio no encontrado' });
+      }
+
       res.json({ message: 'Recordatorio eliminado' });
     } catch (error) {
+      console.error('Error al eliminar recordatorio:', error);
       res.status(500).json({ error: 'Error al eliminar recordatorio' });
     }
   }

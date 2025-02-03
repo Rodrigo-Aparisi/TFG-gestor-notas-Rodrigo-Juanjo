@@ -18,6 +18,18 @@ const Calendar: React.FC = () => {
     fetchReminders();
   }, [selectedDate]);
 
+  useEffect(() => {
+    const loadReminders = async () => {
+      try {
+        await fetchReminders();
+      } catch (error) {
+        console.error('Error loading reminders:', error);
+      }
+    };
+    
+    loadReminders();
+  }, [selectedDate]);
+
   const fetchReminders = async () => {
     try {
       const response = await calendarService.getReminders(selectedDate);
@@ -95,17 +107,35 @@ const Calendar: React.FC = () => {
 
   const handleCreateReminder = async () => {
     try {
+      if (!newReminder.title || !newReminder.time) {
+        alert('Por favor completa todos los campos');
+        return;
+      }
+  
+      const dateTime = new Date(newReminder.date);
+      const [hours, minutes] = newReminder.time.split(':');
+      dateTime.setHours(parseInt(hours), parseInt(minutes));
+  
       const response = await calendarService.createReminder({
-        ...newReminder,
-        dateTime: new Date(`${newReminder.date.toDateString()} ${newReminder.time}`)
+        title: newReminder.title,
+        description: newReminder.description,
+        dateTime: dateTime
       });
       
       if (response && response.reminder) {
         setReminders(prev => [...prev, response.reminder]);
-        setNewReminder({ title: '', description: '', date: new Date(), time: '' });
+        setNewReminder({
+          title: '',
+          description: '',
+          date: new Date(),
+          time: ''
+        });
+        // Recargar los recordatorios
+        fetchReminders();
       }
     } catch (error) {
       console.error('Error creating reminder:', error);
+      alert('Error al crear el recordatorio');
     }
   };
   

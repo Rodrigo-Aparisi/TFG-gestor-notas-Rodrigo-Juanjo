@@ -55,8 +55,8 @@
 }
 
 .calendar-grid {
-  width: 60%;
-  padding: 15px;
+  width: 50%;
+  padding: 10px;
   background: #ffffff1a;
   border-radius: 8px;
 }
@@ -139,7 +139,7 @@
   display: grid;
   width: 100%;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--dorado);
   margin-bottom: 10px;
   padding-bottom: 10px;
@@ -153,7 +153,7 @@
   font-weight: bold;
   flex: 1;
   text-align: center;
-  padding: 10px;
+  padding: 8px;
   border-bottom: 1px solid var(--dorado);
   display: flex;
   flex-direction: column;
@@ -201,7 +201,7 @@
 }
 
 .reminder-form {
-  width: 40%;
+  width: 45%;
   border-radius: 8px;
   padding: 20px;
   background: #ffffff1a;
@@ -231,7 +231,7 @@
 }
 
 .weekday-label {
-  font-size: 0.7em;
+  font-size: 0.6em;
   color: var(--dorado);
   margin-bottom: 4px;
   opacity: 0.8;
@@ -240,8 +240,8 @@
 .days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  padding: 10px;
+  gap: 3px;
+  padding: 8px;
   transition: all 0.2s ease;
 }
 
@@ -256,9 +256,9 @@
   border-radius: 4px;
   position: relative;
   background: #ffffff0d;
-  padding: 5px;
+  padding: 3px;
   transition: all 0.2s ease;
-  min-height: 40px;
+  min-height: 35px;
 }
 
 .day:hover {
@@ -288,7 +288,7 @@
 }
 
 .day-number {
-  font-size: 1.1em;
+  font-size: 0.9em;
   font-weight: 500;
   color: var(--dorado);
 }
@@ -400,7 +400,7 @@
   
 .calendar-and-form {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   width: 100%;
   justify-content: center;
   margin-top: 20px;
