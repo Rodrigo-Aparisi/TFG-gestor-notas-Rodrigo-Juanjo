@@ -146,6 +146,8 @@
   grid-template-columns: repeat(7, 1fr);
   background: #ffffff1a;
   border-radius: 8px 8px 0 0;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .weekday-header-item {
@@ -159,6 +161,12 @@
   flex-direction: column;
   align-items: center;
   border-right: 1px solid var(--dorado);
+  background-color: #363636;
+  padding: 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100px;
 }
 
 .weekday-column {
@@ -259,6 +267,17 @@
   padding: 3px;
   transition: all 0.2s ease;
   min-height: 35px;
+  position: relative;
+  min-height: 100px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  background-color: #363636;
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
 }
 
 .day:hover {
@@ -296,6 +315,90 @@
 .day.selected .weekday-label,
 .day.selected .day-number {
   color: var(--background-dark);
+}
+
+.day-reminders {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 80px;
+}
+
+.reminders-container {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: 80px;
+}
+
+.reminder-pill {
+  background-color: #4a4a4a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reminder-pill:hover {
+  transform: scale(1.02);
+}
+
+.reminder-time {
+  color: #ffd700;
+  font-size: 0.7rem;
+}
+
+.reminder-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.status-1 { /* Pendiente */
+  border-left: 3px solid #ffd700;
+}
+
+.status-2 { /* Completado */
+  border-left: 3px solid #4CAF50;
+  opacity: 0.7;
+}
+
+.status-3 { /* Cancelado */
+  border-left: 3px solid #f44336;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Estilizar scrollbar */
+.day-reminders::-webkit-scrollbar {
+  width: 3px;
+}
+
+.day-reminders::-webkit-scrollbar-track {
+  background: #363636;
+}
+
+.day-reminders::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 2px;
+}
+
+/* Ajustar el tamaño de los días para acomodar los recordatorios */
+.calendar-days-grid {
+  grid-template-rows: repeat(6, minmax(120px, 1fr));
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 8px;
 }
 
 .weekdays-reminders {

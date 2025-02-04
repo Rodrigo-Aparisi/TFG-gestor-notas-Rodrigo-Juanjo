@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { Reminder } from '../types';
 import { User } from '../types';
+import { Reminder, ReminderRecurrence } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -104,10 +104,17 @@ export const noteService = {
 };
 
 
+interface CreateReminderData {
+  title: string;
+  description: string;
+  dateTime: Date;
+  statusId: number;
+}
+
 export const calendarService = {
   async getReminders(date: Date): Promise<{ reminders: Reminder[] }> {
     try {
-      const response = await axios.get(api, {
+      const response = await api.get('/reminders', {
         params: {
           date: date.toISOString()
         }
@@ -119,20 +126,28 @@ export const calendarService = {
     }
   },
 
-  async createReminder(data: {
-    title: string;
-    description: string;
-    dateTime: Date;
-  }): Promise<{ reminder: Reminder }> {
+
+  async createReminder(data: CreateReminderData): Promise<{ reminder: Reminder }> {
     try {
-      const response = await axios.post(api, data);
+      const response = await api.post('/reminders', data);
       return response.data;
     } catch (error) {
       console.error('Error creating reminder:', error);
       throw error;
     }
+  },
+
+  async updateReminderStatus(id: string, statusId: number): Promise<{ reminder: Reminder }> {
+    try {
+      const response = await api.patch(`/reminders/${id}/status`, { statusId });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating reminder status:', error);
+      throw error;
+    }
   }
 };
+
 
 // Servicios de cuenta
 export const accountService = {

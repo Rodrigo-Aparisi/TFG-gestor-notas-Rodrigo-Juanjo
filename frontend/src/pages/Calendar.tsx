@@ -3,16 +3,27 @@ import { calendarService } from '../services/api';
 import { Reminder } from '../types';
 import '../styles/calendar.css';
 
+interface NewReminder {
+  title: string;
+  description: string;
+  date: Date;
+  time: string;
+  statusId?: number;
+}
+
 const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
-  const [newReminder, setNewReminder] = useState({
+  const [selectedStatus, setSelectedStatus] = useState<number>(1);
+  const [newReminder, setNewReminder] = useState<NewReminder>({
     title: '',
     description: '',
     date: new Date(),
-    time: ''
+    time: '',
+    statusId: 1
   });
+
 
   useEffect(() => {
     fetchReminders();
@@ -42,11 +53,21 @@ const Calendar: React.FC = () => {
   const generateCalendarDays = (): React.ReactElement => {
     const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-    const startingDayIndex = (firstDay.getDay() + 6) % 7; // Ajuste para que la semana empiece en lunes
+    const startingDayIndex = (firstDay.getDay() + 6) % 7;
     const daysInMonth = lastDay.getDate();
     
     const days: React.ReactElement[] = [];
-    const totalCells = 42; // 6 filas × 7 columnas
+    const totalCells = 42;
+  
+    // Función auxiliar para obtener los recordatorios de un día específico
+    const getDayReminders = (date: Date) => {
+      return reminders.filter(reminder => {
+        const reminderDate = new Date(reminder.dateTime);
+        return reminderDate.getDate() === date.getDate() &&
+               reminderDate.getMonth() === date.getMonth() &&
+               reminderDate.getFullYear() === date.getFullYear();
+      });
+    };
     
     // Días del mes anterior
     const prevMonthLastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 0);
@@ -66,19 +87,43 @@ const Calendar: React.FC = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
       const isCurrentDay = date.toDateString() === new Date().toDateString();
-      const isDateSelected = date.toDateString() === selectedDate.toDateString();
       const dayOfWeek = (startingDayIndex + day - 1) % 7;
-
+      const dayReminders = reminders.filter(reminder => {
+        const reminderDate = new Date(reminder.dateTime);
+        return reminderDate.getDate() === date.getDate() &&
+               reminderDate.getMonth() === date.getMonth() &&
+               reminderDate.getFullYear() === date.getFullYear();
+      });
+  
       days.push(
         <div
           key={`current-${day}`}
-          className={`day ${isCurrentDay ? 'today' : ''} ${isDateSelected ? 'selected' : ''}`}
+          className={`day ${isCurrentDay ? 'today' : ''}`}
           onClick={() => handleDateSelect(date)}
         >
-          <span className="weekday-label">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][dayOfWeek]}
-          </span>
-          <span className="day-number">{day}</span>
+          <div className="day-header">
+            <span className="weekday-label">
+              {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][dayOfWeek]}
+            </span>
+            <span className="day-number">{day}</span>
+          </div>
+          <div className="reminders-container">
+            {dayReminders.map((reminder, idx) => (
+              <div 
+                key={idx}
+                className={`reminder-pill status-${reminder.statusId}`}
+                title={reminder.description}
+              >
+                <span className="reminder-time">
+                  {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                <span className="reminder-title">{reminder.title}</span>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }
@@ -107,37 +152,50 @@ const Calendar: React.FC = () => {
 
   const handleCreateReminder = async () => {
     try {
-      if (!newReminder.title || !newReminder.time) {
-        alert('Por favor completa todos los campos');
+      if (!newReminder.title) {
+        alert('Por favor ingresa un título');
         return;
       }
-  
+
       const dateTime = new Date(newReminder.date);
       const [hours, minutes] = newReminder.time.split(':');
       dateTime.setHours(parseInt(hours), parseInt(minutes));
-  
+
       const response = await calendarService.createReminder({
         title: newReminder.title,
         description: newReminder.description,
-        dateTime: dateTime
+        dateTime: dateTime,
+        statusId: selectedStatus
       });
-      
-      if (response && response.reminder) {
+
+      if (response.reminder) {
         setReminders(prev => [...prev, response.reminder]);
         setNewReminder({
           title: '',
           description: '',
           date: new Date(),
-          time: ''
+          time: '',
+          statusId: 1
         });
-        // Recargar los recordatorios
-        fetchReminders();
+        await fetchReminders();
       }
     } catch (error) {
-      console.error('Error creating reminder:', error);
-      alert('Error al crear el recordatorio');
+      console.error('Error:', error);
+      alert(error instanceof Error ? error.message : 'Error al crear el recordatorio');
     }
   };
+
+  const renderStatusSelector = () => (
+    <select
+      value={selectedStatus}
+      onChange={(e) => setSelectedStatus(Number(e.target.value))}
+      className="status-selector"
+    >
+      <option value={1}>Pendiente</option>
+      <option value={2}>Completado</option>
+      <option value={3}>Cancelado</option>
+    </select>
+  );
   
   const getWeekDays = (date: Date) => {
     const start = new Date(date);
@@ -162,6 +220,59 @@ const Calendar: React.FC = () => {
       time: prev.time || '00:00' // Establece una hora por defecto si no hay ninguna
     }));
   };
+
+// Función para agrupar los recordatorios por fecha
+const getRemindersByDate = (date: Date) => {
+  return reminders.filter(reminder => {
+    const reminderDate = new Date(reminder.dateTime);
+    return reminderDate.getDate() === date.getDate() &&
+           reminderDate.getMonth() === date.getMonth() &&
+           reminderDate.getFullYear() === date.getFullYear();
+  });
+};
+
+// Función para renderizar los días de la semana con sus recordatorios
+const renderWeekDays = () => {
+  const weekDays = [
+    { name: 'LUN', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 17) },
+    { name: 'MAR', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 18) },
+    { name: 'MIÉ', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 19) },
+    { name: 'JUE', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 20) },
+    { name: 'VIE', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 21) },
+    { name: 'SÁB', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 22) },
+    { name: 'DOM', date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 23) }
+  ];
+
+  return (
+    <div className="week-container">
+      {weekDays.map((day, index) => (
+        <div key={index} className="day-column">
+          <div className="day-header">
+            <div className="day-name">{day.name}</div>
+            <div className="day-number">{day.date.getDate()}</div>
+          </div>
+          <div className="day-reminders">
+            {getRemindersByDate(day.date).map((reminder, idx) => (
+              <div 
+                key={idx} 
+                className={`reminder-pill status-${reminder.statusId}`}
+                title={reminder.description}
+              >
+                <span className="reminder-time">
+                  {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                <span className="reminder-title">{reminder.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
   const generateWeekDays = () => {
     const weekDays = getWeekDays(selectedDate);
@@ -194,18 +305,43 @@ const Calendar: React.FC = () => {
   };
 
   const generateWeekDaysHeader = () => {
-    const weekStart = getWeekDays(selectedDate)[0]; // Obtiene el primer día de la semana actual
+    const weekStart = getWeekDays(selectedDate)[0];
     
     return (
       <div className="weekdays-header">
-        {['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map((day, index) => {
+        {['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'].map((day, index) => {
           const currentDate = new Date(weekStart);
           currentDate.setDate(weekStart.getDate() + index);
-          
+          const dayReminders = reminders.filter(reminder => {
+            const reminderDate = new Date(reminder.dateTime);
+            return reminderDate.getDate() === currentDate.getDate() &&
+                   reminderDate.getMonth() === currentDate.getMonth() &&
+                   reminderDate.getFullYear() === currentDate.getFullYear();
+          });
+  
           return (
             <div key={day} className="weekday-header-item">
-              <span className="weekday-name">{day}</span>
-              <span className="weekday-number">{currentDate.getDate()}</span>
+              <div className="weekday-header-top">
+                <span className="weekday-name">{day}</span>
+                <span className="weekday-number">{currentDate.getDate()}</span>
+              </div>
+              <div className="reminders-container">
+                {dayReminders.map((reminder, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`reminder-pill status-${reminder.statusId}`}
+                    title={reminder.description}
+                  >
+                    <span className="reminder-time">
+                      {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                    <span className="reminder-title">{reminder.title}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
@@ -251,6 +387,33 @@ const Calendar: React.FC = () => {
     );
   };
 
+  const renderReminderForm = () => (
+    <div className="reminder-form">
+      <input
+        type="text"
+        placeholder="Título del recordatorio"
+        value={newReminder.title}
+        onChange={e => setNewReminder(prev => ({ ...prev, title: e.target.value }))}
+      />
+      <textarea
+        placeholder="Descripción"
+        value={newReminder.description}
+        onChange={e => setNewReminder(prev => ({ ...prev, description: e.target.value }))}
+      />
+      <input
+        type="date"
+        value={newReminder.date.toISOString().split('T')[0]}
+        onChange={e => setNewReminder(prev => ({ ...prev, date: new Date(e.target.value) }))}
+      />
+      <input
+        type="time"
+        value={newReminder.time}
+        onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
+      />
+      {renderStatusSelector()}
+      <button onClick={handleCreateReminder}>Crear Recordatorio</button>
+    </div>
+  );
 
   return (
     <div className="calendar-container">
@@ -279,45 +442,18 @@ const Calendar: React.FC = () => {
 
 
       <div className="main-content">
-        {generateWeekDaysHeader()}
+          {generateWeekDaysHeader()}
 
-        <div className="calendar-and-form">
-          <div className="calendar-grid">
+          <div className="calendar-and-form">
+            <div className="calendar-grid">
               {generateCalendarDays()}
-          </div>
-          
-          {/* Formulario de recordatorio */}
-          <div className="reminder-form">
-            <input
-                type="text"
-                placeholder="Título del recordatorio"
-                value={newReminder.title}
-                onChange={e => setNewReminder(prev => ({ ...prev, title: e.target.value }))}
-            />
-            <textarea
-                placeholder="Descripción"
-                value={newReminder.description}
-                onChange={e => setNewReminder(prev => ({ ...prev, description: e.target.value }))}
-            />
-            <input
-                type="date"
-                value={newReminder.date.toISOString().split('T')[0]}
-                onChange={e => setNewReminder(prev => ({ ...prev, date: new Date(e.target.value) }))}
-            />
-            <input
-                type="time"
-                value={newReminder.time}
-                onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
-            />
-            <button onClick={handleCreateReminder}>Crear Recordatorio</button>
-          </div>
+            </div>
+            {renderReminderForm()}
         </div>
-
       </div>
     </div>
+
   );
 };
 
 export default Calendar;
-
-

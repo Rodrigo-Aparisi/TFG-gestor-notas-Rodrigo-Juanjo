@@ -2,8 +2,9 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  created_at: Date;
-  updated_at: Date;
+  password?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Note {
@@ -18,8 +19,26 @@ export interface Note {
 export interface Reminder {
   id: string;
   title: string;
-  description: string;
-  dateTime: string;
+  description?: string;
+  dateTime: Date;
   userId: string;
-  status_id?: number;
+  statusId: number;
+  statusName?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReminderStatus {
+  id: number;
+  name: string;
+}
+
+export interface ReminderRecurrence {
+  id: string;
+  reminderId: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  intervalValue: number;
+  endDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
