@@ -8,7 +8,7 @@ export const reminderController = {
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 1);
 
-      const reminders = await Reminder.find({
+      const reminders = await Reminder.findWithStatus({
         userId: req.user.id,
         dateTime: {
           $gte: date,
@@ -26,16 +26,45 @@ export const reminderController = {
   async createReminder(req: Request, res: Response) {
     try {
       const reminderData = {
-        ...req.body,
+        title: req.body.title,
+        description: req.body.description,
+        dateTime: new Date(req.body.dateTime),
         userId: req.user.id,
-        dateTime: new Date(req.body.dateTime)
+        statusId: 1 // Estado por defecto: pendiente
       };
 
       const reminder = await Reminder.create(reminderData);
+      
+      // Si hay información de recurrencia, crearla también
+      if (req.body.recurrence) {
+        // Aquí irá la lógica para crear la recurrencia
+      }
+
       res.json({ reminder });
     } catch (error) {
       console.error('Error al crear recordatorio:', error);
       res.status(500).json({ error: 'Error al crear recordatorio' });
+    }
+  },
+
+  async updateReminderStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { statusId } = req.body;
+
+      const reminder = await Reminder.findOneAndUpdate(
+        { _id: id, userId: req.user.id },
+        { statusId }
+      );
+
+      if (!reminder) {
+        return res.status(404).json({ error: 'Recordatorio no encontrado' });
+      }
+
+      res.json({ reminder });
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+      res.status(500).json({ error: 'Error al actualizar estado del recordatorio' });
     }
   },
 
