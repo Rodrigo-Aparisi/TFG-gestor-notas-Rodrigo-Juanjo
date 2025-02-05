@@ -3,8 +3,8 @@
   flex-direction: column;
   padding: 10px 20px;
   width: 100%;
-  max-width: 1200px;
-  margin: 40px auto;
+  max-width: 1000px;
+  margin: 20px auto;
   grid-template-areas: 
       "header header"
       "calendar form";
@@ -55,8 +55,8 @@
 }
 
 .calendar-grid {
-  width: 50%;
-  padding: 10px;
+  width: 45%;
+  padding: 8px;
   background: #ffffff1a;
   border-radius: 8px;
 }
@@ -264,20 +264,10 @@
   border-radius: 4px;
   position: relative;
   background: #ffffff0d;
-  padding: 3px;
+  padding: 8px;
   transition: all 0.2s ease;
-  min-height: 35px;
-  position: relative;
   min-height: 100px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
   background-color: #363636;
-  border-radius: 4px;
-  padding: 8px;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
 }
 
 .day:hover {
@@ -300,10 +290,24 @@
 }
 
 .day.selected {
-  background: var(--dorado);
+  background-color: var(--dorado) !important;
   color: var(--background-dark);
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  border: none;
+}
+
+.day.selected .reminder-pill {
+  background-color: rgba(54, 54, 54, 0.9);
+  border: 1px solid var(--background-dark);
+  border-color: var(--background-dark);
+}
+
+.day.selected .weekday-label,
+.day.selected .day-number,
+.day.selected .reminder-time,
+.day.selected .reminder-title {
+  color: var(--background-dark);
 }
 
 .day-number {
@@ -317,6 +321,10 @@
   color: var(--background-dark);
 }
 
+.day.selected .reminders-container {
+  opacity: 1;
+}
+
 .day-reminders {
   flex-grow: 1;
   overflow-y: auto;
@@ -328,12 +336,13 @@
 }
 
 .reminders-container {
-  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   overflow-y: auto;
-  max-height: 80px;
+  max-height: 60px;
+  padding: 4px;
+  margin-top: 4px;
 }
 
 .reminder-pill {
@@ -345,6 +354,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 24px;
 }
 
 .reminder-pill:hover {
@@ -352,15 +362,16 @@
 }
 
 .reminder-time {
-  color: #ffd700;
+  color: var(--dorado);
   font-size: 0.7rem;
+  white-space: nowrap;
 }
 
 .reminder-title {
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100px;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .status-1 { /* Pendiente */
@@ -394,10 +405,10 @@
 
 /* Ajustar el tamaño de los días para acomodar los recordatorios */
 .calendar-days-grid {
-  grid-template-rows: repeat(6, minmax(120px, 1fr));
+  grid-template-rows: repeat(6, minmax(90px, 1fr));
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 4px;
   padding: 8px;
 }
 

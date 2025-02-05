@@ -1,113 +1,214 @@
 import { Request, Response } from 'express';
 import { Reminder } from '../models/reminder';
 
+interface ApiError {
+  message: string;
+  status: number;
+}
+
 export const reminderController = {
   async getReminders(req: Request, res: Response) {
     try {
-      const date = new Date(req.query.date as string);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+  
+      const startDate = new Date(req.query.startDate as string);
+      const endDate = new Date(req.query.endDate as string);
+  
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({
+          error: 'Fechas inválidas'
+        });
+      }
+  
       const reminders = await Reminder.findWithStatus({
         userId: req.user.id,
         dateTime: {
-          $gte: date,
+          $gte: startDate,
           $lt: endDate
         }
       });
-      
+  
       res.json({ reminders });
     } catch (error) {
-      console.error('Error al obtener recordatorios:', error);
-      res.status(500).json({ error: 'Error al obtener recordatorios' });
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al obtener recordatorios:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al obtener recordatorios',
+        details: apiError.message
+      });
     }
   },
 
   async createReminder(req: Request, res: Response) {
     try {
-      const reminderData = {
-        title: req.body.title,
-        description: req.body.description,
-        dateTime: new Date(req.body.dateTime),
-        userId: req.user.id,
-        statusId: 1 // Estado por defecto: pendiente
-      };
-
-      const reminder = await Reminder.create(reminderData);
-      
-      // Si hay información de recurrencia, crearla también
-      if (req.body.recurrence) {
-        // Aquí irá la lógica para crear la recurrencia
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
       }
 
-      res.json({ reminder });
+      // Validar campos requeridos
+      if (!req.body.title || !req.body.dateTime) {
+        return res.status(400).json({
+          error: 'El título y la fecha son requeridos'
+        });
+      }
+
+      const reminderData = {
+        title: req.body.title,
+        description: req.body.description || '',
+        dateTime: new Date(req.body.dateTime),
+        userId: req.user.id,
+        statusId: 1
+      };
+
+      // Validar fecha válida
+      if (isNaN(reminderData.dateTime.getTime())) {
+        return res.status(400).json({
+          error: 'Fecha inválida'
+        });
+      }
+
+      const reminder = await Reminder.create(reminderData);
+      res.status(201).json({ reminder });
     } catch (error) {
-      console.error('Error al crear recordatorio:', error);
-      res.status(500).json({ error: 'Error al crear recordatorio' });
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al crear recordatorio:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al crear recordatorio',
+        details: apiError.message
+      });
     }
   },
 
   async updateReminderStatus(req: Request, res: Response) {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+
       const { id } = req.params;
       const { statusId } = req.body;
 
+      if (!statusId) {
+        return res.status(400).json({
+          error: 'El estado es requerido'
+        });
+      }
+
       const reminder = await Reminder.findOneAndUpdate(
-        { _id: id, userId: req.user.id },
+        { id, userId: req.user.id },
         { statusId }
       );
 
       if (!reminder) {
-        return res.status(404).json({ error: 'Recordatorio no encontrado' });
+        return res.status(404).json({
+          error: 'Recordatorio no encontrado'
+        });
       }
 
       res.json({ reminder });
     } catch (error) {
-      console.error('Error al actualizar estado:', error);
-      res.status(500).json({ error: 'Error al actualizar estado del recordatorio' });
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al actualizar estado:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al actualizar estado del recordatorio',
+        details: apiError.message
+      });
     }
   },
 
   async updateReminder(req: Request, res: Response) {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+
       const { id } = req.params;
       const updateData = {
         ...req.body,
-        dateTime: new Date(req.body.dateTime)
+        dateTime: req.body.dateTime ? new Date(req.body.dateTime) : undefined
       };
 
+      if (updateData.dateTime && isNaN(updateData.dateTime.getTime())) {
+        return res.status(400).json({
+          error: 'Fecha inválida'
+        });
+      }
+
       const reminder = await Reminder.findOneAndUpdate(
-        { _id: id, userId: req.user.id },
+        { id, userId: req.user.id },
         updateData
       );
       
       if (!reminder) {
-        return res.status(404).json({ error: 'Recordatorio no encontrado' });
+        return res.status(404).json({
+          error: 'Recordatorio no encontrado'
+        });
       }
       
       res.json({ reminder });
     } catch (error) {
-      console.error('Error al actualizar recordatorio:', error);
-      res.status(500).json({ error: 'Error al actualizar recordatorio' });
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al actualizar recordatorio:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al actualizar recordatorio',
+        details: apiError.message
+      });
     }
   },
 
   async deleteReminder(req: Request, res: Response) {
     try {
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+
       const { id } = req.params;
       const reminder = await Reminder.findOneAndDelete({ 
-        _id: id, 
+        id,
         userId: req.user.id 
       });
 
       if (!reminder) {
-        return res.status(404).json({ error: 'Recordatorio no encontrado' });
+        return res.status(404).json({
+          error: 'Recordatorio no encontrado'
+        });
       }
 
       res.json({ message: 'Recordatorio eliminado' });
     } catch (error) {
-      console.error('Error al eliminar recordatorio:', error);
-      res.status(500).json({ error: 'Error al eliminar recordatorio' });
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al eliminar recordatorio:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al eliminar recordatorio',
+        details: apiError.message
+      });
     }
   }
 };
