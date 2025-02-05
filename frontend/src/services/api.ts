@@ -112,37 +112,30 @@ interface CreateReminderData {
 }
 
 export const calendarService = {
-  async getReminders(date: Date): Promise<{ reminders: Reminder[] }> {
+  getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {
       const response = await api.get('/reminders', {
         params: {
-          date: date.toISOString()
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
         }
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching reminders:', error);
+      console.error('Error en getReminders:', error);
       throw error;
     }
   },
 
-
-  async createReminder(data: CreateReminderData): Promise<{ reminder: Reminder }> {
+  createReminder: async (data: CreateReminderData) => {
     try {
-      const response = await api.post('/reminders', data);
+      const response = await api.post('/reminders', {
+        ...data,
+        dateTime: data.dateTime.toISOString()
+      });
       return response.data;
     } catch (error) {
       console.error('Error creating reminder:', error);
-      throw error;
-    }
-  },
-
-  async updateReminderStatus(id: string, statusId: number): Promise<{ reminder: Reminder }> {
-    try {
-      const response = await api.patch(`/reminders/${id}/status`, { statusId });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating reminder status:', error);
       throw error;
     }
   }

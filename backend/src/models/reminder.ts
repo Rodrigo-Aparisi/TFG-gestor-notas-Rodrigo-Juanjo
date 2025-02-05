@@ -11,6 +11,7 @@ interface ReminderData {
 
 interface ReminderConditions {
   _id?: string;
+  id?: string;
   userId?: string;
   dateTime?: {
     $gte?: Date;
@@ -20,6 +21,11 @@ interface ReminderConditions {
 
 export class Reminder {
   static async find(conditions: ReminderConditions) {
+    console.log('Condiciones de búsqueda:', conditions); // Debug
+
+    const startDate = conditions.dateTime?.$gte ? new Date(conditions.dateTime.$gte) : new Date();
+    const endDate = conditions.dateTime?.$lt ? new Date(conditions.dateTime.$lt) : new Date();
+
     const query = `
       SELECT 
         id,
@@ -40,11 +46,17 @@ export class Reminder {
     try {
       const result = await pool.query(query, [
         conditions.userId,
-        conditions.dateTime?.$gte,
-        conditions.dateTime?.$lt
+        startDate,
+        endDate
       ]);
-      
-      return result.rows;
+
+      // Transformar las fechas a formato ISO
+      const formattedResults = result.rows.map(row => ({
+        ...row,
+        dateTime: new Date(row.dateTime).toISOString()
+      }));
+
+      return formattedResults;
     } catch (error) {
       console.error('Error in find:', error);
       throw error;
@@ -52,6 +64,10 @@ export class Reminder {
   }
 
   static async create(data: ReminderData) {
+    console.log('Datos para crear recordatorio:', data); // Debug
+
+    const dateTime = new Date(data.dateTime);
+
     const query = `
       INSERT INTO reminders (
         title,
@@ -76,12 +92,18 @@ export class Reminder {
       const result = await pool.query(query, [
         data.title,
         data.description || '',
-        data.dateTime,
+        dateTime,
         data.userId,
-        data.statusId || 1 // Por defecto, estado 'pendiente'
+        data.statusId || 1
       ]);
-      
-      return result.rows[0];
+
+      // Transformar la fecha a formato ISO
+      const reminder = {
+        ...result.rows[0],
+        dateTime: new Date(result.rows[0].dateTime).toISOString()
+      };
+
+      return reminder;
     } catch (error) {
       console.error('Error in create:', error);
       throw error;
@@ -155,36 +177,50 @@ export class Reminder {
 
   // Método adicional para obtener recordatorios con su estado
   static async findWithStatus(conditions: ReminderConditions) {
-    const query = `
-      SELECT 
-        r.id,
-        r.title,
-        r.description,
-        r.date_time as "dateTime",
-        r.user_id as "userId",
-        r.status_id as "statusId",
-        rs.name as "statusName",
-        r.created_at as "createdAt",
-        r.updated_at as "updatedAt"
-      FROM reminders r
-      LEFT JOIN reminder_status rs ON r.status_id = rs.id
-      WHERE r.user_id = $1 
-      AND r.date_time >= $2 
-      AND r.date_time < $3 
-      ORDER BY r.date_time ASC
-    `;
-    
     try {
+      if (!conditions.dateTime?.$gte || !conditions.dateTime?.$lt) {
+        throw new Error('Se requieren fechas de inicio y fin');
+      }
+  
+      const query = `
+        SELECT 
+          r.id,
+          r.title,
+          r.description,
+          r.date_time as "dateTime",
+          r.user_id as "userId",
+          r.status_id as "statusId",
+          rs.name as "statusName",
+          r.created_at as "createdAt",
+          r.updated_at as "updatedAt"
+        FROM reminders r
+        LEFT JOIN reminder_status rs ON r.status_id = rs.id
+        WHERE r.user_id = $1::uuid
+        AND r.date_time >= $2 
+        AND r.date_time < $3 
+        ORDER BY r.date_time ASC
+      `;
+  
       const result = await pool.query(query, [
         conditions.userId,
-        conditions.dateTime?.$gte,
-        conditions.dateTime?.$lt
+        conditions.dateTime.$gte,
+        conditions.dateTime.$lt
       ]);
-      
-      return result.rows;
+  
+      return result.rows.map(row => ({
+        ...row,
+        dateTime: new Date(row.dateTime).toISOString()
+      }));
+  
     } catch (error) {
-      console.error('Error in findWithStatus:', error);
-      throw error;
+      // Convertir el error a un tipo conocido
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('Error desconocido en la base de datos');
+      }
     }
-  }
+  }  
+  
+    
 }

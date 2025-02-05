@@ -1,31 +1,34 @@
+// Definir un tipo para UUID para mejor claridad
+type UUID = string;
+
 export interface User {
-  id: string;
+  id: UUID;
   username: string;
   email: string;
   password?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Note {
-  id: string;
+  id: UUID;     
   title: string;
   content: string | null;
-  user_id: string;
+  user_id: UUID;
   created_at: Date;
   updated_at: Date;
 }
 
 export interface Reminder {
-  id: string;
+  id: UUID;
   title: string;
   description?: string;
-  dateTime: Date;
-  userId: string;
-  statusId: number;
+  dateTime: Date; // Cambiado de date_time a dateTime
+  userId: UUID; // Cambiado de user_id a userId
+  statusId: number; // Cambiado de status_id a statusId
   statusName?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date; // Cambiado de created_at a createdAt
+  updatedAt: Date; // Cambiado de updated_at a updatedAt
 }
 
 export interface ReminderStatus {
@@ -34,11 +37,36 @@ export interface ReminderStatus {
 }
 
 export interface ReminderRecurrence {
-  id: string;
-  reminderId: string;
+  id: UUID;     
+  reminder_id: UUID;
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  intervalValue: number;
-  endDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  interval_value: number; 
+  end_date?: Date; 
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Añadir interfaces para las consultas
+export interface ReminderConditions {
+  userId: string;
+  dateTime: {
+    $gte: Date;
+    $lt: Date;
+  };
+}
+
+// Interface para la creación de recordatorios
+export interface CreateReminderData {
+  title: string;
+  description?: string;
+  dateTime: Date;
+  statusId?: number;
+}
+
+// Interface para la actualización de recordatorios
+export interface UpdateReminderData {
+  title?: string;
+  description?: string;
+  date_time?: Date;
+  status_id?: number;
 }
