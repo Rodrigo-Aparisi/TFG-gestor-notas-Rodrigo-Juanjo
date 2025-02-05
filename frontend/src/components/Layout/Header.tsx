@@ -55,12 +55,6 @@ const Header: React.FC = () => {
               </button>
               <div className="dropdown-menu" id="user-dropdown" role="menu">
                 <button 
-                  onClick={() => navigate('/account')}
-                  role="menuitem"
-                >
-                  Cuenta
-                </button>
-                <button 
                   onClick={() => navigate('/settings')}
                   role="menuitem"
                 >

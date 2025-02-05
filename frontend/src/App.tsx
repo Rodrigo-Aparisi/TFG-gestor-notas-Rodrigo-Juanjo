@@ -6,7 +6,6 @@ import Header from './components/Layout/Header.tsx';
 import Home from './pages/Home.tsx';
 import Login from './pages/Login.tsx';
 import Notes from './pages/Notes.tsx';
-import Account from './pages/account.tsx';
 import Settings from './pages/settings.tsx';
 import Calendar from './pages/Calendar.tsx';
 import PrivateRoute from './components/PrivateRoute';
@@ -20,7 +19,11 @@ function App() {
           <Header />
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={
+                <PrivateRoute>
+                  <Home />
+                </PrivateRoute>
+              } />
               <Route path="/login" element={<Login />} />
               <Route path="/notes" element={
                 <PrivateRoute>
@@ -32,8 +35,13 @@ function App() {
                   <Calendar />
                 </PrivateRoute>
               } />
-              <Route path="/account" element={<Account />} />
-              <Route path="/settings/*" element={<Settings />} />
+              <Route path="/settings" element={
+                <PrivateRoute>
+                  <Settings />
+                </PrivateRoute>
+              } />
+
+              {/* Ruta por defecto */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
