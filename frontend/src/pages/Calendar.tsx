@@ -32,7 +32,6 @@ const Calendar: React.FC = () => {
   
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
 
-
   useEffect(() => {
     fetchReminders();
   }, [currentMonth]);
@@ -41,37 +40,52 @@ const Calendar: React.FC = () => {
     const loadReminders = async () => {
       try {
         setIsLoading(true);
+        
+        // Obtener el primer y último día del mes actual
         const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
         
-        console.log('Cargando recordatorios para:', {
-          firstDay: firstDay.toISOString(),
-          lastDay: lastDay.toISOString()
-        });
-
+        // Obtener también algunos días del mes anterior y siguiente para la vista completa
+        const extendedFirstDay = new Date(firstDay);
+        extendedFirstDay.setDate(firstDay.getDate() - 7); // Una semana antes
+        
+        const extendedLastDay = new Date(lastDay);
+        extendedLastDay.setDate(lastDay.getDate() + 7); // Una semana después
+        
         const response = await calendarService.getReminders({
-          startDate: firstDay,
-          endDate: lastDay
+          startDate: extendedFirstDay,
+          endDate: extendedLastDay
         });
-
+  
         if (response && response.reminders) {
-          console.log('Recordatorios cargados:', response.reminders);
-          setReminders(response.reminders);
+          const transformedReminders = response.reminders.map((reminder: Reminder) => ({
+            ...reminder,
+            dateTime: new Date(reminder.dateTime)
+          }));
+          
+          setReminders(transformedReminders);
         }
       } catch (error) {
-        console.error('Error cargando recordatorios:', error);
+        console.error('Error loading reminders:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     loadReminders();
-  }, [currentMonth]);
+  }, [currentMonth.getFullYear(), currentMonth.getMonth()]);
+
 
   const fetchReminders = async () => {
     try {
+      setIsLoading(true);
       const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  
+      console.log('Fetching reminders for:', {
+        firstDay: firstDay.toISOString(),
+        lastDay: lastDay.toISOString()
+      });
   
       const response = await calendarService.getReminders({
         startDate: firstDay,
@@ -79,15 +93,18 @@ const Calendar: React.FC = () => {
       });
   
       if (response && response.reminders) {
-        // Especificar el tipo Reminder para el parámetro
         const transformedReminders = response.reminders.map((reminder: Reminder) => ({
           ...reminder,
           dateTime: new Date(reminder.dateTime)
         }));
+        
+        console.log('Transformed reminders:', transformedReminders);
         setReminders(transformedReminders);
       }
     } catch (error) {
       console.error('Error fetching reminders:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -103,43 +120,33 @@ const Calendar: React.FC = () => {
   
     // Función auxiliar para obtener los recordatorios de un día específico
     const getDayReminders = (date: Date) => {
-      const dayReminders = reminders.filter(reminder => {
+      return reminders.filter(reminder => {
         const reminderDate = new Date(reminder.dateTime);
-        const match = 
+        return (
           reminderDate.getDate() === date.getDate() &&
           reminderDate.getMonth() === date.getMonth() &&
-          reminderDate.getFullYear() === date.getFullYear();
-        
-        console.log(`Comparando recordatorio:`, {
-          reminderDate,
-          currentDate: date,
-          match
-        });
-        
-        return match;
+          reminderDate.getFullYear() === date.getFullYear()
+        );
       });
-      
-      console.log(`Recordatorios para ${date.toDateString()}:`, dayReminders);
-      return dayReminders;
     };
     
     // Días del mes anterior
     const prevMonthLastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0);
     for (let i = 0; i < startingDayIndex; i++) {
-        const day = prevMonthLastDay.getDate() - (startingDayIndex - i - 1);
-        const prevMonthDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, day);
-        const dayReminders = getDayReminders(prevMonthDate);
+      const day = prevMonthLastDay.getDate() - (startingDayIndex - i - 1);
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, day);
+      const dayReminders = getDayReminders(date);
       
       days.push(
         <div key={`prev-${i}`} className="day other-month">
           <span className="weekday-label">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i % 7]}
+            {date.toLocaleDateString('es-ES', { weekday: 'short' })}
           </span>
           <span className="day-number">{day}</span>
           <div className="reminders-container">
             {dayReminders.map((reminder, idx) => (
               <div 
-                key={idx}
+                key={`reminder-${reminder.id}-${idx}`}
                 className={`reminder-pill status-${reminder.statusId}`}
                 title={reminder.description}
               >
@@ -203,7 +210,7 @@ const Calendar: React.FC = () => {
     for (let i = 1; i <= remainingCells; i++) {
         const nextMonthDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, i);
         const dayReminders = getDayReminders(nextMonthDate);
-      const dayIndex = (startingDayIndex + daysInMonth + i - 1) % 7;
+        const dayIndex = (startingDayIndex + daysInMonth + i - 1) % 7;
       
       days.push(
         <div key={`next-${i}`} className="day other-month">
@@ -424,25 +431,31 @@ const Calendar: React.FC = () => {
     <div className="calendar-container">
 
       <div className="calendar-header">
-          <button className="nav-button nav-button-prev" onClick={() => {
-              const newDate = new Date(currentMonth);
-              newDate.setMonth(newDate.getMonth() - 1);
-              setCurrentMonth(newDate);
-          }}>
-              {new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-                  .toLocaleDateString('es-ES', { month: 'long' })}
-          </button>
-          
-          <h2>{currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
-          
-          <button className="nav-button nav-button-next" onClick={() => {
-              const newDate = new Date(currentMonth);
-              newDate.setMonth(newDate.getMonth() + 1);
-              setCurrentMonth(newDate);
-          }}>
-              {new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-                  .toLocaleDateString('es-ES', { month: 'long' })}
-          </button>
+        <button 
+          className="nav-button nav-button-prev" 
+          onClick={async () => {
+            const newDate = new Date(currentMonth);
+            newDate.setMonth(newDate.getMonth() - 1);
+            setCurrentMonth(newDate);
+          }}
+        >
+          {new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+            .toLocaleDateString('es-ES', { month: 'long' })}
+        </button>
+        
+        <h2>{currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
+        
+        <button 
+          className="nav-button nav-button-next" 
+          onClick={async () => {
+            const newDate = new Date(currentMonth);
+            newDate.setMonth(newDate.getMonth() + 1);
+            setCurrentMonth(newDate);
+          }}
+        >
+          {new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+            .toLocaleDateString('es-ES', { month: 'long' })}
+        </button>
       </div>
 
 
