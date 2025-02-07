@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { FaCalendar } from 'react-icons/fa';
+import { AiOutlineUser } from 'react-icons/ai';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Header: React.FC = () => {
   return (
     <header className="header" role="banner">
       <nav aria-label="Navegación principal">
-      <div className="nav-left">
+        <div className="nav-left">
           <Link to="/" className="logo" aria-label="Ir a la página principal">
             Gestor de Notas
           </Link>
@@ -44,15 +45,13 @@ const Header: React.FC = () => {
         </div>
         <div className="auth-container">
           {isAuthenticated && user ? (
-            <div className="user-menu-container">
-              <button 
-                className="user-menu-button"
-                type="button"
-                aria-controls="user-dropdown"
-                aria-haspopup="true"
-              >
+            <div className="user-menu-container" style={{ display: "inline-flex", alignItems: "center", cursor: "pointer", gap: "0.5rem" }}>
+              <div className="user-menu-icon">
+                <AiOutlineUser size={24} />
+              </div>
+              <span className="user-name" style={{ color: "var(--dorado)", fontWeight: "bold" }}>
                 {user.username}
-              </button>
+              </span>
               <div className="dropdown-menu" id="user-dropdown" role="menu">
                 <button 
                   onClick={() => navigate('/settings')}
