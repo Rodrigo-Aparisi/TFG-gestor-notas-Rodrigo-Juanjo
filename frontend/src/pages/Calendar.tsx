@@ -30,31 +30,33 @@ const Calendar: React.FC = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(new Date());
-
-  useEffect(() => {
-    fetchReminders();
-  }, [currentMonth]);
 
   useEffect(() => {
     const loadReminders = async () => {
       try {
         setIsLoading(true);
         
-        // Obtener el primer y último día del mes actual
+        // Obtener el primer día visible del calendario (incluyendo días del mes anterior)
         const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const startingDayIndex = (firstDay.getDay() + 6) % 7;
+        const visibleStartDate = new Date(firstDay);
+        visibleStartDate.setDate(visibleStartDate.getDate() - startingDayIndex);
+  
+        // Obtener el último día visible del calendario (incluyendo días del mes siguiente)
         const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-        
-        // Obtener también algunos días del mes anterior y siguiente para la vista completa
-        const extendedFirstDay = new Date(firstDay);
-        extendedFirstDay.setDate(firstDay.getDate() - 7); // Una semana antes
-        
-        const extendedLastDay = new Date(lastDay);
-        extendedLastDay.setDate(lastDay.getDate() + 7); // Una semana después
-        
+        const daysInMonth = lastDay.getDate();
+        const remainingDays = 42 - (startingDayIndex + daysInMonth); // 42 es el total de celdas del calendario
+        const visibleEndDate = new Date(lastDay);
+        visibleEndDate.setDate(visibleEndDate.getDate() + remainingDays);
+  
+        console.log('Fetching reminders for range:', {
+          startDate: visibleStartDate.toISOString(),
+          endDate: visibleEndDate.toISOString()
+        });
+  
         const response = await calendarService.getReminders({
-          startDate: extendedFirstDay,
-          endDate: extendedLastDay
+          startDate: visibleStartDate,
+          endDate: visibleEndDate
         });
   
         if (response && response.reminders) {
@@ -63,6 +65,7 @@ const Calendar: React.FC = () => {
             dateTime: new Date(reminder.dateTime)
           }));
           
+          console.log('Transformed reminders:', transformedReminders);
           setReminders(transformedReminders);
         }
       } catch (error) {
@@ -73,40 +76,7 @@ const Calendar: React.FC = () => {
     };
   
     loadReminders();
-  }, [currentMonth.getFullYear(), currentMonth.getMonth()]);
-
-
-  const fetchReminders = async () => {
-    try {
-      setIsLoading(true);
-      const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-  
-      console.log('Fetching reminders for:', {
-        firstDay: firstDay.toISOString(),
-        lastDay: lastDay.toISOString()
-      });
-  
-      const response = await calendarService.getReminders({
-        startDate: firstDay,
-        endDate: lastDay
-      });
-  
-      if (response && response.reminders) {
-        const transformedReminders = response.reminders.map((reminder: Reminder) => ({
-          ...reminder,
-          dateTime: new Date(reminder.dateTime)
-        }));
-        
-        console.log('Transformed reminders:', transformedReminders);
-        setReminders(transformedReminders);
-      }
-    } catch (error) {
-      console.error('Error fetching reminders:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [currentMonth]); // Solo depende del mes actual
   
 
   const generateCalendarDays = (): React.ReactElement => {
@@ -261,14 +231,37 @@ const Calendar: React.FC = () => {
       const reminderData = {
         title: newReminder.title,
         description: newReminder.description,
-        dateTime: dateTime, // Asegúrate de que coincida con la interfaz
-        statusId: selectedStatus // Cambiado de status_id a statusId
+        dateTime: dateTime,
+        statusId: selectedStatus
       };
   
       const response = await calendarService.createReminder(reminderData);
   
       if (response.reminder) {
-        await fetchReminders();        
+        // Usar la misma lógica de carga que en loadReminders
+        const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const startingDayIndex = (firstDay.getDay() + 6) % 7;
+        const visibleStartDate = new Date(firstDay);
+        visibleStartDate.setDate(visibleStartDate.getDate() - startingDayIndex);
+  
+        const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const remainingDays = 42 - (startingDayIndex + daysInMonth);
+        const visibleEndDate = new Date(lastDay);
+        visibleEndDate.setDate(visibleEndDate.getDate() + remainingDays);
+  
+        const updatedResponse = await calendarService.getReminders({
+          startDate: visibleStartDate,
+          endDate: visibleEndDate
+        });
+  
+        if (updatedResponse && updatedResponse.reminders) {
+          setReminders(updatedResponse.reminders.map((reminder: Reminder) => ({
+            ...reminder,
+            dateTime: new Date(reminder.dateTime)
+          })));
+        }
+  
         setNewReminder({
           title: '',
           description: '',
@@ -310,6 +303,14 @@ const Calendar: React.FC = () => {
       date: date,
       time: prev.time || '00:00'
     }));
+  };
+
+  const getWeekStart = (date: Date) => {
+    const start = new Date(date);
+    const day = start.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diff);
+    return start;
   };
 
   const generateWeekDaysHeader = () => {
