@@ -3,7 +3,6 @@
   flex-direction: column;
   padding: 10px 20px;
   width: 100%;
-  max-width: 1000px;
   margin: 20px auto;
   grid-template-areas: 
       "header header"
@@ -11,6 +10,7 @@
   grid-template-columns: auto 450px;
   align-items: center;
   margin-top: 20px;
+  max-width: none;
 }
   
 .calendar-header {
@@ -59,6 +59,8 @@
   padding: 8px;
   background: #ffffff1a;
   border-radius: 8px;
+  flex: 1;
+  min-width: 0;
 }
 .month-nav {
   background: transparent;
@@ -147,7 +149,6 @@
   background: #ffffff1a;
   border-radius: 8px 8px 0 0;
   gap: 8px;
-  margin-bottom: 20px;
 }
 
 .weekday-header-item {
@@ -162,10 +163,7 @@
   align-items: center;
   border-right: 1px solid var(--dorado);
   background-color: #363636;
-  padding: 10px;
   border-radius: 4px;
-  display: flex;
-  flex-direction: column;
   min-height: 100px;
 }
 
@@ -192,7 +190,7 @@
   align-items: center;
   height: auto;
   width: 100%;
-  max-width: 1200px;
+  max-width: none; 
   margin: 0 auto;
 }
 
@@ -268,6 +266,7 @@
   transition: all 0.2s ease;
   min-height: 100px;
   background-color: #363636;
+  font-size: 2em;
 }
 
 .day:hover {
@@ -311,7 +310,6 @@
 }
 
 .day-number {
-  font-size: 0.9em;
   font-weight: 500;
   color: var(--dorado);
 }
@@ -365,6 +363,7 @@
   color: var(--dorado);
   font-size: 0.7rem;
   white-space: nowrap;
+  margin-bottom: 4px;
 }
 
 .reminder-title {
@@ -372,6 +371,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  color: #fff;
 }
 
 .status-1 { /* Pendiente */
@@ -405,10 +405,11 @@
 
 /* Ajustar el tamaño de los días para acomodar los recordatorios */
 .calendar-days-grid {
-  grid-template-rows: repeat(6, minmax(90px, 1fr));
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, minmax(90px, 1fr));
   gap: 4px;
+  width: 100%;
   padding: 8px;
 }
 
@@ -501,31 +502,13 @@
 .reminder-form button:hover {
   background: #e6b000;
 }
-
-.reminder-time {
-  color: var(--dorado);
-  font-size: 0.8em;
-  margin-bottom: 4px;
-}
-
-.reminder-title {
-  color: #fff;
-}
   
 .calendar-and-form {
   display: flex;
   gap: 15px;
   width: 100%;
-  justify-content: center;
+  justify-content: space-between; 
   margin-top: 20px;
-}
-
-.calendar-days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  gap: 2px;
-  width: 100%;
 }
 
 .weekdays-header-with-reminders {
@@ -589,14 +572,16 @@
 
 @media (min-width: 1440px) {
   .calendar-container {
-    max-width: 1400px;
-  }
-
-  .main-content {
-    max-width: 1200px;
+    padding: 40px;
   }
 
   .calendar-and-form {
-    max-width: 1200px;
+    gap: 40px;
+  }
+
+  .reminder-form {
+    width: 400px;
+    min-width: 400px;
   }
 }
+

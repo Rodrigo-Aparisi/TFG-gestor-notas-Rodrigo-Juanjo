@@ -102,7 +102,7 @@ body{
     outline: none;
     border-bottom: 2px solid var(--black);
     transition: .5s;
-    padding-right: 23px;
+    padding-right: 35px;
     position: relative;
     z-index: 2;
     pointer-events: auto !important;
@@ -133,18 +133,65 @@ body{
     transform: translateY(0);
 }
 
-.input-box i{
+/* Nuevos estilos para iconos */
+.input-icon {
     position: absolute;
-    top: 50%;
     right: 0;
-    transform: translateY(-50%);
-    font-size: 18px;
-    transition: 0.5s;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--black) !important;
+    z-index: 3;
+    width: 30px;
+    height: 30px;
 }
 
-.input-box input:focus~i,
-.input-box input:valid~i{
-    color: var(--lightBlue);
+.input-icon svg {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    color: inherit;
+    pointer-events: none;
+}
+
+.input-box input:focus ~ .input-icon {
+    color: var(--lightBlue) !important;
+}
+
+/* Estilos para el campo de contraseña */
+.password-field {
+    position: relative;
+}
+
+.login-password-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--black) !important;
+    z-index: 3;
+    width: 30px;
+    height: 30px;
+}
+
+.login-password-toggle:hover {
+    color: var(--lightBlue) !important;
+}
+
+.login-password-toggle svg {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    color: inherit;
+    pointer-events: none;
 }
 
 form button{
@@ -364,7 +411,7 @@ form .linkTxt{
     transform: translateX(0);
 }
 
-/* Media Queries para Responsividad */
+/* Media Queries */
 @media screen and (max-width: 850px) {
     .wrapper {
         width: 90%;
@@ -457,6 +504,12 @@ form .linkTxt{
 
     .error-message {
         font-size: 0.8em;
+    }
+
+    .input-icon svg,
+    .login-password-toggle svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
