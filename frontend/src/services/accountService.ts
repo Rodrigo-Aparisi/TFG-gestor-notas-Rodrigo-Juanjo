@@ -13,6 +13,15 @@ interface UpdateResponse {
   message: string;
 }
 
+interface UserSettings {
+  id: string;
+  user_id: string;
+  theme: string;
+  notifications_enabled: boolean;
+  language: string;
+}
+
+
 export const accountService = {
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
@@ -25,6 +34,24 @@ export const accountService = {
         throw new Error('Usuario no encontrado');
       }
       throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
+    }
+  },
+
+  getUserSettings: async (userId: string): Promise<UserSettings> => {
+    try {
+      const response = await api.get<UserSettings>(`/api/settings/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Error al obtener la configuración');
+    }
+  },
+
+  updateUserSettings: async (userId: string, settings: Partial<UserSettings>): Promise<UserSettings> => {
+    try {
+      const response = await api.put<UserSettings>(`/api/settings/${userId}`, settings);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Error al actualizar la configuración');
     }
   },
 

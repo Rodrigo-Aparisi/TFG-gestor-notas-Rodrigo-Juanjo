@@ -17,6 +17,21 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Crear tabla de configuración de usuarios (settings)
+CREATE TABLE settings (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    theme VARCHAR(50) DEFAULT 'light',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
+    language VARCHAR(10) DEFAULT 'en',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear un índice para mejorar el rendimiento en búsquedas por user_id
+CREATE INDEX idx_settings_user_id ON settings(user_id);
+
+
 -- Crear tabla de notas
 CREATE TABLE notes (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

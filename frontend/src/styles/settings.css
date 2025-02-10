@@ -393,3 +393,25 @@ section p {
     padding: 1rem;
   }
 }
+
+.save-theme-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.save-theme-button:hover {
+  background-color: #e6b000;
+}
+
+.save-theme-button:active {
+  transform: scale(0.98);
+}
+
