@@ -11,6 +11,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [theme, setTheme] = useState('light');
 
   const subMenus: Record<string, { key: string; label: string }[]> = {
     general: [
@@ -183,7 +184,37 @@ const Settings = () => {
           <h2>General</h2>
           <div id="general-preferencias">
             <h3>Preferencias</h3>
-            <p>Contenido de Preferencias generales.</p>
+            <div className="theme-selector">
+              <h4>Apariencia</h4>
+              <div className="theme-options">
+              <div 
+                  className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setTheme('dark')}>
+                  <div className="theme-preview dark-theme">
+                    <div className="preview-header"></div>
+                    <div className="preview-content">
+                      <div className="preview-line"></div>
+                      <div className="preview-line short"></div>
+                    </div>
+                  </div>
+                  <span>Tema Oscuro</span>
+                </div>
+
+                <div 
+                  className={`theme-option ${theme === 'light' ? 'active' : ''}`}
+                  onClick={() => setTheme('light')}>
+                  <div className="theme-preview light-theme">
+                    <div className="preview-header"></div>
+                    <div className="preview-content">
+                      <div className="preview-line"></div>
+                      <div className="preview-line short"></div>
+                    </div>
+                  </div>
+                  <span>Tema Claro</span>
+                </div>
+                
+              </div>
+            </div>
           </div>
           <div id="general-notificaciones">
             <h3>Notificaciones</h3>
@@ -366,7 +397,6 @@ const Settings = () => {
             </div>
           </form>
         </section>
-
 
         <section id="privacidad-section">
           <h2>Privacidad</h2>
