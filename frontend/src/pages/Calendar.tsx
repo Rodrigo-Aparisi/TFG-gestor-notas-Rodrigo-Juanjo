@@ -532,85 +532,132 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="calendar-container">
-      <div className="calendar-header">
-        <button 
-          className="nav-button nav-button-prev" 
-          onClick={() => {
-            const newDate = new Date(currentMonth);
-            newDate.setMonth(newDate.getMonth() - 1);
-            setCurrentMonth(newDate);
-          }}
-        >
-          {new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-            .toLocaleDateString('es-ES', { month: 'long' })}
-        </button>
-        
-        <h2>{currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
-        
-        <button 
-          className="nav-button nav-button-next" 
-          onClick={() => {
-            const newDate = new Date(currentMonth);
-            newDate.setMonth(newDate.getMonth() + 1);
-            setCurrentMonth(newDate);
-          }}
-        >
-          {new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-            .toLocaleDateString('es-ES', { month: 'long' })}
-        </button>
-      </div>
-  
-      <div className="main-content">
-        {generateWeekDaysHeader()}
-        
-        <div className="calendar-and-form">
-        <div className="calendar-mini-grid">
-          <div className="mini-calendar-container">
-            <div className="mini-calendar-header">
+      {!showFullCalendar ? (
+        <>
+          <div className="calendar-header">
               <button 
-                className="nav-button"
+                className="nav-button nav-button-prev" 
                 onClick={() => {
                   const newDate = new Date(currentMonth);
                   newDate.setMonth(newDate.getMonth() - 1);
                   setCurrentMonth(newDate);
                 }}
               >
-                &lt;
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })}
               </button>
-              <span>
-                {currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-              </span>
+              
+              <h2>{currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
+              
               <button 
-                className="nav-button"
+                className="nav-button nav-button-next" 
                 onClick={() => {
                   const newDate = new Date(currentMonth);
                   newDate.setMonth(newDate.getMonth() + 1);
                   setCurrentMonth(newDate);
                 }}
               >
-                &gt;
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })}
+              </button>
+          </div>
+  
+          <div className="main-content">
+            {generateWeekDaysHeader()}
+            
+            <div className="calendar-and-form">
+              <div className="calendar-mini-grid">
+                <div className="mini-calendar-container">
+                  <div className="mini-calendar-header">
+                    <button 
+                      className="nav-button"
+                      onClick={() => {
+                        const newDate = new Date(currentMonth);
+                        newDate.setMonth(newDate.getMonth() - 1);
+                        setCurrentMonth(newDate);
+                      }}
+                    >
+                      &lt;
+                    </button>
+                    <span>
+                      {currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button 
+                      className="nav-button"
+                      onClick={() => {
+                        const newDate = new Date(currentMonth);
+                        newDate.setMonth(newDate.getMonth() + 1);
+                        setCurrentMonth(newDate);
+                      }}
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                  <div className="mini-calendar-weekdays">
+                    {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map(day => (
+                      <div key={day} className="mini-weekday">{day}</div>
+                    ))}
+                  </div>
+                  <div className="mini-calendar-days">
+                    {generateMiniCalendarDays()}
+                  </div>
+                  <button 
+                    className="expand-calendar-button"
+                    onClick={() => setShowFullCalendar(true)}
+                  >
+                    Ver calendario completo
+                  </button>
+                </div>
+              </div>
+              {renderReminderForm()}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="full-calendar-modal">
+          <div className="full-calendar-content">
+            <button 
+              className="close-calendar-button"
+              onClick={() => setShowFullCalendar(false)}
+            >
+              ×
+            </button>
+            <div className="calendar-header">
+              <button 
+                className="nav-button nav-button-prev" 
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setCurrentMonth(newDate);
+                }}
+              >
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })}
+              </button>
+              
+              <h2>{currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</h2>
+              
+              <button 
+                className="nav-button nav-button-next" 
+                onClick={() => {
+                  const newDate = new Date(currentMonth);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setCurrentMonth(newDate);
+                }}
+              >
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+                  .toLocaleDateString('es-ES', { month: 'long' })}
               </button>
             </div>
-            <div className="mini-calendar-weekdays">
-              {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map(day => (
-                <div key={day} className="mini-weekday">{day}</div>
-              ))}
-            </div>
-            <div className="mini-calendar-days">
-              {generateMiniCalendarDays()}
-            </div>
-            <button 
-              className="expand-calendar-button"
-              onClick={() => setShowFullCalendar(true)}
-            >
-              Ver calendario completo
-            </button>
+              <div className="calendar-and-form">
+                <div className="calendar-grid">
+                  {generateCalendarDays()}
+                </div>
+                {renderReminderForm()}
+              </div>
           </div>
         </div>
-
-          {renderReminderForm()}
-        </div>
-      </div>
+      )}
   
       {expandedDay && (
         <ReminderPopup
@@ -628,6 +675,7 @@ const Calendar: React.FC = () => {
       )}
     </div>
   );
+  
   
 };
 
