@@ -21,7 +21,7 @@
   justify-content: space-between;
   text-align: center;
   padding: 10px 0;
-  margin: 60px 0 40px 0;
+  margin: 60px 0 0 0;
   width: 100%;
   transition: all 0.3s ease;
   max-width: 950px;
@@ -60,8 +60,8 @@
   background: #ffffff1a;
   border-radius: 8px;
   flex: 1;
-  min-width: 0;
 }
+
 .month-nav {
   background: transparent;
   border: 1px solid var(--dorado);
@@ -164,8 +164,8 @@
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--dorado);
-  margin-bottom: 10px;
-  padding-bottom: 10px;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
   grid-template-columns: repeat(7, 1fr);
   background: #ffffff1a;
   border-radius: 8px 8px 0 0;
@@ -209,7 +209,7 @@
 
 .main-content {
   display: flex;
-  gap: 10px;
+  gap: 5px;
   flex-direction: column;
   align-items: center;
   height: auto;
@@ -236,10 +236,10 @@
   padding: 15px;
   background: #ffffff1a;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin: 20px auto;
   grid-area: form;
   height: fit-content;
   min-width: 300px;
+  margin: 0;
 }
 
 .weekdays {
@@ -450,10 +450,11 @@
 .calendar-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, minmax(45px, auto));
-  gap: 2px;
+  grid-template-rows: repeat(6, minmax(60px, auto));
+  gap: 3px;
   width: 100%;
-  padding: 4px; 
+  padding: 4px;
+  margin: 0 auto;
 }
 
 .weekdays-reminders {
@@ -548,10 +549,10 @@
   
 .calendar-and-form {
   display: flex;
-  gap: 30px;
+  gap: 20px;
   width: 100%;
-  justify-content: space-between; 
-  margin-top: 20px;
+  justify-content: center; 
+  margin-top: 10px;
 }
 
 .weekdays-header-with-reminders {
@@ -712,9 +713,9 @@
 
 /* Mini Calendar */
 .calendar-mini-grid {
-  width: 45%;
+  width: 25%;
   padding: 20px;
-  background: #ffffff1a;
+  /*Quitar?*/background: #ffffff1a;
   border-radius: 8px;
   display: flex;
   justify-content: center;
@@ -726,7 +727,7 @@
   max-width: 400px;
   background: #363636;
   border-radius: 8px;
-  padding: 20px;
+  padding: 8px;
   color: var(--dorado);
 }
 
@@ -734,7 +735,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .mini-calendar-header span {
@@ -742,25 +743,33 @@
   text-transform: capitalize;
 }
 
+.mini-calendar-header .nav-button {
+  width: auto;
+  padding: 4px 12px;
+  height: 30px;
+  min-width: 40px;
+}
+
 .mini-calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 2px;
+  margin-bottom: 4px;
   text-align: center;
 }
 
 .mini-weekday {
-  font-size: 1em;
+  font-size: 1.1em;
   color: var(--dorado);
   opacity: 0.8;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .mini-calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 2px;
+  padding: 4px;
 }
 
 .mini-day {
@@ -770,10 +779,10 @@
   justify-content: center;
   cursor: pointer;
   border-radius: 4px;
-  font-size: 1.1em;
+  font-size: 1em;
   transition: all 0.2s ease;
-  padding: 10px;
-  min-height: 40px;
+  padding: 4px;
+  min-height: 28px;
 }
 
 .mini-day:hover {
@@ -800,8 +809,8 @@
 
 .expand-calendar-button {
   width: 100%;
-  margin-top: 20px;
-  padding: 12px;
+  margin-top: 12px;
+  padding: 8px;
   background: var(--dorado);
   color: var(--background-dark);
   border: none;
@@ -822,7 +831,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -831,13 +840,18 @@
 
 .full-calendar-content {
   background: var(--background-dark);
-  padding: 24px;
+  padding: 12px;
   border-radius: 8px;
   position: relative;
-  width: 90%;
-  max-width: 1200px;
+  width: 85%;
+  max-width: none;
+  height: auto;
   max-height: 90vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
 }
 
 .close-calendar-button {
@@ -849,4 +863,25 @@
   color: var(--dorado);
   font-size: 24px;
   cursor: pointer;
+}
+
+.full-calendar-modal .calendar-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  margin: 8px 0;
+}
+
+.full-calendar-modal .reminder-form {
+  width: 40%;
+  padding: 12px;
+}
+
+.full-calendar-modal .main-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
