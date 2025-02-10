@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   padding: 10px 20px;
-  width: 100%;
+  width: 90%;
   margin: 20px auto;
   grid-template-areas: 
       "header header"
@@ -96,7 +96,6 @@
   transition: all 0.3s ease;
 }
 
-
 .month-navigation h2 {
   margin: 0;
   font-size: 1.8rem;
@@ -106,7 +105,29 @@
 .other-month {
   opacity: 0.5;
   visibility: visible !important;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.other-month:hover {
+  opacity: 0.8;
+}
+
+.other-month .reminder-pill {
+  opacity: 1;
+}
+
+.other-month.selected {
+  opacity: 1;
+}
+
+.other-month .show-more-reminders {
+  opacity: 1;
+}
+
+.weekday-header-item .reminders-container {
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .week-navigator {
@@ -156,7 +177,7 @@
   font-weight: bold;
   flex: 1;
   text-align: center;
-  padding: 8px;
+  padding: 4px;
   border-bottom: 1px solid var(--dorado);
   display: flex;
   flex-direction: column;
@@ -164,7 +185,10 @@
   border-right: 1px solid var(--dorado);
   background-color: #363636;
   border-radius: 4px;
-  min-height: 100px;
+  font-size: 1.2em;
+  min-height: 120px;
+  height: auto;
+  max-height: none;
 }
 
 .weekday-column {
@@ -207,14 +231,15 @@
 }
 
 .reminder-form {
-  width: 45%;
+  width: 35%;
   border-radius: 8px;
-  padding: 20px;
+  padding: 15px;
   background: #ffffff1a;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin: 20px auto;
   grid-area: form;
   height: fit-content;
+  min-width: 300px;
 }
 
 .weekdays {
@@ -237,7 +262,7 @@
 }
 
 .weekday-label {
-  font-size: 0.6em;
+  font-size: 0.7em;
   color: var(--dorado);
   margin-bottom: 4px;
   opacity: 0.8;
@@ -247,7 +272,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 3px;
-  padding: 8px;
+  padding: 2px;
   transition: all 0.2s ease;
 }
 
@@ -262,11 +287,11 @@
   border-radius: 4px;
   position: relative;
   background: #ffffff0d;
-  padding: 8px;
+  padding: 2px;
   transition: all 0.2s ease;
-  min-height: 100px;
   background-color: #363636;
-  font-size: 2em;
+  font-size: 1.4em;
+  min-height: 45px;
 }
 
 .day:hover {
@@ -310,8 +335,9 @@
 }
 
 .day-number {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--dorado);
+  font-size: 0.8em;
 }
 
 .day.selected .weekday-label,
@@ -321,6 +347,12 @@
 
 .day.selected .reminders-container {
   opacity: 1;
+}
+
+.day .reminder-pill {
+  padding: 1px 4px;
+  font-size: 0.6rem;
+  min-height: 16px;
 }
 
 .day-reminders {
@@ -333,26 +365,37 @@
   max-height: 80px;
 }
 
+.day .reminders-container {
+  max-height: 45px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 1px;
+}
+
 .reminders-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-  max-height: 60px;
-  padding: 4px;
-  margin-top: 4px;
+  gap: 2px;
+  max-height: 30px;
+  padding: 2px;
+  margin-top: 1px;
+  overflow: hidden;
+  position: relative;
 }
 
 .reminder-pill {
   background-color: #4a4a4a;
   border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: 1px 4px;
+  font-size: 0.6rem;
   color: white;
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 24px;
+  min-height: 16px;
+  line-height: 1.2;
 }
 
 .reminder-pill:hover {
@@ -407,10 +450,10 @@
 .calendar-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, minmax(90px, 1fr));
-  gap: 4px;
+  grid-template-rows: repeat(6, minmax(45px, auto));
+  gap: 2px;
   width: 100%;
-  padding: 8px;
+  padding: 4px; 
 }
 
 .weekdays-reminders {
@@ -505,7 +548,7 @@
   
 .calendar-and-form {
   display: flex;
-  gap: 15px;
+  gap: 30px;
   width: 100%;
   justify-content: space-between; 
   margin-top: 20px;
@@ -570,18 +613,240 @@
   color: var(--background-dark); /* Este es el color negro/oscuro de fondo */
 }
 
-@media (min-width: 1440px) {
-  .calendar-container {
-    padding: 40px;
-  }
 
-  .calendar-and-form {
-    gap: 40px;
-  }
-
-  .reminder-form {
-    width: 400px;
-    min-width: 400px;
-  }
+/* Botón de "mostrar más" */
+.show-more-reminders {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  margin-top: 2px;
+  width: 100%;
+  text-align: center;
 }
 
+.show-more-reminders:hover {
+  background: #e6b000;
+}
+
+/* Estilos para el popup */
+.reminder-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.reminder-popup {
+  background: var(--background-dark);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 300px;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.reminder-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.reminder-popup-header h3 {
+  margin: 0;
+  color: var(--dorado);
+  text-transform: capitalize;
+}
+
+.reminder-popup-header button {
+  background: none;
+  border: none;
+  color: var(--dorado);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.reminder-popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reminder-popup-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #ffffff1a;
+  border-radius: 4px;
+}
+
+.reminder-popup-time {
+  color: var(--dorado);
+  font-weight: bold;
+}
+
+.reminder-popup-details {
+  flex: 1;
+}
+
+.reminder-popup-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.reminder-popup-description {
+  font-size: 0.9em;
+  color: #ffffff99;
+}
+
+/* Mini Calendar */
+.calendar-mini-grid {
+  width: 45%;
+  padding: 20px;
+  background: #ffffff1a;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.mini-calendar-container {
+  width: 100%;
+  max-width: 400px;
+  background: #363636;
+  border-radius: 8px;
+  padding: 20px;
+  color: var(--dorado);
+}
+
+.mini-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.mini-calendar-header span {
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.mini-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.mini-weekday {
+  font-size: 1em;
+  color: var(--dorado);
+  opacity: 0.8;
+  padding: 8px 0;
+}
+
+.mini-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.mini-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 1.1em;
+  transition: all 0.2s ease;
+  padding: 10px;
+  min-height: 40px;
+}
+
+.mini-day:hover {
+  background: var(--dorado);
+  color: var(--background-dark);
+}
+
+.mini-day.other-month {
+  opacity: 0.3;
+}
+
+.mini-day.today {
+  border: 1px solid var(--dorado);
+}
+
+.mini-day.has-reminders {
+  background: rgba(255, 215, 0, 0.2);
+  font-weight: bold;
+}
+
+.mini-day.has-reminders:hover {
+  background: var(--dorado);
+}
+
+.expand-calendar-button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.expand-calendar-button:hover {
+  background: #e6b000;
+}
+
+.full-calendar-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.full-calendar-content {
+  background: var(--background-dark);
+  padding: 24px;
+  border-radius: 8px;
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.close-calendar-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--dorado);
+  font-size: 24px;
+  cursor: pointer;
+}
