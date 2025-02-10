@@ -10,7 +10,7 @@
   --lightBlue: #17a;
   --header-height: 80px;
   
-  /* Theme colors */
+  /* Theme colors para el modo oscuro por defecto */
   --theme-background: var(--background-black);
   --theme-border: var(--dorado);
 }
@@ -251,6 +251,27 @@ button:hover {
   flex: 1;
   width: 100%;
   height: 100%;
+}
+
+/* Estilos para modo claro */
+body.light-theme,
+.light-theme #root,
+.light-theme .app {
+  /* Fondo claro y texto oscuro */
+  --theme-background: #f5f5f5;
+  --theme-border: var(--dorado);
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+body.light-theme {
+  background-color: var(--theme-background);
+  color: #333;
+}
+
+/* El resto de elementos que dependen de las variables continúan usando --theme-background */
+#root {
+  background-color: var(--theme-background);
 }
 
 /* Media Queries */

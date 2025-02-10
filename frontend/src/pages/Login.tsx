@@ -23,7 +23,7 @@ const Login: React.FC = () => {
     if (authService.isAuthenticated()) {
       navigate("/notes", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   // Estados
   const [loginData, setLoginData] = useState<LoginData>({
@@ -47,9 +47,7 @@ const Login: React.FC = () => {
   // Efecto para la animación
   useEffect(() => {
     const wrapper = document.querySelector(".wrapper") as HTMLElement;
-    const registerLink = document.querySelector(
-      ".register-link"
-    ) as HTMLElement;
+    const registerLink = document.querySelector(".register-link") as HTMLElement;
     const loginLink = document.querySelector(".login-link") as HTMLElement;
 
     if (registerLink && loginLink && wrapper) {
