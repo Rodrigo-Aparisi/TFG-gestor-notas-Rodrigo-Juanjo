@@ -141,5 +141,93 @@ export const accountController = {
             console.error('Error al eliminar cuenta:', error);
             res.status(500).json({ error: 'Error al eliminar la cuenta' });
         }
+    },
+
+    getUserSettings: async (req: Request, res: Response): Promise<void> => {
+        try {
+            const userId = req.user.id;
+            console.log('Obteniendo configuración para usuario:', userId);
+    
+            const result: QueryResult = await pool.query(
+                'SELECT * FROM settings WHERE user_id = $1',
+                [userId]
+            );
+    
+            if (result.rows.length === 0) {
+                console.log('No se encontró configuración, creando por defecto');
+                // Valores por defecto actualizados
+                const defaultSettings = {
+                    theme: 'dark',            // Cambiado a dark
+                    notifications_enabled: true,
+                    language: 'es'            // Cambiado a es
+                };
+    
+                const newSettingsResult: QueryResult = await pool.query(
+                    `INSERT INTO settings (user_id, theme, notifications_enabled, language)
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING *`,
+                    [userId, defaultSettings.theme, defaultSettings.notifications_enabled, defaultSettings.language]
+                );
+    
+                res.json(newSettingsResult.rows[0]);
+            } else {
+                console.log('Configuración encontrada:', result.rows[0]);
+                res.json(result.rows[0]);
+            }
+        } catch (error) {
+            console.error('Error al obtener configuración:', error);
+            res.status(500).json({ 
+                error: 'Error al obtener la configuración del usuario',
+                details: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    },
+    
+    updateUserSettings: async (req: Request, res: Response): Promise<void> => {
+        try {
+            const userId = req.user.id;
+            const { theme, notifications_enabled, language } = req.body;
+            console.log('Actualizando configuración para usuario:', userId);
+            console.log('Nuevos valores:', { theme, notifications_enabled, language });
+    
+            // Verificar si existe la configuración
+            const checkResult: QueryResult = await pool.query(
+                'SELECT * FROM settings WHERE user_id = $1',
+                [userId]
+            );
+    
+            let result: QueryResult;
+    
+            if (checkResult.rows.length === 0) {
+                console.log('Creando nueva configuración');
+                result = await pool.query(
+                    `INSERT INTO settings (user_id, theme, notifications_enabled, language)
+                     VALUES ($1, $2, $3, $4)
+                     RETURNING *`,
+                    [userId, theme || 'dark', notifications_enabled || true, language || 'es'] // Valores por defecto actualizados
+                );
+            } else {
+                console.log('Actualizando configuración existente');
+                result = await pool.query(
+                    `UPDATE settings
+                     SET theme = COALESCE($2, theme),
+                         notifications_enabled = COALESCE($3, notifications_enabled),
+                         language = COALESCE($4, language),
+                         updated_at = NOW()
+                     WHERE user_id = $1
+                     RETURNING *`,
+                    [userId, theme, notifications_enabled, language]
+                );
+            }
+    
+            console.log('Configuración actualizada:', result.rows[0]);
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error al actualizar configuración:', error);
+            res.status(500).json({ 
+                error: 'Error al actualizar la configuración del usuario',
+                details: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
     }
 };

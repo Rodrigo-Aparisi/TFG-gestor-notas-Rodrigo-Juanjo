@@ -1,5 +1,14 @@
-import api from './api';
-import { User } from '../types';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+});
+
+interface UserSettings {
+  theme?: string;
+  notifications_enabled?: boolean;
+  language?: string;
+}
 
 interface UpdateUserData {
   username: string;
@@ -9,70 +18,111 @@ interface UpdateUserData {
 }
 
 interface UpdateResponse {
-  user: User;
-  message: string;
+  user: any;
+  message?: string;
 }
-
-interface UserSettings {
-  id: string;
-  user_id: string;
-  theme: string;
-  notifications_enabled: boolean;
-  language: string;
-}
-
 
 export const accountService = {
-  updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
-    try {
-      const response = await api.put<UpdateResponse>('/account/update', userData);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error('Contraseña actual incorrecta');
-      } else if (error.response?.status === 404) {
-        throw new Error('Usuario no encontrado');
-      }
-      throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
-    }
-  },
-
   getUserSettings: async (userId: string): Promise<UserSettings> => {
     try {
-      const response = await api.get<UserSettings>(`/api/settings/${userId}`);
+      // Cambiado para coincidir con la ruta del backend
+      const response = await api.get('/account/settings');
+      
+      if (!response.data) {
+        throw new Error('No se encontró la configuración');
+      }
+      
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al obtener la configuración');
+      console.error('Error al obtener la configuración:', error);
+      
+      if (error.response?.status === 404) {
+        try {
+          const defaultSettings: UserSettings = {
+            theme: 'dark',
+            notifications_enabled: true,
+            language: 'es'
+          };
+          
+          const newSettings = await accountService.updateUserSettings(userId, defaultSettings);
+          return newSettings;
+        } catch (createError) {
+          console.error('Error al crear configuración por defecto:', createError);
+          return { theme: 'dark' };
+        }
+      }
+      
+      return { theme: 'dark' };
     }
   },
 
-  updateUserSettings: async (userId: string, settings: Partial<UserSettings>): Promise<UserSettings> => {
+  updateUserSettings: async (userId: string, settings: UserSettings): Promise<UserSettings> => {
     try {
-      const response = await api.put<UserSettings>(`/api/settings/${userId}`, settings);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+
+      // Cambiado para coincidir con la ruta del backend
+      const response = await api.put('/account/settings', settings);
+
+      if (!response.data) {
+        throw new Error('No se recibió respuesta del servidor');
+      }
+
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al actualizar la configuración');
+      console.error('Error al actualizar la configuración:', error);
+      throw new Error(error.response?.data?.message || 'Error al actualizar la configuración del usuario');
     }
   },
 
-  getProfile: async (): Promise<User> => {
+  updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
-      const response = await api.get<{ user: User }>('/account/profile');
-      return response.data.user;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al obtener el perfil');
-    }
-  },
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
 
-  deleteAccount: async (password: string): Promise<void> => {
-    try {
-      await api.delete('/account/delete', {
-        data: { password }
-      });
+      const response = await api.put<UpdateResponse>('/auth/update', userData);
+
+      if (!response.data) {
+        throw new Error('No se recibió respuesta del servidor');
+      }
+
+      return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al eliminar la cuenta');
+      console.error('Error al actualizar el usuario:', error);
+      throw new Error(error.response?.data?.message || 'Error al actualizar el usuario');
     }
   }
 };
+
+// Interceptor para añadir el token a todas las peticiones
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar errores de respuesta
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default accountService;
