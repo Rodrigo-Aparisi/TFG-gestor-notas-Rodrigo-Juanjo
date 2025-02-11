@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calendarService } from '../services/api';
-import { Reminder } from '../types';
+import { Reminder, NewReminder } from '../types';
 import '../styles/calendar.css';
-
-interface NewReminder {
-  title: string;
-  description: string;
-  date: Date;
-  time: string;
-  statusId?: number;
-}
 
 const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -22,7 +14,8 @@ const Calendar: React.FC = () => {
     description: '',
     date: new Date(),
     time: '',
-    statusId: 1
+    statusId: 1,
+    hasTime: false
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -103,12 +96,7 @@ const Calendar: React.FC = () => {
               key={idx}
               className={`reminder-popup-item status-${reminder.statusId}`}
             >
-              <div className="reminder-popup-time">
-                {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
+              {renderReminderTime(reminder)}
               <div className="reminder-popup-details">
                 <div className="reminder-popup-title">{reminder.title}</div>
                 <div className="reminder-popup-description">{reminder.description}</div>
@@ -119,6 +107,8 @@ const Calendar: React.FC = () => {
       </div>
     </div>
   );
+  
+  
 
 
   const generateCalendarDays = (): React.ReactElement => {
@@ -214,7 +204,6 @@ const Calendar: React.FC = () => {
     );
   };
   
-  
   const handleCreateReminder = async () => {
     try {
       if (!newReminder.title) {
@@ -223,16 +212,24 @@ const Calendar: React.FC = () => {
       }
   
       const dateTime = new Date(newReminder.date);
-      const [hours, minutes] = newReminder.time.split(':');
-      dateTime.setHours(parseInt(hours), parseInt(minutes));
+      
+      if (newReminder.hasTime && newReminder.time) {
+        const [hours, minutes] = newReminder.time.split(':');
+        dateTime.setHours(parseInt(hours), parseInt(minutes));
+      } else {
+        // Si no hay hora, establecer a mediodía para evitar problemas de zona horaria
+        dateTime.setHours(12, 0, 0, 0);
+      }
   
       const reminderData = {
         title: newReminder.title,
         description: newReminder.description,
         dateTime: dateTime,
-        statusId: selectedStatus
+        statusId: selectedStatus,
+        hasTime: newReminder.hasTime
       };
   
+      console.log('Creating reminder with data:', reminderData); // Para debug
       const response = await calendarService.createReminder(reminderData);
   
       if (response.reminder) {
@@ -265,7 +262,8 @@ const Calendar: React.FC = () => {
           description: '',
           date: new Date(),
           time: '',
-          statusId: 1
+          statusId: 1,
+          hasTime: false
         });
       }
     } catch (error) {
@@ -274,6 +272,12 @@ const Calendar: React.FC = () => {
     }
   };
   
+
+  const formatDateForInput = (date: Date) => {
+    const offset = date.getTimezoneOffset();
+    const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return adjustedDate.toISOString().split('T')[0];
+  };
 
   const renderStatusSelector = () => (
     <select
@@ -289,18 +293,24 @@ const Calendar: React.FC = () => {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setNewReminder(prev => ({
+      ...prev,
+      date: date
+    }));
     
-    // Actualizar el mes actual si el día seleccionado es de otro mes
     if (date.getMonth() !== currentMonth.getMonth()) {
       setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
     }
-    
-    // Actualizar el formulario de nuevo recordatorio
-    setNewReminder(prev => ({
-      ...prev,
-      date: date,
-      time: prev.time || '00:00'
-    }));
+  };
+
+  const handleReminderClick = (reminder: Reminder) => {
+    // Toggle el estado focused
+    setReminders(prevReminders => 
+      prevReminders.map(r => ({
+        ...r,
+        focused: r.id === reminder.id ? !r.focused : false
+      }))
+    );
   };
 
   const getWeekStart = (date: Date) => {
@@ -352,7 +362,11 @@ const Calendar: React.FC = () => {
         days.push(
           <div
             key={`day-${day}`}
-            className={`mini-day ${isToday ? 'today' : ''} ${hasRemindersForDay ? 'has-reminders' : ''}`}
+            className={`mini-day 
+              ${isToday ? 'today' : ''} 
+              ${hasRemindersForDay ? 'has-reminders' : ''}
+              ${date.toDateString() === selectedDate.toDateString() ? 'selected' : ''}
+            `}
             onClick={() => handleDateSelect(date)}
           >
             {day}
@@ -431,25 +445,36 @@ const Calendar: React.FC = () => {
     
   };
 
+  const renderReminderTime = (reminder: Reminder) => {
+    console.log('Reminder:', reminder);
+    if (!reminder.hasTime) {
+      return null;
+    }
+    return (
+      <span className="reminder-time">
+        {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })}
+      </span>
+    );
+  };
+
   // Función para el calendario (MAX_VISIBLE_REMINDERS = 1)
   const renderDayReminders = (dayReminders: Reminder[], date: Date) => {
     const MAX_VISIBLE_REMINDERS = 1;
     const hasMoreReminders = dayReminders.length > MAX_VISIBLE_REMINDERS;
-
+  
     return (
       <div className="reminders-container">
         {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
           <div 
             key={`reminder-${idx}`}
-            className={`reminder-pill status-${reminder.statusId}`}
+            className={`reminder-pill status-${reminder.statusId} ${reminder.focused ? 'focused' : ''}`}
+            onClick={() => handleReminderClick(reminder)}
             title={reminder.description}
           >
-            <span className="reminder-time">
-              {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </span>
+            {renderReminderTime(reminder)}
             <span className="reminder-title">{reminder.title}</span>
           </div>
         ))}
@@ -472,21 +497,17 @@ const Calendar: React.FC = () => {
   const renderHeaderReminders = (dayReminders: Reminder[], date: Date) => {
     const MAX_VISIBLE_REMINDERS = 2;
     const hasMoreReminders = dayReminders.length > MAX_VISIBLE_REMINDERS;
-
+  
     return (
       <div className="reminders-container">
         {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
           <div 
             key={`reminder-${idx}`}
-            className={`reminder-pill status-${reminder.statusId}`}
+            className={`reminder-pill status-${reminder.statusId} ${reminder.focused ? 'focused' : ''}`}
+            onClick={() => handleReminderClick(reminder)}
             title={reminder.description}
           >
-            <span className="reminder-time">
-              {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </span>
+            {renderReminderTime(reminder)}
             <span className="reminder-title">{reminder.title}</span>
           </div>
         ))}
@@ -514,25 +535,54 @@ const Calendar: React.FC = () => {
         value={newReminder.title}
         onChange={e => setNewReminder(prev => ({ ...prev, title: e.target.value }))}
       />
+      
       <textarea
         placeholder="Descripción"
         value={newReminder.description}
         onChange={e => setNewReminder(prev => ({ ...prev, description: e.target.value }))}
       />
-      <input
-        type="date"
-        value={newReminder.date.toISOString().split('T')[0]}
-        onChange={e => setNewReminder(prev => ({ ...prev, date: new Date(e.target.value) }))}
-      />
-      <input
-        type="time"
-        value={newReminder.time}
-        onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
-      />
+      
+      <div className="date-time-container">
+        <div className="date-input">
+          <input
+            type="date"
+            value={formatDateForInput(selectedDate)}
+            onChange={e => {
+              const newDate = new Date(e.target.value);
+              handleDateSelect(newDate);
+            }}
+          />
+        </div>
+        
+        <div className="time-checkbox-container">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={newReminder.hasTime}
+              onChange={e => setNewReminder(prev => ({ 
+                ...prev, 
+                hasTime: e.target.checked,
+                time: e.target.checked ? prev.time || '00:00' : ''
+              }))}
+            />
+            Incluir hora
+          </label>
+          
+          {newReminder.hasTime && (
+            <input
+              type="time"
+              value={newReminder.time}
+              onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
+            />
+          )}
+        </div>
+      </div>
+      
       {renderStatusSelector()}
       <button onClick={handleCreateReminder}>Crear Recordatorio</button>
     </div>
   );
+  
 
   return (
     <div className="calendar-container">
