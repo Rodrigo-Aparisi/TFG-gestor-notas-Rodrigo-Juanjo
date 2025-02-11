@@ -4,16 +4,16 @@ import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-// Todas las rutas de cuenta requieren autenticación
+// Todas las rutas requieren autenticación
 router.use(authenticateToken);
 
-// Actualizar usuario
+// Rutas existentes
 router.put('/update', accountController.updateUser);
-
-// Obtener perfil
 router.get('/profile', accountController.getProfile);
-
-// Eliminar cuenta
 router.delete('/delete', accountController.deleteAccount);
+
+// Nuevas rutas para la configuración
+router.get('/settings', accountController.getUserSettings);
+router.put('/settings', accountController.updateUserSettings);
 
 export default router;

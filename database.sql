@@ -21,9 +21,9 @@ CREATE TABLE users (
 CREATE TABLE settings (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    theme VARCHAR(50) DEFAULT 'light',
+    theme VARCHAR(50) DEFAULT 'dark',
     notifications_enabled BOOLEAN DEFAULT TRUE,
-    language VARCHAR(10) DEFAULT 'en',
+    language VARCHAR(10) DEFAULT 'es',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
