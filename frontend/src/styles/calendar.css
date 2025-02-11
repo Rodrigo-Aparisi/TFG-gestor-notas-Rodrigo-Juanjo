@@ -291,7 +291,10 @@
   transition: all 0.2s ease;
   background-color: #363636;
   font-size: 1.4em;
-  min-height: 0;
+  min-height: 122px; /* Altura fija más compacta */
+  max-height: 122px;
+  padding: 8px;
+  gap: 4px;
 }
 
 .day:hover {
@@ -377,25 +380,27 @@
 .reminders-container {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 30px;
-  padding: 2px;
-  margin-top: 1px;
+  gap: 3px;
+  max-height: 25px;
+  padding: 3px;
+  margin-top: 2px;
   overflow: hidden;
   position: relative;
 }
 
 .reminder-pill {
-  background-color: #4a4a4a;
+  background-color: rgba(74, 74, 74, 0.9);
   border-radius: 4px;
-  padding: 1px 4px;
-  font-size: 0.6rem;
-  color: white;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 4px;
-  min-height: 16px;
-  line-height: 1.2;
+  gap: 6px;
+  min-height: 20px;
+  line-height: 1.4;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .reminder-pill:hover {
@@ -404,9 +409,11 @@
 
 .reminder-time {
   color: var(--dorado);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   white-space: nowrap;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .reminder-title {
@@ -414,7 +421,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  color: #fff;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .status-1 { /* Pendiente */
@@ -621,12 +630,14 @@
   color: var(--background-dark);
   border: none;
   border-radius: 4px;
-  padding: 1px 4px;
-  font-size: 0.7rem;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 2px;
+  margin-top: 3px;
   width: 100%;
   text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .show-more-reminders:hover {
