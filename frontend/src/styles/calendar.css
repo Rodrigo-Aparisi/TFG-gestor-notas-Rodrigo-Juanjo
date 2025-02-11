@@ -128,6 +128,9 @@
   max-height: none;
   overflow-y: auto;
   padding-right: 4px;
+  position: relative;
+  margin-top: 4px;
+  padding-top: 4px;
 }
 
 .week-navigator {
@@ -148,8 +151,9 @@
 .weekday-name {
   color: var(--dorado);
   text-transform: uppercase;
-  font-size: 0.9em;
-  margin-bottom: 4px;
+  font-size: 1em;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .weekday-number {
@@ -163,13 +167,14 @@
   width: 100%;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--dorado);
+  border-bottom: none;
   margin-bottom: 5px;
   padding-bottom: 5px;
   grid-template-columns: repeat(7, 1fr);
   background: #ffffff1a;
-  border-radius: 8px 8px 0 0;
+  border-radius: 8px;
   gap: 8px;
+  min-height: 155px;
 }
 
 .weekday-header-item {
@@ -178,7 +183,7 @@
   flex: 1;
   text-align: center;
   padding: 4px;
-  border-bottom: 1px solid var(--dorado);
+  border-bottom: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -186,9 +191,11 @@
   background-color: #363636;
   border-radius: 4px;
   font-size: 1.2em;
-  min-height: 120px;
   height: auto;
-  max-height: none;
+  position: relative; 
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+
 }
 
 .weekday-column {
@@ -205,6 +212,16 @@
 
 .weekday-header-item:last-child {
   border-right: none;
+}
+
+.weekday-header-item::after {
+  content: '';
+  position: absolute;
+  top: 27%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background-color: var(--dorado);
 }
 
 .main-content {
@@ -241,6 +258,9 @@
   margin: 0;
   flex: 1;
   min-width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .weekdays {
@@ -282,7 +302,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   cursor: pointer;
   border: 1px solid #eee;
   border-radius: 4px;
@@ -295,6 +315,7 @@
   max-height: 122px;
   padding: 8px;
   gap: 4px;
+  overflow: hidden;
 }
 
 .day:hover {
@@ -380,27 +401,33 @@
 .reminders-container {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  max-height: 25px;
   padding: 3px;
-  margin-top: 2px;
   overflow: hidden;
   position: relative;
+  width: 100%;
+  height: auto;
+  overflow-y: auto;
+  max-height: 80px;
 }
 
 .reminder-pill {
   background-color: rgba(74, 74, 74, 0.9);
   border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 0.75rem;
+  padding: 2px 4px;
+  font-size: 0.9rem;
   color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-height: 20px;
   line-height: 1.4;
   border: 1px solid rgba(255, 215, 0, 0.3);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  max-height: 20px;
+  justify-content: flex-start;
+  width: 100%;
+  overflow: hidden;
+  margin: 2px;
 }
 
 .reminder-pill:hover {
@@ -409,7 +436,7 @@
 
 .reminder-time {
   color: var(--dorado);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
   margin-bottom: 2px;
@@ -426,19 +453,22 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.status-1 { /* Pendiente */
+.reminder-pill.status-1 { /* Pendiente */
   border-left: 3px solid #ffd700;
+  background-color: rgba(255, 215, 0, 0.1);
 }
 
-.status-2 { /* Completado */
+.reminder-pill.status-2 { /* Completado */
   border-left: 3px solid #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
   opacity: 0.7;
 }
 
-.status-3 { /* Cancelado */
+.reminder-pill.status-3 { /* Cancelado */
   border-left: 3px solid #f44336;
-  text-decoration: line-through;
+  background-color: rgba(244, 67, 54, 0.1);
   opacity: 0.7;
+  text-decoration: line-through;
 }
 
 /* Estilizar scrollbar */
@@ -631,7 +661,7 @@
   border: none;
   border-radius: 4px;
   padding: 2px 6px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   margin-top: 3px;
@@ -809,6 +839,14 @@
   border: 1px solid var(--dorado);
 }
 
+.mini-day.selected {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  font-weight: bold;
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .mini-day.has-reminders {
   background: rgba(255, 215, 0, 0.2);
   font-weight: bold;
@@ -893,4 +931,75 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
+}
+
+.date-input {
+  flex: 1;
+  max-width: 35%;
+}
+
+.time-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dorado);
+  cursor: pointer;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.date-time-container {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+}
+
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-input-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ffffff;
+}
+
+.reminder-pill.focused {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 500px;
+  height: auto;
+  z-index: 1000;
+  background-color: var(--background-dark);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.reminder-pill.focused .reminder-title {
+  font-size: 1.2em;
+  white-space: normal;
+  margin-bottom: 10px;
+}
+
+.reminder-pill.focused .reminder-time {
+  font-size: 1em;
+  margin-bottom: 15px;
 }

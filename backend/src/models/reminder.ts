@@ -7,6 +7,11 @@ interface ReminderData {
   dateTime: Date;
   userId: string;
   statusId?: number;
+  statusName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  focused?: boolean;
+  hasTime: boolean;
 }
 
 interface ReminderConditions {
@@ -65,18 +70,16 @@ export class Reminder {
 
   static async create(data: ReminderData) {
     console.log('Datos para crear recordatorio:', data); // Debug
-
-    const dateTime = new Date(data.dateTime);
-
+  
     const query = `
       INSERT INTO reminders (
-        title,
-        description,
-        date_time,
-        user_id,
-        status_id
-      )
-      VALUES ($1, $2, $3, $4, $5)
+        title, 
+        description, 
+        date_time, 
+        user_id, 
+        status_id,
+        has_time
+      ) VALUES ($1, $2, $3, $4, $5, $6) 
       RETURNING 
         id,
         title,
@@ -84,31 +87,37 @@ export class Reminder {
         date_time as "dateTime",
         user_id as "userId",
         status_id as "statusId",
+        has_time as "hasTime",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
-    
+  
     try {
-      const result = await pool.query(query, [
+      // Crear un solo array de valores y usarlo en la consulta
+      const values = [
         data.title,
         data.description || '',
-        dateTime,
+        new Date(data.dateTime),
         data.userId,
-        data.statusId || 1
-      ]);
-
-      // Transformar la fecha a formato ISO
+        data.statusId || 1,
+        data.hasTime || false
+      ];
+  
+      const result = await pool.query(query, values);
+  
+      // Transformar la fecha a formato ISO y mantener el formato camelCase
       const reminder = {
         ...result.rows[0],
         dateTime: new Date(result.rows[0].dateTime).toISOString()
       };
-
+  
       return reminder;
     } catch (error) {
       console.error('Error in create:', error);
       throw error;
     }
   }
+  
 
   static async findOneAndUpdate(conditions: ReminderConditions, data: Partial<ReminderData>) {
     const query = `
@@ -182,45 +191,67 @@ export class Reminder {
         throw new Error('Se requieren fechas de inicio y fin');
       }
   
+      // Asegurarse de que las fechas sean válidas
+      const startDate = new Date(conditions.dateTime.$gte);
+      const endDate = new Date(conditions.dateTime.$lt);
+  
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Invalid time value');
+      }
+  
+      console.log('Fechas de búsqueda:', { startDate, endDate }); // Debug
+  
       const query = `
         SELECT 
           r.id,
           r.title,
           r.description,
           r.date_time as "dateTime",
+          r.has_time as "hasTime",
           r.user_id as "userId",
           r.status_id as "statusId",
-          rs.name as "statusName",
           r.created_at as "createdAt",
-          r.updated_at as "updatedAt"
+          r.updated_at as "updatedAt",
+          rs.name as "statusName"
         FROM reminders r
         LEFT JOIN reminder_status rs ON r.status_id = rs.id
-        WHERE r.user_id = $1::uuid
-        AND r.date_time >= $2 
-        AND r.date_time < $3 
+        WHERE r.user_id = $1
+        AND r.date_time >= $2
+        AND r.date_time < $3
         ORDER BY r.date_time ASC
       `;
   
-      const result = await pool.query(query, [
+      const values = [
         conditions.userId,
-        conditions.dateTime.$gte,
-        conditions.dateTime.$lt
-      ]);
+        startDate.toISOString(),
+        endDate.toISOString()
+      ];
   
-      return result.rows.map(row => ({
+      console.log('Ejecutando query con valores:', values); // Debug
+  
+      const result = await pool.query(query, values);
+  
+      // Transformar los resultados
+      const reminders = result.rows.map(row => ({
         ...row,
-        dateTime: new Date(row.dateTime).toISOString()
+        dateTime: new Date(row.dateTime).toISOString(),
+        hasTime: row.hasTime || false
       }));
   
+      console.log('Recordatorios encontrados:', reminders); // Debug
+  
+      return reminders;
+  
     } catch (error) {
-      // Convertir el error a un tipo conocido
+      console.error('Error en findWithStatus:', error);
       if (error instanceof Error) {
         throw error;
       } else {
         throw new Error('Error desconocido en la base de datos');
       }
     }
-  }  
+  }
+  
   
     
 }

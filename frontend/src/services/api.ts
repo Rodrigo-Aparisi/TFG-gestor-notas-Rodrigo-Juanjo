@@ -109,6 +109,7 @@ interface CreateReminderData {
   description: string;
   dateTime: Date;
   statusId: number;
+  hasTime: boolean;
 }
 
 export const calendarService = {
@@ -129,10 +130,14 @@ export const calendarService = {
 
   createReminder: async (data: CreateReminderData) => {
     try {
-      const response = await api.post('/reminders', {
+      const reminderData = {
         ...data,
-        dateTime: data.dateTime.toISOString()
-      });
+        dateTime: data.dateTime.toISOString(),
+        hasTime: data.hasTime
+      };
+      
+      console.log('Sending reminder data:', reminderData);
+      const response = await api.post('/reminders', reminderData);
       return response.data;
     } catch (error) {
       console.error('Error creating reminder:', error);

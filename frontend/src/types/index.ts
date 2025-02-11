@@ -23,12 +23,23 @@ export interface Reminder {
   id: UUID;
   title: string;
   description?: string;
-  dateTime: Date; // Cambiado de date_time a dateTime
-  userId: UUID; // Cambiado de user_id a userId
-  statusId: number; // Cambiado de status_id a statusId
+  dateTime: Date;
+  userId: UUID; 
+  statusId: number;
   statusName?: string;
-  createdAt: Date; // Cambiado de created_at a createdAt
-  updatedAt: Date; // Cambiado de updated_at a updatedAt
+  createdAt: Date;
+  updatedAt: Date;
+  focused?: boolean;
+  hasTime: boolean;
+}
+
+export interface NewReminder {
+  title: string;
+  description: string;
+  date: Date;
+  time: string;
+  statusId?: number;
+  hasTime: boolean;
 }
 
 export interface ReminderStatus {

@@ -27,10 +27,21 @@ CREATE TABLE notes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear índices
+-- Crear índices para notas
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_users_email ON users(email);
 
+-- Crear tabla de estados de recordatorios
+CREATE TABLE reminder_status (
+    id SMALLINT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL
+);
+
+-- Insertar estados básicos
+INSERT INTO reminder_status (id, name) VALUES
+    (1, 'pendiente'),
+    (2, 'completado'),
+    (3, 'cancelado');
 
 -- Crear tabla de recordatorios (reminders)
 CREATE TABLE reminders (
@@ -38,28 +49,14 @@ CREATE TABLE reminders (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     date_time TIMESTAMP NOT NULL,
+    has_time BOOLEAN DEFAULT false,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear tabla de estados de recordatorios (opcional, si quieres añadir estados como "pendiente", "completado", etc.)
-CREATE TABLE reminder_status (
-    id SMALLINT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
-);
-
--- Insertar estados básicos (opcional)
-INSERT INTO reminder_status (id, name) VALUES
-    (1, 'pendiente'),
-    (2, 'completado'),
-    (3, 'cancelado');
-
--- Agregar columna de estado a los recordatorios (opcional)
-ALTER TABLE reminders
-ADD COLUMN status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1;
-
--- Crear tabla de recordatorios recurrentes (opcional, si quieres permitir recordatorios que se repiten)
+-- Crear tabla de recordatorios recurrentes
 CREATE TABLE reminder_recurrence (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     reminder_id UUID REFERENCES reminders(id) ON DELETE CASCADE,
@@ -96,14 +93,16 @@ CREATE TRIGGER update_reminder_recurrence_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Crear vista para facilitar las consultas de recordatorios con sus estados (opcional)
+-- Crear vista para facilitar las consultas
 CREATE VIEW v_reminders AS
 SELECT 
     r.id,
     r.title,
     r.description,
     r.date_time,
+    r.has_time,
     r.user_id,
+    r.status_id,
     r.created_at,
     r.updated_at,
     rs.name as status,
@@ -114,7 +113,7 @@ FROM reminders r
 LEFT JOIN reminder_status rs ON r.status_id = rs.id
 LEFT JOIN reminder_recurrence rr ON r.id = rr.reminder_id;
 
--- Agregar permisos necesarios (ajustar según tus necesidades)
+-- Agregar permisos necesarios
 GRANT SELECT, INSERT, UPDATE, DELETE ON reminders TO postgres;
 GRANT SELECT ON reminder_status TO postgres;
 GRANT SELECT, INSERT, UPDATE, DELETE ON reminder_recurrence TO postgres;

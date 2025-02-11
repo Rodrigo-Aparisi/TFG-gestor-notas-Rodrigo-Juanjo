@@ -15,6 +15,11 @@ export const reminderController = {
         });
       }
   
+      console.log('Request params:', {
+        startDate: req.query.startDate,
+        endDate: req.query.endDate
+      });
+  
       const startDate = new Date(req.query.startDate as string);
       const endDate = new Date(req.query.endDate as string);
   
@@ -32,8 +37,15 @@ export const reminderController = {
         }
       });
   
-      res.json({ reminders });
+      // Transformar los recordatorios antes de enviarlos
+      const transformedReminders = reminders.map(reminder => ({
+        ...reminder,
+        hasTime: reminder.hasTime === true // Asegurarse de que sea booleano
+      }));
+  
+      res.json({ reminders: transformedReminders });
     } catch (error) {
+      console.error('Error completo:', error);
       const apiError: ApiError = {
         message: error instanceof Error ? error.message : 'Error desconocido',
         status: 500
@@ -44,7 +56,8 @@ export const reminderController = {
         details: apiError.message
       });
     }
-  },
+  }
+  ,
 
   async createReminder(req: Request, res: Response) {
     try {
@@ -53,29 +66,36 @@ export const reminderController = {
           error: 'Usuario no autenticado'
         });
       }
-
+  
       // Validar campos requeridos
       if (!req.body.title || !req.body.dateTime) {
         return res.status(400).json({
           error: 'El título y la fecha son requeridos'
         });
       }
-
+  
+      // Crear el objeto de datos con los tipos correctos
       const reminderData = {
         title: req.body.title,
         description: req.body.description || '',
         dateTime: new Date(req.body.dateTime),
         userId: req.user.id,
-        statusId: 1
+        statusId: req.body.statusId || 1,
+        hasTime: req.body.hasTime || false,
+        // Añadir los campos requeridos por la interfaz ReminderData
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
-
+  
       // Validar fecha válida
       if (isNaN(reminderData.dateTime.getTime())) {
         return res.status(400).json({
           error: 'Fecha inválida'
         });
       }
-
+  
+      console.log('Creando recordatorio con datos:', reminderData); // Debug
+  
       const reminder = await Reminder.create(reminderData);
       res.status(201).json({ reminder });
     } catch (error) {
@@ -89,7 +109,8 @@ export const reminderController = {
         details: apiError.message
       });
     }
-  },
+  }
+  ,
 
   async updateReminderStatus(req: Request, res: Response) {
     try {
