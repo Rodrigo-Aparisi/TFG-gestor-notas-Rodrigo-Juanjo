@@ -151,10 +151,12 @@ const Calendar: React.FC = () => {
       
       days.push(
         <div key={`prev-${i}`} className="day other-month">
-          <span className="weekday-label">
-            {date.toLocaleDateString('es-ES', { weekday: 'short' })}
-          </span>
-          <span className="day-number">{day}</span>
+          <div className="day-header">
+            <span className="weekday-label">
+              {date.toLocaleDateString('es-ES', { weekday: 'short' })}
+            </span>
+            <span className="day-number">{day}</span>
+          </div>
           {dayReminders.length > 0 && renderDayReminders(dayReminders, date)}
         </div>
       );
@@ -194,10 +196,12 @@ const Calendar: React.FC = () => {
     
       days.push(
         <div key={`next-${i}`} className="day other-month">
-          <span className="weekday-label">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][dayIndex]}
-          </span>
-          <span className="day-number">{i}</span>
+          <div className="day-header">
+            <span className="weekday-label">
+              {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][dayIndex]}
+            </span>
+            <span className="day-number">{i}</span>
+          </div>
           {dayReminders.length > 0 && renderDayReminders(dayReminders, nextMonthDate)}
         </div>
       );
