@@ -5,7 +5,10 @@ const api = axios.create({
 });
 
 interface UserSettings {
-  theme?: string;
+  theme?: 'light' | 'dark';
+  defaultPage?: 'notes' | 'calendar' | 'home';
+  defaultNoteSort?: 'date' | 'title' | 'lastModified';
+  confirmDelete?: boolean;
   notifications_enabled?: boolean;
   language?: string;
 }
@@ -25,7 +28,6 @@ interface UpdateResponse {
 export const accountService = {
   getUserSettings: async (userId: string): Promise<UserSettings> => {
     try {
-      // Cambiado para coincidir con la ruta del backend
       const response = await api.get('/account/settings');
       
       if (!response.data) {
@@ -40,6 +42,9 @@ export const accountService = {
         try {
           const defaultSettings: UserSettings = {
             theme: 'dark',
+            defaultPage: 'notes',
+            defaultNoteSort: 'date',
+            confirmDelete: true,
             notifications_enabled: true,
             language: 'es'
           };
@@ -48,11 +53,21 @@ export const accountService = {
           return newSettings;
         } catch (createError) {
           console.error('Error al crear configuración por defecto:', createError);
-          return { theme: 'dark' };
+          return { 
+            theme: 'dark',
+            defaultPage: 'notes',
+            defaultNoteSort: 'date',
+            confirmDelete: true
+          };
         }
       }
       
-      return { theme: 'dark' };
+      return { 
+        theme: 'dark',
+        defaultPage: 'notes',
+        defaultNoteSort: 'date',
+        confirmDelete: true
+      };
     }
   },
 
@@ -63,7 +78,6 @@ export const accountService = {
         throw new Error('No hay token de autenticación');
       }
 
-      // Cambiado para coincidir con la ruta del backend
       const response = await api.put('/account/settings', settings);
 
       if (!response.data) {
