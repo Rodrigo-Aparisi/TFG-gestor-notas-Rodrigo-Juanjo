@@ -100,25 +100,17 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const response = await authService.login(loginData);
-      if (response && response.token && response.user) {
-        try {
-          const userSettings = await accountService.getUserSettings(response.user.id);
-          const themeToApply = userSettings?.theme || "dark";
-          applyTheme(themeToApply);
-          navigate("/notes", { replace: true });
-        } catch (settingsError) {
-          console.error("Error al obtener la configuración:", settingsError);
-          // Si hay error al obtener la configuración, usar tema por defecto y continuar
-          applyTheme("dark");
-          navigate("/notes", { replace: true });
+        const response = await authService.login(loginData);
+        if (response && response.token && response.user) {
+            // Ya no intentamos obtener ni aplicar el tema aquí
+            navigate("/notes", { replace: true });
         }
-      }
     } catch (error: any) {
-      console.error("Error en el login:", error);
-      setError(error.message || "Error en el inicio de sesión");
+        console.error("Error en el login:", error);
+        setError(error.message || "Error en el inicio de sesión");
     }
-  };
+};
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
