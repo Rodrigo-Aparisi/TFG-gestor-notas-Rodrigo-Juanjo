@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState } from "../store";
 import { accountService } from "../services/accountService";
 import themeService from "../services/themeService";
+import { SettingsState, updateSettings } from "../store/slices/settingsSlice";
 import themeConfig from "../config/themeConfig.json";
 import {
   AiOutlineEye,
@@ -16,8 +17,10 @@ import "../styles/settings.css";
 type ThemeType = keyof typeof themeConfig.themes;
 
 const Settings = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
+  const reduxSettings = useSelector((state: RootState) => state.settings);
   const [theme, setTheme] = useState<ThemeType>("dark");
   const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -34,6 +37,14 @@ const Settings = () => {
       { key: "contrasena", label: "Contraseña" },
     ],
   };
+
+  const [settings, setSettings] = useState<SettingsState>({
+    theme: reduxSettings?.theme || 'dark',
+    defaultPage: reduxSettings?.defaultPage || 'notes',
+    defaultNoteSort: reduxSettings?.defaultNoteSort || 'date',
+    confirmDelete: reduxSettings?.confirmDelete ?? true
+  });
+  
 
   const [activeMainTab, setActiveMainTab] = useState<string>("general");
   const [activeSubTab, setActiveSubTab] = useState<string>("preferencias");
@@ -99,23 +110,86 @@ const Settings = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    const initializeSettings = async () => {
-      if (!user) {
-        navigate("/login");
-        return;
+  const handleSettingsChange = async (newSettings: Partial<typeof settings>) => {
+    try {
+      // Actualizar estado local
+      setSettings(prev => ({
+        ...prev,
+        ...newSettings
+      }));
+  
+      // Actualizar Redux
+      dispatch(updateSettings(newSettings));
+  
+      // Guardar en localStorage
+      const updatedSettings = {
+        ...settings,
+        ...newSettings
+      };
+      localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
+  
+      // Actualizar en el backend
+      if (user?.id) {
+        await accountService.updateUserSettings(user.id, newSettings);
       }
-      
-      try {
-        await loadTheme();
-        setIsLoaded(true);
-      } catch (error) {
-        console.error("Error initializing settings:", error);
-      }
-    };
+  
+      showMessage("Configuración actualizada correctamente", "success");
+    } catch (error) {
+      console.error("Error al actualizar la configuración:", error);
+      showMessage("Error al actualizar la configuración", "error");
+    }
+  };
+  
 
-    initializeSettings();
-  }, [user, navigate, loadTheme]);
+useEffect(() => {
+  const initializeSettings = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Cargar tema
+      await loadTheme();
+
+      // Cargar configuraciones
+      const savedSettings = localStorage.getItem('userSettings');
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings) as SettingsState;
+        setSettings(parsedSettings);
+        dispatch(updateSettings(parsedSettings));
+      } else if (user?.id) {
+        const userSettings = await accountService.getUserSettings(user.id);
+        if (userSettings) {
+          const settingsToSave: SettingsState = {
+            theme: userSettings.theme === 'light' ? 'light' : 'dark',
+            defaultPage: ['notes', 'calendar', 'home'].includes(userSettings.defaultPage as string) 
+              ? (userSettings.defaultPage as 'notes' | 'calendar' | 'home') 
+              : 'notes',
+            defaultNoteSort: ['date', 'title', 'lastModified'].includes(userSettings.defaultNoteSort as string)
+              ? (userSettings.defaultNoteSort as 'date' | 'title' | 'lastModified')
+              : 'date',
+            confirmDelete: Boolean(userSettings.confirmDelete)
+          };
+          setSettings(settingsToSave);
+          dispatch(updateSettings(settingsToSave));
+          localStorage.setItem('userSettings', JSON.stringify(settingsToSave));
+        }
+      }
+
+      setIsLoaded(true);
+    } catch (error) {
+      console.error("Error initializing settings:", error);
+    }
+  };
+
+  initializeSettings();
+}, [user, navigate, loadTheme, dispatch]);
+
+  
+  
+  
+  
 
   const handleMainTabClick = (tab: string) => {
     if (subMenus[tab]) {
@@ -300,6 +374,61 @@ const Settings = () => {
                 {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
               </button>
             </div>
+            <div className="behavior-settings">
+              <h4>Comportamiento</h4>
+              
+              <div className="setting-option">
+                <label>Página de inicio predeterminada</label>
+                <select 
+                  value={settings.defaultPage}
+                  onChange={(e) => handleSettingsChange({
+                    defaultPage: e.target.value as 'notes' | 'calendar' | 'home'
+                  })}
+                >
+                  <option value="notes">Notas</option>
+                  <option value="calendar">Calendario</option>
+                  <option value="home">Inicio</option>
+                </select>
+              </div>
+            <div className="setting-option">
+              <label>Ordenación predeterminada de notas</label>
+              <select
+                value={settings.defaultNoteSort}
+                onChange={(e) => handleSettingsChange({
+                  defaultNoteSort: e.target.value as 'date' | 'title' | 'lastModified'
+                })}
+              >
+                <option value="date">Fecha de creación</option>
+                <option value="title">Título</option>
+                <option value="lastModified">Última modificación</option>
+              </select>
+            </div>
+            <div className="setting-option">
+              <label className="toggle-label">
+                <span>Confirmar antes de eliminar</span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={settings.confirmDelete}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      confirmDelete: e.target.checked
+                    }))}
+                  />
+                  <span className="toggle-slider"></span>
+                </div>
+              </label>
+            </div>
+            <div className="settings-buttons">
+              <button
+                className="save-settings-button"
+                onClick={() => handleSettingsChange(settings)}
+                disabled={loading}
+              >
+                {loading ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
           </div>
           <div id="general-notificaciones">
             <h3>Notificaciones</h3>

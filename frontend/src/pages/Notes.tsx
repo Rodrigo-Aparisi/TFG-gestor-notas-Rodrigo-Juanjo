@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note } from '../types';
@@ -7,6 +9,7 @@ import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
 
 const Notes: React.FC = () => {
+  const defaultNoteSort = useSelector((state: RootState) => state.settings.defaultNoteSort);
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
@@ -20,7 +23,8 @@ const Notes: React.FC = () => {
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
-  };
+};
+
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -70,7 +74,6 @@ const Notes: React.FC = () => {
       }
     }
   }, [focusedNoteId]);
-  
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -100,6 +103,24 @@ const Notes: React.FC = () => {
       showFeedback(error.response?.data?.error || 'Error al crear la nota');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const sortNotes = (notesToSort: Note[]) => {
+    const sortedNotes = [...notesToSort];
+    
+    switch (defaultNoteSort) {
+      case 'title':
+        return sortedNotes.sort((a, b) => a.title.localeCompare(b.title));
+      case 'lastModified':
+        return sortedNotes.sort((a, b) => 
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+      case 'date':
+      default:
+        return sortedNotes.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
     }
   };
 
@@ -196,7 +217,6 @@ const Notes: React.FC = () => {
     setFocusedNoteId(id);
     document.body.style.overflow = 'hidden';
     
-    // Añade un pequeño delay para permitir que la transición CSS se complete
     setTimeout(() => {
       const textarea = document.querySelector('.note-card.focused textarea');
       if (textarea) {
@@ -204,7 +224,6 @@ const Notes: React.FC = () => {
       }
     }, 300);
   };
-  
 
   const handleBlur = () => {
     setFocusedNoteId(null);
@@ -217,7 +236,6 @@ const Notes: React.FC = () => {
       });
     }, 0);
   };
-  
 
   const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
@@ -232,34 +250,22 @@ const Notes: React.FC = () => {
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
     if (!element) return;
     
-    // Guarda el valor actual de scroll
     const scrollPos = element.scrollTop;
-    
-    // Restablece la altura
     element.style.height = 'auto';
     
-    // Calcula la nueva altura
     let newHeight;
     const parentNote = element.closest('.note-card');
     const isFocused = parentNote?.classList.contains('focused');
     
     if (isFocused) {
-      // Para notas focused, usa un porcentaje más alto del viewport
       newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.6);
     } else {
-      // Para notas normales, ajusta al contenido
       newHeight = element.scrollHeight;
     }
     
-    // Aplica la nueva altura
     element.style.height = `${newHeight}px`;
-    
-    // Restaura la posición del scroll
     element.scrollTop = scrollPos;
   };
-  
-  
-  
 
   return (
     <div className="notes-container">
@@ -270,26 +276,26 @@ const Notes: React.FC = () => {
         onClick={handleBlur}
       />
 
-          <div 
-              className="create-note"
-              onMouseEnter={e => {
-                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
-                  if (textarea) {
-                      textarea.style.opacity = '1';
-                      autoResizeTextarea(textarea);
-                      if (textarea.value.trim() === '') {
-                          textarea.setAttribute('placeholder', 'Contenido de la nota...');
-                      }
-                  }
-              }}
-              onMouseLeave={e => {
-                  const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
-                  if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
-                      textarea.style.opacity = '0';
-                      autoResizeTextarea(textarea);
-                    }
-              }}
-          >        
+      <div 
+        className="create-note"
+        onMouseEnter={e => {
+          const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+          if (textarea) {
+            textarea.style.opacity = '1';
+            autoResizeTextarea(textarea);
+            if (textarea.value.trim() === '') {
+              textarea.setAttribute('placeholder', 'Contenido de la nota...');
+            }
+          }
+        }}
+        onMouseLeave={e => {
+          const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+          if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
+            textarea.style.opacity = '0';
+            autoResizeTextarea(textarea);
+          }
+        }}
+      >        
         <input
           type="text"
           placeholder="Título"
@@ -298,44 +304,38 @@ const Notes: React.FC = () => {
           required
         />
         <textarea
-            placeholder="Contenido de la nota..."
-            value={newNote.content}
-            onChange={e => {
-                setNewNote(prev => ({ ...prev, content: e.target.value }));
-                const textarea = e.target as HTMLTextAreaElement;
-                textarea.style.opacity = '1';
-                
-                if (e.target.value.trim() === '') {
-                    textarea.setAttribute('placeholder', 'Contenido de la nota...');
-                    autoResizeTextarea(textarea);
-
-                } else {
-                    autoResizeTextarea(textarea);
-                }
-            }}
-            onBlur={e => {
-              const textarea = e.target as HTMLTextAreaElement;
-
-                if (newNote.content.trim() === '') {
-                    e.target.style.opacity = '0';
-                    autoResizeTextarea(textarea);
-                    e.target.setAttribute('placeholder', 'Contenido de la nota...');
-                } else {
-                  autoResizeTextarea(textarea);
-                }
-            }}
-            onFocus={e => {
-                e.target.style.opacity = '1';
-                e.target.style.height = 'auto';
-            }}
-
-            onClick={e => {
-
-            }}
-
-            onMouseLeave={e => {
-              const textarea = e.target as HTMLTextAreaElement;
+          placeholder="Contenido de la nota..."
+          value={newNote.content}
+          onChange={e => {
+            setNewNote(prev => ({ ...prev, content: e.target.value }));
+            const textarea = e.target as HTMLTextAreaElement;
+            textarea.style.opacity = '1';
+            
+            if (e.target.value.trim() === '') {
+              textarea.setAttribute('placeholder', 'Contenido de la nota...');
               autoResizeTextarea(textarea);
+            } else {
+              autoResizeTextarea(textarea);
+            }
+          }}
+          onBlur={e => {
+            const textarea = e.target as HTMLTextAreaElement;
+            if (newNote.content.trim() === '') {
+              e.target.style.opacity = '0';
+              autoResizeTextarea(textarea);
+              e.target.setAttribute('placeholder', 'Contenido de la nota...');
+            } else {
+              autoResizeTextarea(textarea);
+            }
+          }}
+          onFocus={e => {
+            e.target.style.opacity = '1';
+            e.target.style.height = 'auto';
+          }}
+          onClick={e => {}}
+          onMouseLeave={e => {
+            const textarea = e.target as HTMLTextAreaElement;
+            autoResizeTextarea(textarea);
           }}
         />
         <button 
@@ -352,7 +352,7 @@ const Notes: React.FC = () => {
         className="masonry-grid"
         columnClassName="masonry-grid_column"
       >
-        {notes.map(note => (
+        {sortNotes(notes).map(note => (
           <div 
             key={note.id}
             data-note-id={note.id}
@@ -388,7 +388,6 @@ const Notes: React.FC = () => {
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
-
             </div>
             <button 
               onClick={(e) => {
