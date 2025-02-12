@@ -1,3 +1,4 @@
+/* Estilos iniciales y de carga */
 .settings-container {
   display: flex;
   background-color: var(--background-black);
@@ -8,6 +9,14 @@
   color: var(--white);
   max-height: 80vh;
   overflow: hidden;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.settings-container.loaded {
+  visibility: visible;
+  opacity: 1;
 }
 
 .settings-sidebar {
@@ -172,15 +181,15 @@ section p {
   margin-bottom: 0.5rem;
   padding: 8px;
   border: 1px solid rgba(255, 198, 0, 0.2);
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
-.light-theme {
-  background-color: var(--white);
+.theme-preview.light-theme {
+  background-color: var(--white) !important;
 }
 
-.dark-theme {
-  background-color: var(--background-black);
+.theme-preview.dark-theme {
+  background-color: var(--background-black) !important;
 }
 
 .preview-header {
@@ -415,3 +424,15 @@ section p {
   transform: scale(0.98);
 }
 
+/* Estilos para inputs deshabilitados */
+.input-container input:disabled,
+.password-input-container input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Estilos para botones deshabilitados */
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

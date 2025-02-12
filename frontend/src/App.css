@@ -163,6 +163,12 @@ button:hover {
 .auth-container {
   position: relative;
   z-index: 1000;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.auth-container.loading {
+  opacity: 0;
 }
 
 /* User Menu */

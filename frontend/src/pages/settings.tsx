@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState } from "../store";
 import { accountService } from "../services/accountService";
+import themeService from "../services/themeService";
+import themeConfig from "../config/themeConfig.json";
 import {
   AiOutlineEye,
   AiOutlineEyeInvisible,
@@ -11,11 +13,14 @@ import {
 } from "react-icons/ai";
 import "../styles/settings.css";
 
+type ThemeType = keyof typeof themeConfig.themes;
+
 const Settings = () => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
-  const [theme, setTheme] = useState<string>("dark"); // Valor por defecto
+  const [theme, setTheme] = useState<ThemeType>("dark");
   const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Menú lateral y tabs
   const subMenus: Record<string, { key: string; label: string }[]> = {
@@ -61,45 +66,57 @@ const Settings = () => {
     confirmNewPassword: "",
   });
 
-  // Función para aplicar el tema en el documento
-  const applyTheme = useCallback((selectedTheme: string) => {
-    if (selectedTheme === "light") {
-      document.body.classList.add("light-theme");
-      document.body.classList.remove("dark-theme");
-    } else {
-      document.body.classList.add("dark-theme");
-      document.body.classList.remove("light-theme");
-    }
-  }, []);
-
   // Carga la configuración del tema desde la BBDD
   const loadTheme = useCallback(async () => {
     try {
       if (user?.id) {
+        const savedTheme = localStorage.getItem('userTheme') as ThemeType;
+        if (savedTheme && savedTheme in themeConfig.themes) {
+          setTheme(savedTheme);
+          themeService.setTheme(savedTheme);
+        }
+
         const userSettings = await accountService.getUserSettings(user.id);
-        const initialTheme = userSettings?.theme || "dark";
-        setTheme(initialTheme);
-        applyTheme(initialTheme);
+        const initialTheme = (userSettings?.theme as ThemeType) || "dark";
+        
+        if (initialTheme in themeConfig.themes) {
+          setTheme(initialTheme);
+          themeService.setTheme(initialTheme);
+          localStorage.setItem('userTheme', initialTheme);
+        }
       } else {
-        setTheme("dark");
-        applyTheme("dark");
+        const defaultTheme: ThemeType = "dark";
+        setTheme(defaultTheme);
+        themeService.setTheme(defaultTheme);
+        localStorage.setItem('userTheme', defaultTheme);
       }
     } catch (error) {
       console.error("Error al cargar configuración:", error);
-      setTheme("dark");
-      applyTheme("dark");
+      const defaultTheme: ThemeType = "dark";
+      setTheme(defaultTheme);
+      themeService.setTheme(defaultTheme);
+      localStorage.setItem('userTheme', defaultTheme);
     }
-  }, [user, applyTheme]);
+  }, [user]);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    loadTheme();
+    const initializeSettings = async () => {
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+      
+      try {
+        await loadTheme();
+        setIsLoaded(true);
+      } catch (error) {
+        console.error("Error initializing settings:", error);
+      }
+    };
+
+    initializeSettings();
   }, [user, navigate, loadTheme]);
 
-  // Handlers para el menú lateral y navegación entre secciones
   const handleMainTabClick = (tab: string) => {
     if (subMenus[tab]) {
       setExpandedMenu(expandedMenu === tab ? null : tab);
@@ -150,7 +167,6 @@ const Settings = () => {
       const response = await accountService.updateUser(userData);
 
       if (response.user) {
-        // Si se actualiza el email o la contraseña, se requerirá que el usuario inicie sesión nuevamente.
         const requiresRelogin = userData.email !== user?.email || userData.newPassword;
         if (requiresRelogin) {
           showMessage(
@@ -183,15 +199,15 @@ const Settings = () => {
     }
   };
 
-  // Actualiza y guarda el tema en la BBDD
-  const handleThemeChange = async (newTheme: string) => {
+  const handleThemeChange = async (newTheme: ThemeType) => {
     if (!user?.id) return;
 
     setIsSavingTheme(true);
     try {
       setTheme(newTheme);
-      applyTheme(newTheme);
+      themeService.setTheme(newTheme);
       await accountService.updateUserSettings(user.id, { theme: newTheme });
+      localStorage.setItem('userTheme', newTheme);
       showMessage("Tema actualizado correctamente", "success");
     } catch (error) {
       console.error("Error al actualizar el tema:", error);
@@ -202,7 +218,8 @@ const Settings = () => {
   };
 
   return (
-    <div className="settings-container">
+    <div className={`settings-container ${isLoaded ? 'loaded' : ''}`}>
+      {/* Resto del JSX igual que antes */}
       <div className="settings-sidebar">
         {[
           { key: "general", label: "General" },
