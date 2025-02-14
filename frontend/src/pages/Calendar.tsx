@@ -9,6 +9,7 @@ const Calendar: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<number>(1);
   const [expandedDay, setExpandedDay] = useState<Date | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
+  const [focusedReminder, setFocusedReminder] = useState<Reminder | null>(null);
   const [newReminder, setNewReminder] = useState<NewReminder>({
     title: '',
     description: '',
@@ -108,6 +109,13 @@ const Calendar: React.FC = () => {
     </div>
   );
   
+  useEffect(() => {
+    return () => {
+      if (focusedReminder) {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [focusedReminder]);
   
 
 
@@ -303,14 +311,15 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const handleReminderClick = (reminder: Reminder) => {
-    // Toggle el estado focused
-    setReminders(prevReminders => 
-      prevReminders.map(r => ({
-        ...r,
-        focused: r.id === reminder.id ? !r.focused : false
-      }))
-    );
+  const handleReminderClick = (reminder: Reminder, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFocusedReminder(reminder);
+    document.body.style.overflow = 'hidden';
+  };
+  
+  const handleCloseReminder = () => {
+    setFocusedReminder(null);
+    document.body.style.overflow = '';
   };
 
   const getWeekStart = (date: Date) => {
@@ -469,15 +478,22 @@ const Calendar: React.FC = () => {
       <div className="reminders-container">
         {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
           <div 
-            key={`reminder-${idx}`}
-            className={`reminder-pill status-${reminder.statusId} ${reminder.focused ? 'focused' : ''}`}
-            onClick={() => handleReminderClick(reminder)}
-            title={reminder.description}
+            key={`reminder-${reminder.id}-${idx}`}
+            className={`reminder-pill status-${reminder.statusId} ${
+              focusedReminder?.id === reminder.id ? 'focused' : ''
+            }`}
+            onClick={(e) => handleReminderClick(reminder, e)}
           >
             {renderReminderTime(reminder)}
             <span className="reminder-title">{reminder.title}</span>
+            {focusedReminder?.id === reminder.id && (
+              <div className="reminder-description">
+                {reminder.description}
+              </div>
+            )}
           </div>
         ))}
+  
         {hasMoreReminders && (
           <button 
             className="show-more-reminders"
@@ -492,6 +508,8 @@ const Calendar: React.FC = () => {
       </div>
     );
   };
+  
+  
 
   // Función para el header (MAX_VISIBLE_REMINDERS = 2)
   const renderHeaderReminders = (dayReminders: Reminder[], date: Date) => {
@@ -499,32 +517,47 @@ const Calendar: React.FC = () => {
     const hasMoreReminders = dayReminders.length > MAX_VISIBLE_REMINDERS;
   
     return (
-      <div className="reminders-container">
-        {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
-          <div 
-            key={`reminder-${idx}`}
-            className={`reminder-pill status-${reminder.statusId} ${reminder.focused ? 'focused' : ''}`}
-            onClick={() => handleReminderClick(reminder)}
-            title={reminder.description}
-          >
-            {renderReminderTime(reminder)}
-            <span className="reminder-title">{reminder.title}</span>
-          </div>
-        ))}
-        {hasMoreReminders && (
-          <button 
-            className="show-more-reminders"
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpandedDay(date);
-            }}
-          >
-            +{dayReminders.length - MAX_VISIBLE_REMINDERS} más
-          </button>
-        )}
-      </div>
+      <>
+        <div 
+          className={`reminder-overlay ${focusedReminder ? 'active' : ''}`}
+          onClick={handleCloseReminder}
+        />
+  
+        <div className="reminders-container">
+          {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
+            <div 
+              key={`reminder-${idx}`}
+              className={`reminder-pill status-${reminder.statusId} ${
+                focusedReminder?.id === reminder.id ? 'focused' : ''
+              }`}
+              onClick={(e) => handleReminderClick(reminder, e)}
+            >
+              {renderReminderTime(reminder)}
+              <span className="reminder-title">{reminder.title}</span>
+              {focusedReminder?.id === reminder.id && (
+                <div className="reminder-description">
+                  {reminder.description}
+                </div>
+              )}
+            </div>
+          ))}
+  
+          {hasMoreReminders && (
+            <button 
+              className="show-more-reminders"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpandedDay(date);
+              }}
+            >
+              +{dayReminders.length - MAX_VISIBLE_REMINDERS} más
+            </button>
+          )}
+        </div>
+      </>
     );
   };
+  
 
 
   const renderReminderForm = () => (
