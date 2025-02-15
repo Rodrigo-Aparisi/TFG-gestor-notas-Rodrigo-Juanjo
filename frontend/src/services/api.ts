@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User } from '../types';
-import { Reminder, ReminderRecurrence } from '../types';
+import { User, Reminder, ReminderRecurrence } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -141,6 +140,26 @@ export const calendarService = {
       return response.data;
     } catch (error) {
       console.error('Error creating reminder:', error);
+      throw error;
+    }
+  },
+
+  updateReminderStatus: async (id: string, statusId: number) => {
+    try {
+      const response = await api.put(`/reminders/${id}/status`, { statusId });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating reminder status:', error);
+      throw error;
+    }
+  },
+
+  updateReminder: async (id: string, data: Partial<Reminder>) => {
+    try {
+      const response = await api.put(`/reminders/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating reminder:', error);
       throw error;
     }
   }

@@ -563,7 +563,6 @@
   -webkit-appearance: none;
   appearance: none;
   color-scheme: dark;
-
 }
 
 .reminder-form input[type="date"]::-webkit-calendar-picker-indicator,
@@ -604,13 +603,6 @@
 .reminder-form input::-ms-input-placeholder,
 .reminder-form textarea::-ms-input-placeholder {
   color: rgba(255, 255, 255, 0.7);
-}
-
-.reminder-form input[type="date"],
-.reminder-form input[type="time"] {
-  border: 1px solid #eee;
-  border-radius: 4px;
-  background: #f8f9fa;
 }
 
 .reminder-form button {
@@ -725,11 +717,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(5px);
 }
 
 .reminder-popup {
@@ -1098,4 +1091,236 @@
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
+}
+
+
+.reminder-card.focused {
+  background: var(--background-dark);
+  border: 1px solid var(--dorado);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  padding: 30px;
+  width: min(500px, 90vw);
+  max-height: 90vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reminder-card.focused h3 {
+  color: var(--dorado);
+  font-size: 1.5em;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.reminder-card.focused p {
+  font-size: 1.2em;
+  color: #ffffff99;
+  line-height: 1.6;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.reminder-card.focused .edit-button {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.reminder-card.focused .reminder-popup-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.reminder-popup-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Estilos para los inputs en el popup */
+.reminder-card.focused input,
+.reminder-card.focused textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.reminder-card.focused input {
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.reminder-card.focused textarea {
+  min-height: 150px;
+  resize: none;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.reminder-card.focused input:focus,
+.reminder-card.focused textarea:focus {
+  outline: none;
+  border-color: var(--dorado);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+/* Estilos para los botones */
+.reminder-popup-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.reminder-popup-actions button:first-child {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+}
+
+.reminder-popup-actions button:last-child {
+  background: transparent;
+  color: var(--dorado);
+  border: 1px solid var(--dorado);
+}
+
+.reminder-popup-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Placeholders */
+.reminder-card.focused input::placeholder,
+.reminder-card.focused textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Estilos para el modo visualización */
+.reminder-view-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: calc(90vh - 60px);
+  overflow-y: auto;
+}
+
+.reminder-view-content h3 {
+  color: var(--dorado);
+  font-size: 1.8em;
+  text-align: center;
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 10px;
+  border-bottom: 1px solid var(--dorado);
+}
+
+.reminder-view-content .reminder-description {
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  padding: 15px;
+  color: #ffffff;
+  line-height: 1.6;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.reminder-view-content .edit-button {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 200px;
+  margin-top: 10px;
+}
+
+.reminder-view-content .edit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+/* Estilos para el modo edición */
+.reminder-edit-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reminder-edit-content input,
+.reminder-edit-content textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.reminder-edit-content input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.reminder-edit-content textarea {
+  width: 100%;
+  min-height: 100px;
+  max-height: calc(70vh - 200px);
+  resize: vertical;
+  padding: 12px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.reminder-edit-content textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reminder-edit-content textarea::-webkit-scrollbar-track {
+  background: rgba(54, 54, 54, 0.8);
+  border-radius: 4px;
+}
+
+.reminder-edit-content textarea::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
 }
