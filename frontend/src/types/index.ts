@@ -81,3 +81,8 @@ export interface UpdateReminderData {
   date_time?: Date;
   status_id?: number;
 }
+
+export interface EditingReminder {
+  title: string;
+  description: string;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { calendarService } from '../services/api';
-import { Reminder, NewReminder } from '../types';
+import { Reminder, NewReminder, EditingReminder } from '../types';
 import '../styles/calendar.css';
 
 const Calendar: React.FC = () => {
@@ -10,6 +10,8 @@ const Calendar: React.FC = () => {
   const [expandedDay, setExpandedDay] = useState<Date | null>(null);
   const [showFullCalendar, setShowFullCalendar] = useState(false);
   const [focusedReminder, setFocusedReminder] = useState<Reminder | null>(null);
+  const [editingReminder, setEditingReminder] = useState<EditingReminder | null>(null);
+
   const [newReminder, setNewReminder] = useState<NewReminder>({
     title: '',
     description: '',
@@ -116,6 +118,17 @@ const Calendar: React.FC = () => {
       }
     };
   }, [focusedReminder]);
+  
+  useEffect(() => {
+    if (editingReminder) {
+      const textarea = document.querySelector('.reminder-edit-content textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      }
+    }
+  }, [editingReminder]);
+  
   
 
 
@@ -316,6 +329,39 @@ const Calendar: React.FC = () => {
     setFocusedReminder(reminder);
     document.body.style.overflow = 'hidden';
   };
+
+  const handleSaveReminder = async () => {
+    if (!focusedReminder || !editingReminder) return;
+    
+    try {
+      const updatePayload: Partial<Reminder> = {
+        title: editingReminder.title,
+        description: editingReminder.description
+      };
+  
+      const response = await calendarService.updateReminder(
+        focusedReminder.id,
+        updatePayload
+      );
+  
+      if (response?.reminder) {
+        setReminders(prev => 
+          prev.map(reminder => 
+            reminder.id === focusedReminder.id ? response.reminder : reminder
+          )
+        );
+      }
+      
+      setFocusedReminder(null);
+      setEditingReminder(null);
+      document.body.style.overflow = '';
+    } catch (error) {
+      console.error('Error al actualizar recordatorio:', error);
+    }
+  };
+  
+  
+
   
   const handleCloseReminder = () => {
     setFocusedReminder(null);
@@ -468,6 +514,72 @@ const Calendar: React.FC = () => {
       </span>
     );
   };
+
+  const renderFocusedReminder = () => {
+    if (!focusedReminder) return null;
+    
+    return (
+      <div className="reminder-popup-overlay" onClick={() => setFocusedReminder(null)}>
+        <div 
+          className={`reminder-card focused status-${focusedReminder.statusId}`}
+          onClick={e => e.stopPropagation()}
+        >
+          {!editingReminder ? (
+            // Modo visualización (se mostrará primero)
+            <div className="reminder-view-content">
+              <h3>{focusedReminder.title}</h3>
+              <div className="reminder-description">
+                {focusedReminder.description || 'Sin descripción'}
+              </div>
+              <button 
+                className="edit-button"
+                onClick={() => 
+                  setEditingReminder({
+                    title: focusedReminder.title,
+                    description: focusedReminder.description ?? ''
+                  })
+                }
+              >
+                Editar
+              </button>
+            </div>
+          ) : (
+            // Modo edición (se mostrará solo al hacer clic en "Editar")
+            <div className="reminder-edit-content">
+              <input
+                type="text"
+                value={editingReminder.title}
+                onChange={e => 
+                  setEditingReminder(prev => 
+                    prev ? { ...prev, title: e.target.value } : null
+                  )
+                }
+                placeholder="Título del recordatorio"
+              />
+              <textarea
+                value={editingReminder.description ?? ''}
+                onChange={e => 
+                  setEditingReminder(prev => 
+                    prev ? { ...prev, description: e.target.value } : null
+                  )
+                }
+                placeholder="Descripción del recordatorio"
+              />
+              <div className="reminder-popup-actions">
+                <button onClick={handleSaveReminder}>Guardar</button>
+                <button onClick={() => setEditingReminder(null)}>Cancelar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+  
+  
+  
+
 
   // Función para el calendario (MAX_VISIBLE_REMINDERS = 1)
   const renderDayReminders = (dayReminders: Reminder[], date: Date) => {
@@ -760,6 +872,7 @@ const Calendar: React.FC = () => {
           onClose={() => setExpandedDay(null)}
         />
       )}
+      {focusedReminder && renderFocusedReminder()}
     </div>
   );
   
