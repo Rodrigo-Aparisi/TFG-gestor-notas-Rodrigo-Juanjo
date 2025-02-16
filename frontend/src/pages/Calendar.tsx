@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { calendarService } from '../services/api';
-import { Reminder, NewReminder, EditingReminder } from '../types';
+import { Reminder, NewReminder, EditingReminder, UpdateReminderData } from '../types';
 import '../styles/calendar.css';
 
 const Calendar: React.FC = () => {
@@ -11,6 +11,7 @@ const Calendar: React.FC = () => {
   const [showFullCalendar, setShowFullCalendar] = useState(false);
   const [focusedReminder, setFocusedReminder] = useState<Reminder | null>(null);
   const [editingReminder, setEditingReminder] = useState<EditingReminder | null>(null);
+  const [editingStatus, setEditingStatus] = useState<number>(focusedReminder?.statusId || 1);
 
   const [newReminder, setNewReminder] = useState<NewReminder>({
     title: '',
@@ -77,6 +78,22 @@ const Calendar: React.FC = () => {
   
     loadReminders();
   }, [currentMonth, selectedDate]); // Mantener ambas dependencias
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+  
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
   
   const ReminderPopup = ({ date, reminders, onClose }: { 
     date: Date, 
@@ -327,6 +344,7 @@ const Calendar: React.FC = () => {
   const handleReminderClick = (reminder: Reminder, e: React.MouseEvent) => {
     e.stopPropagation();
     setFocusedReminder(reminder);
+    setEditingReminder(null);
     document.body.style.overflow = 'hidden';
   };
 
@@ -334,37 +352,80 @@ const Calendar: React.FC = () => {
     if (!focusedReminder || !editingReminder) return;
     
     try {
-      const updatePayload: Partial<Reminder> = {
-        title: editingReminder.title,
-        description: editingReminder.description
-      };
-  
-      const response = await calendarService.updateReminder(
-        focusedReminder.id,
-        updatePayload
-      );
-  
+        console.log('Estado actual del recordatorio:', {
+            focusedReminder,
+            editingReminder,
+            editingStatus
+        });
+
+        const updatePayload: UpdateReminderData = {
+            title: editingReminder.title,
+            description: editingReminder.description,
+            date_time: editingReminder.dateTime.toISOString(),
+            status_id: editingStatus, // Usar el estado de edición
+            has_time: editingReminder.hasTime // Asegurarse de enviar hasTime
+        };
+
+        console.log('Enviando actualización:', updatePayload);
+
+        const response = await calendarService.updateReminder(
+            focusedReminder.id,
+            updatePayload
+        );
+
+        console.log('Respuesta recibida:', response);
+
       if (response?.reminder) {
+        // Actualizar el estado local
         setReminders(prev => 
           prev.map(reminder => 
-            reminder.id === focusedReminder.id ? response.reminder : reminder
+            reminder.id === focusedReminder.id 
+              ? {
+                  ...response.reminder,
+                  dateTime: new Date(response.reminder.date_time),
+                  statusId: response.reminder.status_id,
+                  hasTime: response.reminder.has_time
+                }
+              : reminder
           )
         );
+
+        // Recargar recordatorios
+        const startDate = new Date(currentMonth);
+        startDate.setDate(1);
+        startDate.setDate(startDate.getDate() - 7);
+        
+        const endDate = new Date(currentMonth);
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0);
+        endDate.setDate(endDate.getDate() + 7);
+
+        const updatedResponse = await calendarService.getReminders({
+          startDate,
+          endDate
+        });
+
+        if (updatedResponse?.reminders) {
+          setReminders(updatedResponse.reminders.map((r: Reminder) => ({
+            ...r,
+            dateTime: new Date(r.dateTime),
+            statusId: r.statusId,
+            hasTime: r.hasTime
+          })));
+        }
+
+        setEditingReminder(null);
+        setFocusedReminder(null);
+        document.body.style.overflow = '';
       }
-      
-      setFocusedReminder(null);
-      setEditingReminder(null);
-      document.body.style.overflow = '';
     } catch (error) {
       console.error('Error al actualizar recordatorio:', error);
     }
   };
-  
-  
 
-  
   const handleCloseReminder = () => {
     setFocusedReminder(null);
+    setEditingReminder(null);
     document.body.style.overflow = '';
   };
 
@@ -519,52 +580,132 @@ const Calendar: React.FC = () => {
     if (!focusedReminder) return null;
     
     return (
-      <div className="reminder-popup-overlay" onClick={() => setFocusedReminder(null)}>
+      <div className="reminder-popup-overlay" onClick={() => {
+        setFocusedReminder(null);
+        setEditingReminder(null);
+        document.body.style.overflow = '';
+      }}>
         <div 
           className={`reminder-card focused status-${focusedReminder.statusId}`}
           onClick={e => e.stopPropagation()}
         >
           {!editingReminder ? (
-            // Modo visualización (se mostrará primero)
+            // Modo visualización
             <div className="reminder-view-content">
               <h3>{focusedReminder.title}</h3>
+              <div className="reminder-datetime">
+                <div className="reminder-date">
+                  {new Date(focusedReminder.dateTime).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </div>
+                {focusedReminder.hasTime && (
+                  <div className="reminder-time">
+                    {new Date(focusedReminder.dateTime).toLocaleTimeString('es-ES', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    })}
+                  </div>
+                )}
+              </div>
               <div className="reminder-description">
                 {focusedReminder.description || 'Sin descripción'}
               </div>
               <button 
                 className="edit-button"
-                onClick={() => 
+                onClick={() => {
+                  setEditingStatus(focusedReminder.statusId);
                   setEditingReminder({
                     title: focusedReminder.title,
-                    description: focusedReminder.description ?? ''
-                  })
-                }
+                    description: focusedReminder.description ?? '',
+                    dateTime: new Date(focusedReminder.dateTime),
+                    hasTime: focusedReminder.hasTime
+                  });
+                }}
               >
                 Editar
               </button>
             </div>
           ) : (
-            // Modo edición (se mostrará solo al hacer clic en "Editar")
+            // Modo edición
             <div className="reminder-edit-content">
-              <input
-                type="text"
-                value={editingReminder.title}
-                onChange={e => 
-                  setEditingReminder(prev => 
-                    prev ? { ...prev, title: e.target.value } : null
-                  )
-                }
-                placeholder="Título del recordatorio"
-              />
-              <textarea
-                value={editingReminder.description ?? ''}
-                onChange={e => 
-                  setEditingReminder(prev => 
-                    prev ? { ...prev, description: e.target.value } : null
-                  )
-                }
-                placeholder="Descripción del recordatorio"
-              />
+            <input
+              type="text"
+              value={editingReminder.title}
+              onChange={e => 
+                setEditingReminder(prev => 
+                  prev ? { ...prev, title: e.target.value } : null
+                )
+              }
+              placeholder="Título del recordatorio"
+            />
+            <textarea
+              value={editingReminder.description}
+              onChange={e => 
+                setEditingReminder(prev => 
+                  prev ? { ...prev, description: e.target.value } : null
+                )
+              }
+              placeholder="Descripción del recordatorio"
+            />
+              <div className="date-time-container">
+                <input
+                  type="date"
+                  value={formatDateForInput(editingReminder.dateTime)}
+                  onChange={e => {
+                    const newDate = new Date(e.target.value);
+                    setEditingReminder(prev => {
+                      if (!prev) return null;
+                      const updatedDateTime = new Date(prev.dateTime);
+                      updatedDateTime.setFullYear(newDate.getFullYear());
+                      updatedDateTime.setMonth(newDate.getMonth());
+                      updatedDateTime.setDate(newDate.getDate());
+                      return { ...prev, dateTime: updatedDateTime };
+                    });
+                  }}
+                />
+                <div className="time-input-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={editingReminder.hasTime}
+                      onChange={e => 
+                        setEditingReminder(prev => 
+                          prev ? { ...prev, hasTime: e.target.checked } : null
+                        )
+                      }
+                    />
+                    Incluir hora
+                  </label>
+                  {editingReminder.hasTime && (
+                    <input
+                      type="time"
+                      value={editingReminder.dateTime.toTimeString().slice(0, 5)}
+                      onChange={e => {
+                        const [hours, minutes] = e.target.value.split(':');
+                        setEditingReminder(prev => {
+                          if (!prev) return null;
+                          const updatedDateTime = new Date(prev.dateTime);
+                          updatedDateTime.setHours(parseInt(hours), parseInt(minutes));
+                          return { ...prev, dateTime: updatedDateTime };
+                        });
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+              <select
+                  value={editingStatus}
+                  onChange={(e) => setEditingStatus(Number(e.target.value))}
+                  className="status-selector"
+                >
+                  <option value={1}>Pendiente</option>
+                  <option value={2}>Completado</option>
+                  <option value={3}>Cancelado</option>
+                </select>
               <div className="reminder-popup-actions">
                 <button onClick={handleSaveReminder}>Guardar</button>
                 <button onClick={() => setEditingReminder(null)}>Cancelar</button>
@@ -575,6 +716,7 @@ const Calendar: React.FC = () => {
       </div>
     );
   };
+  
   
   
   
