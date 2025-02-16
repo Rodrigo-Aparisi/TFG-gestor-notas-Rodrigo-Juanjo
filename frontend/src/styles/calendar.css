@@ -439,6 +439,10 @@
   white-space: nowrap;
   margin-bottom: 2px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
 }
 
 .reminder-title {
@@ -550,23 +554,26 @@
 }
 
 .reminder-form input[type="date"],
-.reminder-form input[type="time"] {
+.reminder-form input[type="time"],
+.reminder-edit-content input[type="date"],
+.reminder-edit-content input[type="time"] {
   width: 100%;
   padding: 10px;
   border-radius: 4px;
   border: 1px solid rgba(255, 215, 0, 0.3);
-  background: rgba(54, 54, 54, 0.95);
-  color: #FFD700;
+  background: rgba(54, 54, 54, 0.95) !important;
+  color: var(--dorado);
   font-family: inherit;
   height: 40px;
-  background-color: rgba(54, 54, 54, 0.95) !important;
   -webkit-appearance: none;
   appearance: none;
   color-scheme: dark;
 }
 
 .reminder-form input[type="date"]::-webkit-calendar-picker-indicator,
-.reminder-form input[type="time"]::-webkit-calendar-picker-indicator {
+.reminder-form input[type="time"]::-webkit-calendar-picker-indicator,
+.reminder-edit-content input[type="date"]::-webkit-calendar-picker-indicator,
+.reminder-edit-content input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1) brightness(0.8) sepia(100%) saturate(10000%) hue-rotate(0deg);
   opacity: 0.7;
   cursor: pointer;
@@ -717,12 +724,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(1px);
 }
 
 .reminder-popup {
@@ -1037,51 +1044,6 @@
   visibility: visible;
 }
 
-.reminder-pill.focused {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(800px, 90vw);
-  height: auto;
-  max-height: 90vh;
-  z-index: 1000;
-  background: var(--background-dark);
-  padding: 40px;
-  border-radius: 8px;
-  border: 1px solid var(--dorado);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow: auto;
-  animation: focusIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reminder-pill.focused .reminder-time {
-  font-size: 1.5em;
-  color: var(--dorado);
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.reminder-pill.focused .reminder-title {
-  font-size: 1.8em;
-  text-align: center;
-  color: #ffffff;
-  margin-bottom: 20px;
-  white-space: normal;
-}
-
-.reminder-pill.focused .reminder-description {
-  font-size: 1.2em;
-  color: #ffffff99;
-  line-height: 1.6;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
 @keyframes focusIn {
   from {
     opacity: 0;
@@ -1112,7 +1074,7 @@
   color: var(--dorado);
   font-size: 1.5em;
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 5px;
 }
 
 .reminder-card.focused p {
@@ -1323,4 +1285,62 @@
 .reminder-edit-content textarea::-webkit-scrollbar-thumb {
   background: var(--dorado);
   border-radius: 4px;
+}
+
+.reminder-datetime {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.reminder-date {
+  padding: 5px 10px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+}
+
+.reminder-date,
+.reminder-time {
+  padding: 5px 10px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  color: var(--dorado);
+}
+
+/* Estilo para el selector de estado */
+.status-selector {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: var(--dorado);
+  height: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.status-selector option {
+  background: #363636;
+  color: var(--dorado);
+}
+
+/* Contenedor para fecha y hora */
+.datetime-inputs {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+  align-items: center;
+}
+
+/* Para los placeholders y textos de entrada */
+.reminder-form input::placeholder,
+.reminder-form textarea::placeholder,
+.reminder-edit-content input::placeholder,
+.reminder-edit-content textarea::placeholder {
+  color: rgba(255, 215, 0, 0.7);
 }

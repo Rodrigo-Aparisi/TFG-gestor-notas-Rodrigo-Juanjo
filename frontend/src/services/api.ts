@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User, Reminder, ReminderRecurrence } from '../types';
+import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -102,15 +102,6 @@ export const noteService = {
   }
 };
 
-
-interface CreateReminderData {
-  title: string;
-  description: string;
-  dateTime: Date;
-  statusId: number;
-  hasTime: boolean;
-}
-
 export const calendarService = {
   getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {
@@ -154,15 +145,40 @@ export const calendarService = {
     }
   },
 
-  updateReminder: async (id: string, data: Partial<Reminder>) => {
+  updateReminder: async (id: string, data: UpdateReminderData) => {
     try {
-      const response = await api.put(`/reminders/${id}`, data);
+      console.log('Datos a enviar:', {
+        id,
+        data
+      });
+
+      const response = await api.put(`/reminders/${id}`, {
+        title: data.title,
+        description: data.description,
+        date_time: data.date_time,
+        status_id: data.status_id,
+        has_time: data.has_time
+      });
+
+      console.log('Respuesta del servidor:', response.data);
+      
+      if (response.data?.reminder) {
+        return {
+          reminder: {
+            ...response.data.reminder,
+            dateTime: new Date(response.data.reminder.date_time),
+            statusId: response.data.reminder.status_id,
+            hasTime: response.data.reminder.has_time
+          }
+        };
+      }
       return response.data;
     } catch (error) {
       console.error('Error updating reminder:', error);
       throw error;
     }
   }
+
 };
 
 

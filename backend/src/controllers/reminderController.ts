@@ -156,46 +156,48 @@ export const reminderController = {
 
   async updateReminder(req: Request, res: Response) {
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({
-          error: 'Usuario no autenticado'
-        });
-      }
+        console.log('Datos recibidos en el controlador:', req.body);
 
-      const { id } = req.params;
-      const updateData = {
-        ...req.body,
-        dateTime: req.body.dateTime ? new Date(req.body.dateTime) : undefined
-      };
+        if (!req.user?.id) {
+            return res.status(401).json({
+                error: 'Usuario no autenticado'
+            });
+        }
 
-      if (updateData.dateTime && isNaN(updateData.dateTime.getTime())) {
-        return res.status(400).json({
-          error: 'Fecha inválida'
-        });
-      }
+        const { id } = req.params;
+        const updateData = {
+            title: req.body.title,
+            description: req.body.description,
+            dateTime: req.body.date_time ? new Date(req.body.date_time) : undefined,
+            statusId: req.body.status_id, // Asegurarse de que se use status_id
+            hasTime: req.body.has_time, // Asegurarse de que se use has_time
+            updatedAt: new Date()
+        };
 
-      const reminder = await Reminder.findOneAndUpdate(
-        { id, userId: req.user.id },
-        updateData
-      );
-      
-      if (!reminder) {
-        return res.status(404).json({
-          error: 'Recordatorio no encontrado'
-        });
-      }
-      
-      res.json({ reminder });
+        console.log('Datos procesados para actualización:', updateData);
+
+        const reminder = await Reminder.findOneAndUpdate(
+            { id, userId: req.user.id },
+            updateData
+        );
+        
+        if (!reminder) {
+            return res.status(404).json({
+                error: 'Recordatorio no encontrado'
+            });
+        }
+        
+        res.json({ reminder });
     } catch (error) {
-      const apiError: ApiError = {
-        message: error instanceof Error ? error.message : 'Error desconocido',
-        status: 500
-      };
-      console.error('Error al actualizar recordatorio:', apiError);
-      res.status(apiError.status).json({
-        error: 'Error al actualizar recordatorio',
-        details: apiError.message
-      });
+        console.error('Error completo:', error);
+        const apiError: ApiError = {
+            message: error instanceof Error ? error.message : 'Error desconocido',
+            status: 500
+        };
+        res.status(apiError.status).json({
+            error: 'Error al actualizar recordatorio',
+            details: apiError.message
+        });
     }
   },
 

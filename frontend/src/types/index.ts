@@ -72,17 +72,21 @@ export interface CreateReminderData {
   description?: string;
   dateTime: Date;
   statusId?: number;
+  hasTime: boolean;
 }
 
 // Interface para la actualización de recordatorios
 export interface UpdateReminderData {
-  title?: string;
-  description?: string;
-  date_time?: Date;
-  status_id?: number;
+  title: string;
+  description: string;
+  date_time: string;
+  status_id: number;
+  has_time: boolean;
 }
 
 export interface EditingReminder {
   title: string;
   description: string;
+  dateTime: Date;
+  hasTime: boolean;
 }
