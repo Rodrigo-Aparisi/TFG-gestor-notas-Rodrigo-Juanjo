@@ -177,6 +177,16 @@ export const calendarService = {
       console.error('Error updating reminder:', error);
       throw error;
     }
+  },
+  
+  deleteReminder: async (id: string) => {
+    try {
+      const response = await api.delete(`/reminders/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      throw error;
+    }
   }
 
 };

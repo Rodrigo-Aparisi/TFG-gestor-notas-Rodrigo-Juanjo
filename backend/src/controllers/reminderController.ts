@@ -169,8 +169,8 @@ export const reminderController = {
             title: req.body.title,
             description: req.body.description,
             dateTime: req.body.date_time ? new Date(req.body.date_time) : undefined,
-            statusId: req.body.status_id, // Asegurarse de que se use status_id
-            hasTime: req.body.has_time, // Asegurarse de que se use has_time
+            statusId: req.body.status_id,
+            hasTime: req.body.has_time,
             updatedAt: new Date()
         };
 
