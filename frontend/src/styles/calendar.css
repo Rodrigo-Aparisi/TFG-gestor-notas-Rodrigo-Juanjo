@@ -800,12 +800,41 @@
   margin-top: 15px;
   padding-top: 15px;
   border-top: 1px solid rgba(255, 215, 0, 0.3);
+  gap: 20px;
 }
 
 .reminder-info {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.reminder-actions button {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.reminder-actions .edit-button {
+  background: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+}
+
+.reminder-actions .delete-button {
+  background: #ff4757;
+  color: white;
+  border: none;
 }
 
 /* Estilos específicos para cada estado */
@@ -868,6 +897,36 @@
 .reminder-popup-item .edit-button:hover {
   background: #e6b000;
   transform: translateY(-2px);
+}
+
+.reminder-popup-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.reminder-popup-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reminder-popup-actions .edit-button {
+  background: var(--dorado);
+  color: var(--background-dark);
+}
+
+.reminder-popup-actions .delete-button {
+  background: #ff4757;
+  color: white;
+}
+
+.reminder-popup-actions .delete-button:hover {
+  background: #ff6b81;
 }
 
 /* Estilo para la fecha */
@@ -1204,16 +1263,6 @@
 .reminder-card.focused .reminder-popup-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
-}
-
-.reminder-popup-actions button {
-  flex: 1;
-  padding: 10px;
-  border-radius: 4px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 /* Estilos para los inputs en el popup */
@@ -1251,13 +1300,6 @@
 }
 
 /* Estilos para los botones */
-.reminder-popup-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-  width: 100%;
-}
-
 .reminder-popup-actions button:first-child {
   background: var(--dorado);
   color: var(--background-dark);
@@ -1329,6 +1371,25 @@
 .reminder-view-content .edit-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.reminder-view-content .delete-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+  z-index: 2;
+}
+
+.reminder-view-content .delete-button:hover {
+  background: #c0392b;
 }
 
 /* Estilos para el modo edición */

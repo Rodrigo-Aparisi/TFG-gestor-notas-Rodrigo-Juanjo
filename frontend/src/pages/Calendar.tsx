@@ -12,7 +12,7 @@ const Calendar: React.FC = () => {
   const [focusedReminder, setFocusedReminder] = useState<Reminder | null>(null);
   const [editingReminder, setEditingReminder] = useState<EditingReminder | null>(null);
   const [editingStatus, setEditingStatus] = useState<number>(focusedReminder?.statusId || 1);
-
+  const [isFromPopup, setIsFromPopup] = useState(false);
   const [newReminder, setNewReminder] = useState<NewReminder>({
     title: '',
     description: '',
@@ -120,27 +120,45 @@ const Calendar: React.FC = () => {
                 <div className="reminder-popup-title">{reminder.title}</div>
                 <div className="reminder-popup-description">{reminder.description}</div>
                 <div className="reminder-popup-footer">
-                <div className="reminder-info">
-                  {reminder.hasTime && (
-                    <span className="reminder-time">
-                      {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                  <div className="reminder-info">
+                    {reminder.hasTime && (
+                      <span className="reminder-time">
+                        {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                    <span className="reminder-status">
+                      {reminder.statusId === 1 && "Pendiente"}
+                      {reminder.statusId === 2 && "Completado"}
+                      {reminder.statusId === 3 && "Cancelado"}
                     </span>
-                  )}
-                  <span className="reminder-status">
-                    {reminder.statusId === 1 && "Pendiente"}
-                    {reminder.statusId === 2 && "Completado"}
-                    {reminder.statusId === 3 && "Cancelado"}
-                  </span>
-                </div>
-                <button 
-                  className="edit-button"
-                  onClick={() => {/* ... */}}
-                >
-                  Editar
-                </button>
+                  </div>
+                  <div className="reminder-actions">
+                    <button 
+                      className="edit-button"
+                      onClick={() => {
+                        setFocusedReminder(reminder);
+                        setEditingReminder({
+                          title: reminder.title,
+                          description: reminder.description ?? '',
+                          dateTime: new Date(reminder.dateTime),
+                          hasTime: reminder.hasTime
+                        });
+                        setIsFromPopup(true);
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      className="edit-button"
+                      onClick={() => handleDeleteReminder(reminder.id)}
+                      style={{ backgroundColor: '#ff4757' }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -332,6 +350,18 @@ const Calendar: React.FC = () => {
       alert(error instanceof Error ? error.message : 'Error al crear el recordatorio');
     }
   };
+
+  const handleDeleteReminder = async (id: string) => {
+    try {
+      await calendarService.deleteReminder(id);
+      setReminders(prev => prev.filter(reminder => reminder.id !== id));
+      // Cerrar el popup o modal
+      setFocusedReminder(null);
+    } catch (error) {
+      console.error('Error al eliminar recordatorio:', error);
+    }
+  };
+  
   
 
   const formatDateForInput = (date: Date) => {
@@ -385,8 +415,8 @@ const Calendar: React.FC = () => {
             title: editingReminder.title,
             description: editingReminder.description,
             date_time: editingReminder.dateTime.toISOString(),
-            status_id: editingStatus, // Usar el estado de edición
-            has_time: editingReminder.hasTime // Asegurarse de enviar hasTime
+            status_id: editingStatus,
+            has_time: editingReminder.hasTime
         };
 
         console.log('Enviando actualización:', updatePayload);
@@ -449,6 +479,7 @@ const Calendar: React.FC = () => {
   const handleCloseReminder = () => {
     setFocusedReminder(null);
     setEditingReminder(null);
+    setIsFromPopup(false);
     document.body.style.overflow = '';
   };
 
@@ -637,20 +668,29 @@ const Calendar: React.FC = () => {
               <div className="reminder-description">
                 {focusedReminder.description || 'Sin descripción'}
               </div>
-              <button 
-                className="edit-button"
-                onClick={() => {
-                  setEditingStatus(focusedReminder.statusId);
-                  setEditingReminder({
-                    title: focusedReminder.title,
-                    description: focusedReminder.description ?? '',
-                    dateTime: new Date(focusedReminder.dateTime),
-                    hasTime: focusedReminder.hasTime
-                  });
-                }}
-              >
-                Editar
-              </button>
+              <div className="reminder-popup-actions">
+                <button 
+                  className="edit-button"
+                  onClick={() => {
+                    setEditingStatus(focusedReminder.statusId);
+                    setEditingReminder({
+                      title: focusedReminder.title,
+                      description: focusedReminder.description ?? '',
+                      dateTime: new Date(focusedReminder.dateTime),
+                      hasTime: focusedReminder.hasTime
+                    });
+                  }}
+                >
+                  Editar
+                </button>
+                <button 
+                  className="edit-button"
+                  onClick={() => handleDeleteReminder(focusedReminder.id)}
+                  style={{ backgroundColor: '#ff4757' }}
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
           ) : (
             // Modo edición
@@ -729,10 +769,21 @@ const Calendar: React.FC = () => {
                   <option value={2}>Completado</option>
                   <option value={3}>Cancelado</option>
                 </select>
-              <div className="reminder-popup-actions">
-                <button onClick={handleSaveReminder}>Guardar</button>
-                <button onClick={() => setEditingReminder(null)}>Cancelar</button>
-              </div>
+                <div className="reminder-popup-actions">
+                  <button onClick={handleSaveReminder}>Guardar</button>
+                  <button onClick={() => {
+                    if (isFromPopup) {
+                      setFocusedReminder(null);
+                      setEditingReminder(null);
+                      setIsFromPopup(false);
+                      document.body.style.overflow = '';
+                    } else {
+                      setEditingReminder(null);
+                    }
+                  }}>
+                    Cancelar
+                  </button>
+                </div>
             </div>
           )}
         </div>
@@ -794,46 +845,33 @@ const Calendar: React.FC = () => {
     const hasMoreReminders = dayReminders.length > MAX_VISIBLE_REMINDERS;
   
     return (
-      <>
-        <div 
-          className={`reminder-overlay ${focusedReminder ? 'active' : ''}`}
-          onClick={handleCloseReminder}
-        />
+      <div className="reminders-container">
+        {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
+          <div 
+            key={`reminder-${idx}`}
+            className={`reminder-pill status-${reminder.statusId}`}
+            onClick={(e) => handleReminderClick(reminder, e)}
+          >
+            {renderReminderTime(reminder)}
+            <span className="reminder-title">{reminder.title}</span>
+          </div>
+        ))}
   
-        <div className="reminders-container">
-          {dayReminders.slice(0, MAX_VISIBLE_REMINDERS).map((reminder, idx) => (
-            <div 
-              key={`reminder-${idx}`}
-              className={`reminder-pill status-${reminder.statusId} ${
-                focusedReminder?.id === reminder.id ? 'focused' : ''
-              }`}
-              onClick={(e) => handleReminderClick(reminder, e)}
-            >
-              {renderReminderTime(reminder)}
-              <span className="reminder-title">{reminder.title}</span>
-              {focusedReminder?.id === reminder.id && (
-                <div className="reminder-description">
-                  {reminder.description}
-                </div>
-              )}
-            </div>
-          ))}
-  
-          {hasMoreReminders && (
-            <button 
-              className="show-more-reminders"
-              onClick={(e) => {
-                e.stopPropagation();
-                setExpandedDay(date);
-              }}
-            >
-              +{dayReminders.length - MAX_VISIBLE_REMINDERS} más
-            </button>
-          )}
-        </div>
-      </>
+        {hasMoreReminders && (
+          <button 
+            className="show-more-reminders"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedDay(date);
+            }}
+          >
+            +{dayReminders.length - MAX_VISIBLE_REMINDERS} más
+          </button>
+        )}
+      </div>
     );
   };
+
   
 
 
