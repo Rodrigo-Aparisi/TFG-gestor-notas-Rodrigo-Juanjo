@@ -116,10 +116,32 @@ const Calendar: React.FC = () => {
               key={idx}
               className={`reminder-popup-item status-${reminder.statusId}`}
             >
-              {renderReminderTime(reminder)}
               <div className="reminder-popup-details">
                 <div className="reminder-popup-title">{reminder.title}</div>
                 <div className="reminder-popup-description">{reminder.description}</div>
+                <div className="reminder-popup-footer">
+                <div className="reminder-info">
+                  {reminder.hasTime && (
+                    <span className="reminder-time">
+                      {new Date(reminder.dateTime).toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  )}
+                  <span className="reminder-status">
+                    {reminder.statusId === 1 && "Pendiente"}
+                    {reminder.statusId === 2 && "Completado"}
+                    {reminder.statusId === 3 && "Cancelado"}
+                  </span>
+                </div>
+                <button 
+                  className="edit-button"
+                  onClick={() => {/* ... */}}
+                >
+                  Editar
+                </button>
+                </div>
               </div>
             </div>
           ))}
@@ -127,6 +149,7 @@ const Calendar: React.FC = () => {
       </div>
     </div>
   );
+  
   
   useEffect(() => {
     return () => {
