@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/auth.ts";
+import { authService } from "../services/auth";
+import { accountService } from "../services/accountService";
+import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from "react-icons/ai";
 import "../styles/login.css";
 
-// Interfaces
 interface LoginData {
   email: string;
   password: string;
@@ -18,14 +19,12 @@ interface RegisterData {
 const Login: React.FC = () => {
   const navigate = useNavigate();
 
-  // Verificar autenticación solo una vez al montar
   useEffect(() => {
     if (authService.isAuthenticated()) {
       navigate("/notes", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
-  // Estados
   const [loginData, setLoginData] = useState<LoginData>({
     email: "",
     password: "",
@@ -37,30 +36,51 @@ const Login: React.FC = () => {
     password: "",
   });
 
+  const [showPasswords, setShowPasswords] = useState({
+    loginPassword: false,
+    registerPassword: false,
+  });
+
   const [error, setError] = useState<string>("");
 
-  // Efecto para la animación
+  const applyTheme = (selectedTheme: string) => {
+    if (selectedTheme === "light") {
+      document.body.classList.add("light-theme");
+      document.body.classList.remove("dark-theme");
+    } else {
+      document.body.classList.add("dark-theme");
+      document.body.classList.remove("light-theme");
+    }
+  };
+
   useEffect(() => {
     const wrapper = document.querySelector(".wrapper") as HTMLElement;
-    const registerLink = document.querySelector(
-      ".register-link"
-    ) as HTMLElement;
+    const registerLink = document.querySelector(".register-link") as HTMLElement;
     const loginLink = document.querySelector(".login-link") as HTMLElement;
 
     if (registerLink && loginLink && wrapper) {
-      registerLink.onclick = () => {
+      registerLink.onclick = (e) => {
+        e.preventDefault();
         wrapper.classList.add("active");
         setError("");
+        setShowPasswords({
+          loginPassword: false,
+          registerPassword: false,
+        });
       };
 
-      loginLink.onclick = () => {
+      loginLink.onclick = (e) => {
+        e.preventDefault();
         wrapper.classList.remove("active");
         setError("");
+        setShowPasswords({
+          loginPassword: false,
+          registerPassword: false,
+        });
       };
     }
   }, []);
 
-  // Manejadores de cambios
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({
       ...loginData,
@@ -75,22 +95,23 @@ const Login: React.FC = () => {
     });
   };
 
-  // Función de login usando el servicio
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await authService.login(loginData);
-      if (response && response.token) {
-        navigate("/notes", { replace: true });
-      }
+        const response = await authService.login(loginData);
+        if (response && response.token && response.user) {
+            // Ya no intentamos obtener ni aplicar el tema aquí
+            navigate("/notes", { replace: true });
+        }
     } catch (error: any) {
-      setError(error.message || "Error en el inicio de sesión");
+        console.error("Error en el login:", error);
+        setError(error.message || "Error en el inicio de sesión");
     }
-  };
+};
 
-  // Función de registro usando el servicio
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -99,15 +120,11 @@ const Login: React.FC = () => {
       const response = await authService.register(registerData);
       if (response) {
         alert("Registro exitoso");
-
-        // Limpiar formulario
         setRegisterData({
           username: "",
           email: "",
           password: "",
         });
-
-        // Cambiar a vista de login
         const wrapper = document.querySelector(".wrapper") as HTMLElement;
         if (wrapper) {
           wrapper.classList.remove("active");
@@ -123,7 +140,7 @@ const Login: React.FC = () => {
       <div className="wrapper">
         <span className="rotate-bg"></span>
         <span className="rotate-bg2"></span>
-
+        
         {/* Formulario de Login */}
         <div className="form-box login">
           <h2
@@ -132,7 +149,6 @@ const Login: React.FC = () => {
           >
             Inicio de Sesión
           </h2>
-
           <form onSubmit={handleLogin}>
             <div
               className="input-box animation"
@@ -146,22 +162,38 @@ const Login: React.FC = () => {
                 required
               />
               <label>Email</label>
-              <i className="bx bxs-user"></i>
+              <span className="input-icon">
+                <AiOutlineMail />
+              </span>
             </div>
 
             <div
-              className="input-box animation"
+              className="input-box animation password-field"
               style={{ "--i": 2, "--j": 23 } as React.CSSProperties}
             >
               <input
-                type="password"
+                type={showPasswords.loginPassword ? "text" : "password"}
                 name="password"
                 value={loginData.password}
                 onChange={handleLoginChange}
                 required
               />
               <label>Contraseña</label>
-              <i className="bx bxs-lock-alt"></i>
+              <span
+                className="login-password-toggle"
+                onClick={() =>
+                  setShowPasswords((prev) => ({
+                    ...prev,
+                    loginPassword: !prev.loginPassword,
+                  }))
+                }
+              >
+                {showPasswords.loginPassword ? (
+                  <AiOutlineEyeInvisible />
+                ) : (
+                  <AiOutlineEye />
+                )}
+              </span>
             </div>
 
             {error && (
@@ -203,7 +235,6 @@ const Login: React.FC = () => {
           >
             Registro
           </h2>
-
           <form onSubmit={handleRegister}>
             <div
               className="input-box animation"
@@ -217,7 +248,9 @@ const Login: React.FC = () => {
                 required
               />
               <label>Usuario</label>
-              <i className="bx bxs-user"></i>
+              <span className="input-icon">
+                <AiOutlineUser />
+              </span>
             </div>
 
             <div
@@ -232,22 +265,38 @@ const Login: React.FC = () => {
                 required
               />
               <label>Email</label>
-              <i className="bx bxs-envelope"></i>
+              <span className="input-icon">
+                <AiOutlineMail />
+              </span>
             </div>
 
             <div
-              className="input-box animation"
+              className="input-box animation password-field"
               style={{ "--i": 20, "--j": 3 } as React.CSSProperties}
             >
               <input
-                type="password"
+                type={showPasswords.registerPassword ? "text" : "password"}
                 name="password"
                 value={registerData.password}
                 onChange={handleRegisterChange}
                 required
               />
               <label>Contraseña</label>
-              <i className="bx bxs-lock-alt"></i>
+              <span
+                className="login-password-toggle"
+                onClick={() =>
+                  setShowPasswords((prev) => ({
+                    ...prev,
+                    registerPassword: !prev.registerPassword,
+                  }))
+                }
+              >
+                {showPasswords.registerPassword ? (
+                  <AiOutlineEyeInvisible />
+                ) : (
+                  <AiOutlineEye />
+                )}
+              </span>
             </div>
 
             {error && (

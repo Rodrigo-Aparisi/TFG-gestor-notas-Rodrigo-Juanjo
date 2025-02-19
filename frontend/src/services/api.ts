@@ -191,7 +191,6 @@ export const calendarService = {
 
 };
 
-
 // Servicios de cuenta
 export const accountService = {
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {

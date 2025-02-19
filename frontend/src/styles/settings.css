@@ -1,0 +1,641 @@
+/* Estilos iniciales y de carga */
+.settings-container {
+  display: flex;
+  background-color: var(--background-black);
+  border: 1px solid var(--dorado);
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 2rem auto;
+  color: var(--white);
+  max-height: 80vh;
+  overflow: hidden;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.settings-container.loaded {
+  visibility: visible;
+  opacity: 1;
+}
+
+.settings-sidebar {
+  width: 250px;
+  background-color: var(--background-darker);
+  border-right: 1px solid var(--dorado);
+  padding: 1rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.settings-sections {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  height: 100%;
+  max-height: 80vh;
+}
+
+/* Estilo para los botones principales */
+.sidebar-button {
+  background-color: transparent;
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  position: relative;
+  padding-left: 20px;
+}
+
+.sidebar-button:hover {
+  background-color: transparent;
+  color: var(--dorado);
+}
+
+/* Contenedor del submenú */
+.submenu-container {
+  display: flex;
+  flex-direction: column;
+  margin-left: 1.2rem;
+  margin-top: 0;
+  border-left: 1px solid var(--dorado);
+}
+
+/* Botones del submenú */
+.submenu-button {
+  background-color: transparent;
+  color: var(--white);
+  border: none;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.submenu-button:hover {
+  background-color: transparent;
+  color: var(--dorado);
+}
+
+/* Estilos para el botón activo */
+.sidebar-button.active,
+.submenu-button.active {
+  color: var(--dorado);
+  font-weight: normal;
+  background-color: transparent;
+}
+
+/* Ícono para expandir/colapsar */
+.sidebar-button:not(.no-arrow)::before {
+  content: '▼';
+  position: absolute;
+  left: 5px;
+  display: inline-block;
+  font-size: 0.7em;
+  transition: transform 0.2s ease;
+}
+
+/* Rotar el ícono cuando el menú está colapsado */
+.sidebar-button.collapsed:not(.no-arrow)::before {
+  transform: rotate(-90deg);
+}
+
+/* Botones sin flecha */
+.sidebar-button.no-arrow {
+  padding-left: 1rem;
+}
+
+/* Estilos para las secciones y títulos */
+section h2 {
+  color: var(--dorado);
+  border-bottom: 1px solid var(--dorado);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+section h3 {
+  color: var(--dorado);
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+section p {
+  color: var(--white);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Theme Selector Styles */
+.theme-selector {
+  background-color: var(--background-darker);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.theme-selector h4 {
+  color: var(--dorado);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.theme-options {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: flex-start;
+}
+
+.theme-option {
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s ease;
+  padding: 0.5rem;
+  border-radius: 8px;
+  width: 140px;
+}
+
+.theme-option:hover {
+  background-color: rgba(255, 198, 0, 0.1);
+}
+
+.theme-option.active {
+  background-color: rgba(255, 198, 0, 0.2);
+}
+
+.theme-preview {
+  width: 120px;
+  height: 80px;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  padding: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.theme-preview.light-theme {
+  background-color: var(--white) !important;
+}
+
+.theme-preview.dark-theme {
+  background-color: var(--background-black) !important;
+}
+
+.preview-header {
+  height: 12px;
+  background-color: var(--dorado);
+  opacity: 0.3;
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-line {
+  height: 6px;
+  background-color: var(--dorado);
+  opacity: 0.2;
+  border-radius: 2px;
+}
+
+.preview-line.short {
+  width: 60%;
+}
+
+.theme-option span {
+  color: var(--white);
+  font-size: 0.9rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* Account Section Styles */
+.account-section {
+  background-color: var(--background-darker);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--dorado);
+}
+
+.input-container,
+.password-input-container {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.input-container input,
+.password-input-container input {
+  width: 100%;
+  padding: 0.75rem;
+  padding-right: 2.5rem;
+  background-color: var(--background-black);
+  border: 1px solid rgba(255, 198, 0, 0.2);
+  border-radius: 4px;
+  color: var(--white);
+}
+
+.account-icon,
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dorado);
+  cursor: pointer;
+}
+
+.warning-text {
+  color: #ff9800;
+  font-size: 0.85em;
+  margin-top: 5px;
+  display: block;
+  padding: 0.5rem;
+  border-left: 2px solid #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+  border-radius: 0 4px 4px 0;
+}
+
+/* Estilos para la barra de scroll */
+.settings-sections::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-sections::-webkit-scrollbar-track {
+  background: var(--background-darker);
+  border-radius: 4px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
+}
+
+.settings-sections::-webkit-scrollbar-thumb:hover {
+  background: #e6b000;
+}
+
+.button-group {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.edit-button,
+.save-button,
+.cancel-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-button {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+}
+
+.save-button {
+  background-color: #4CAF50;
+  color: var(--white);
+}
+
+.cancel-button {
+  background-color: #f44336;
+  color: var(--white);
+}
+
+/* Message Styles */
+.message {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.message.success {
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 1px solid #4CAF50;
+  color: #4CAF50;
+}
+
+.message.error {
+  background-color: rgba(244, 67, 54, 0.1);
+  border: 1px solid #f44336;
+  color: #f44336;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .settings-container {
+    flex-direction: column;
+    max-height: none;
+    margin: 1rem;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    max-height: none;
+  }
+
+  .settings-sections {
+    max-height: none;
+  }
+
+  .theme-options {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .theme-option {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-sections {
+    padding: 1rem;
+  }
+
+  .account-section {
+    padding: 1rem;
+  }
+
+  .theme-selector {
+    padding: 1rem;
+  }
+}
+
+.save-theme-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.save-theme-button:hover {
+  background-color: #e6b000;
+}
+
+.save-theme-button:active {
+  transform: scale(0.98);
+}
+
+/* Estilos para las opciones de comportamiento */
+.behavior-settings {
+  background-color: var(--background-darker);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.behavior-settings h4 {
+  color: var(--dorado);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.setting-option {
+  margin-bottom: 1.5rem;
+}
+
+.setting-option:last-child {
+  margin-bottom: 0;
+}
+
+.setting-option label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--white);
+}
+
+.setting-option select {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--background-black);
+  border: 1px solid rgba(255, 198, 0, 0.2);
+  border-radius: 4px;
+  color: var(--white);
+  cursor: pointer;
+}
+
+.setting-option select:focus {
+  outline: none;
+  border-color: var(--dorado);
+}
+
+/* Estilos para el toggle switch */
+.toggle-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 34px;
+}
+
+.behavior-settings {
+  background-color: var(--background-darker);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.setting-option {
+  margin-bottom: 1.5rem;
+}
+
+.toggle-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background-black);
+  border: 1px solid rgba(255, 198, 0, 0.2);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 3px;
+  background-color: var(--dorado);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--dorado);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+  background-color: var(--white);
+}
+
+.settings-buttons {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-settings-button {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.save-settings-button:hover {
+  background-color: #e6b000;
+}
+
+.save-settings-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background-black);
+  border: 1px solid rgba(255, 198, 0, 0.2);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 3px;
+  background-color: var(--white);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--dorado);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+  .setting-option {
+    margin-bottom: 1rem;
+  }
+
+  .toggle-label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+
+/* Estilos para inputs deshabilitados */
+.input-container input:disabled,
+.password-input-container input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Estilos para botones deshabilitados */
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
