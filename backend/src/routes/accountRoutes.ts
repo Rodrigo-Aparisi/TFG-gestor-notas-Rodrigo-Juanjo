@@ -1,12 +1,19 @@
 import { Router } from 'express';
-import { AccountController } from '../controllers/accountController';
+import { accountController } from '../controllers/accountController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
-const accountController = new AccountController();
 
-router.put('/update', authenticateToken, accountController.updateUser.bind(accountController));
-router.get('/profile', authenticateToken, accountController.getProfile.bind(accountController));
-router.delete('/delete', authenticateToken, accountController.deleteAccount.bind(accountController));
+// Todas las rutas requieren autenticación
+router.use(authenticateToken);
+
+// Rutas existentes
+router.put('/update', accountController.updateUser);
+router.get('/profile', accountController.getProfile);
+router.delete('/delete', accountController.deleteAccount);
+
+// Nuevas rutas para la configuración
+router.get('/settings', accountController.getUserSettings);
+router.put('/settings', accountController.updateUserSettings);
 
 export default router;

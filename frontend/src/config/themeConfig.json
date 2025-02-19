@@ -1,0 +1,14 @@
+{
+    "themes": {
+    "dark": {
+    "backgroundColor": "#221e19",
+    "textColor": "#fff",
+    "themeBorder": "#ffc600"
+    },
+    "light": {
+    "backgroundColor": "#f5f5f5",
+    "textColor": "#333",
+    "themeBorder": "#ffc600"
+    }
+    }
+    }
