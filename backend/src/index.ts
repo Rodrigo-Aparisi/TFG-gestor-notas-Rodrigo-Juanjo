@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
 import accountRoutes from './routes/accountRoutes';
+import reminderRoutes from './routes/reminderRoutes';
 
 // Configurar variables de entorno
 dotenv.config();
@@ -30,6 +31,7 @@ const pool = new Pool({
 // Configurar rutas
 app.use('/api/auth', authRoutes);     // Rutas de autenticación
 app.use('/api/notes', notesRoutes);   // Rutas de notas
+app.use('/api/reminders', reminderRoutes);
 
 // Ruta de prueba para la base de datos
 app.get('/test-db', async (req, res) => {
@@ -45,6 +47,15 @@ app.get('/test-db', async (req, res) => {
       error: 'Error conectando a la base de datos' 
     });
   }
+});
+
+// Agregar manejo de errores global
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    error: 'Error interno del servidor',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Configurar puerto

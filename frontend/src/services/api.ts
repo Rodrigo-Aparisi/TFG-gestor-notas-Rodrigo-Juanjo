@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { Reminder } from '../types';
-import { User } from '../types';
+import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -103,35 +102,93 @@ export const noteService = {
   }
 };
 
-
 export const calendarService = {
-  async getReminders(date: Date): Promise<{ reminders: Reminder[] }> {
-    const response = await axios.get(`${api}/reminders`, {
-      params: { date: date.toISOString() }
-    });
-    return response.data;
+  getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
+    try {
+      const response = await api.get('/reminders', {
+        params: {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error en getReminders:', error);
+      throw error;
+    }
   },
 
-  async createReminder(reminderData: {
-    title: string;
-    description: string;
-    dateTime: Date;
-  }): Promise<{ reminder: Reminder }> {
-    const response = await axios.post(`${api}/reminders`, reminderData);
-    return response.data;
+  createReminder: async (data: CreateReminderData) => {
+    try {
+      const reminderData = {
+        ...data,
+        dateTime: data.dateTime.toISOString(),
+        hasTime: data.hasTime
+      };
+      
+      console.log('Sending reminder data:', reminderData);
+      const response = await api.post('/reminders', reminderData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      throw error;
+    }
   },
 
-  async updateReminder(
-    id: string,
-    reminderData: Partial<Reminder>
-  ): Promise<{ reminder: Reminder }> {
-    const response = await axios.put(`${api}/reminders/${id}`, reminderData);
-    return response.data;
+  updateReminderStatus: async (id: string, statusId: number) => {
+    try {
+      const response = await api.put(`/reminders/${id}/status`, { statusId });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating reminder status:', error);
+      throw error;
+    }
   },
 
-  async deleteReminder(id: string): Promise<void> {
-    await axios.delete(`${api}/reminders/${id}`);
+  updateReminder: async (id: string, data: UpdateReminderData) => {
+    try {
+      console.log('Datos a enviar:', {
+        id,
+        data
+      });
+
+      const response = await api.put(`/reminders/${id}`, {
+        title: data.title,
+        description: data.description,
+        date_time: data.date_time,
+        status_id: data.status_id,
+        has_time: data.has_time
+      });
+
+      console.log('Respuesta del servidor:', response.data);
+      
+      if (response.data?.reminder) {
+        return {
+          reminder: {
+            ...response.data.reminder,
+            dateTime: new Date(response.data.reminder.date_time),
+            statusId: response.data.reminder.status_id,
+            hasTime: response.data.reminder.has_time
+          }
+        };
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+      throw error;
+    }
+  },
+  
+  deleteReminder: async (id: string) => {
+    try {
+      const response = await api.delete(`/reminders/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      throw error;
+    }
   }
+
 };
 
 // Servicios de cuenta
