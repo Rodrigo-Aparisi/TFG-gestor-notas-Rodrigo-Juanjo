@@ -2,6 +2,7 @@ import axios from 'axios';
 import { store } from '../store';
 import { setUser, setToken, logout as logoutAction } from '../store/slices/authSlice';
 import { User } from '../types';
+import { themeService } from './themeService';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
@@ -81,6 +82,7 @@ export const authService = {
   },
 
   logout: () => {
+    themeService.resetToDefault(); // Restaurar tema por defecto
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     store.dispatch(logoutAction());
@@ -101,9 +103,11 @@ export const authService = {
         return true;
       } catch (error) {
         console.error('Error parsing user data:', error);
+        themeService.resetToDefault();
         return false;
       }
     }
+    themeService.resetToDefault();
     return false;
   },
 
@@ -122,7 +126,10 @@ export const authService = {
         store.dispatch(setToken(token));
       } catch (error) {
         console.error('Error initializing auth:', error);
+        themeService.resetToDefault();
       }
+    } else {
+      themeService.resetToDefault();
     }
   }
 };
