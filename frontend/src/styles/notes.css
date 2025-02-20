@@ -160,6 +160,8 @@ html, body {
   margin-bottom: 15px;
   break-inside: avoid;
   transition: transform 0.2s ease;
+  padding-right: calc(15px + 8px); /* Añade espacio extra para la scrollbar */
+  box-sizing: border-box;
 }
 
 .note-actions {
@@ -244,10 +246,10 @@ html, body {
   width: 100%;
   min-height: 10px;
   resize: none;
-  overflow: auto;
+  overflow-y: auto;
   line-height: 1.5;
   font-size: 14px;
-  padding: 8px 0;
+  padding: 8px 8px;
   border: none;
   background: transparent;
   transition: height 0.2s ease;
@@ -256,6 +258,7 @@ html, body {
   white-space: pre-wrap;
   margin-bottom: 35px;
   max-height: 500px;
+  box-sizing: border-box;
 }
 
 /* === ESTADOS FOCUSED === */
@@ -311,6 +314,8 @@ html, body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  padding-right: calc(20px + 8px);
+  box-sizing: border-box;
 }
 
 /* === BOTONES === */
@@ -454,11 +459,14 @@ button:focus {
 .note-card textarea::-webkit-scrollbar-track {
   background: rgba(54, 54, 54, 0.8);
   border-radius: 4px;
+  margin: 2px;
 }
 
 .note-card textarea::-webkit-scrollbar-thumb {
   background: var(--dorado);
   border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .note-card textarea::-webkit-scrollbar-thumb:hover {
