@@ -20,7 +20,7 @@ html, body {
   width: 100%;
   min-height: 100%;
   padding: 20px;
-  margin: 0;
+  margin-top: 12px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -36,6 +36,12 @@ html, body {
   margin-bottom: 20px;
   width: 450px;
   min-width: 450px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.create-note.expanded {
+  max-height: 200px;
 }
 
 .create-note input,
@@ -48,18 +54,24 @@ html, body {
   padding: 8px;
 }
 
-.create-note textarea {
+.create-note input {
   width: 100%;
-  resize: none;
-  overflow: auto;
-  line-height: 1.5;
-  padding: 8px;
   border: none;
   outline: none;
+  padding: 8px;
   font-size: 16px;
-  margin-bottom: 10px;
-  transition: all 0.2s ease;
-  opacity: 0;
+  background: transparent;
+}
+
+.create-note textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 8px;
+  font-size: 14px;
+  resize: none;
+  min-height: 60px;
+  background: transparent;
 }
 
 .create-note textarea::placeholder {
@@ -90,7 +102,7 @@ html, body {
 .masonry-grid {
   display: flex;
   margin-left: -15px;
-  width: 100%;
+  width: 90%;
 }
 
 /* Columnas de Masonry */
@@ -115,6 +127,20 @@ html, body {
   margin-bottom: 15px;
   break-inside: avoid;
   transition: transform 0.2s ease;
+}
+
+.note-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
 }
 
 /* Focus Indicator */
@@ -216,21 +242,6 @@ html, body {
   flex-direction: column;
   background: #fff;
   overflow: auto;
-
-  /*position: fixed;
-  width: 800px;
-  max-height: 90vh;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) !important;
-  z-index: 1000;
-  padding: 40px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  overflow: visible;
-  margin: 0;  */
 }
 
 .note-card.focused .note-content {
@@ -242,12 +253,6 @@ html, body {
   gap: 20px;
   overflow: visible;
   flex: 1;
-
-  /*width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow: visible;*/
 }
 
 .note-card.focused input {
@@ -299,6 +304,43 @@ button:focus {
   outline-offset: 2px;
 }
 
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancel-button {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.create-button {
+  background: #f1c40f;
+  color: #000;
+}
+
+.action-button {
+  background: transparent;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.action-button:hover {
+  color: #000;
+}
+
+.action-button.marked {
+  color: #f1c40f;
+}
+
+.action-button.pinned {
+  color: #2ecc71;
+}
+
 /* === BOTÓN DE ELIMINAR === */
 .delete-button {
   position: absolute;
@@ -345,7 +387,7 @@ button:focus {
   z-index: 999;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
 }
 
 .overlay.active {

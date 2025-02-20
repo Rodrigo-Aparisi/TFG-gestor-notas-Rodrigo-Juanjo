@@ -99,9 +99,18 @@ export const noteService = {
       console.error('Error deleting note:', error);
       throw error;
     }
+  },
+
+  togglePin: async (id: string) => {
+    const response = await api.patch(`/notes/${id}/pin`);
+    return response.data;
+  },
+
+  toggleMark: async (id: string) => {
+    const response = await api.patch(`/notes/${id}/mark`);
+    return response.data;
   }
 };
-
 export const calendarService = {
   getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {

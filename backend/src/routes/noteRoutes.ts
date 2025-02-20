@@ -12,4 +12,7 @@ router.get('/', noteController.getNotes);
 router.put('/:id', noteController.updateNote);
 router.delete('/:id', noteController.deleteNote);
 
+router.patch('/:id/pin', noteController.togglePin);
+router.patch('/:id/mark', noteController.toggleMark);
+
 export default router;
