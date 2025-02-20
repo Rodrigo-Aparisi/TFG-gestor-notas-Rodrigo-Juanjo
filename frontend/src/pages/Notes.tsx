@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
-import { Note } from '../types';
+import { Note, NotePosition } from '../types';
 import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
 
@@ -18,6 +18,8 @@ const Notes: React.FC = () => {
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [markedNotes, setMarkedNotes] = useState<string[]>([]);
+  const [notePositions, setNotePositions] = useState<{[key: string]: NotePosition}>({});
 
   const breakpointColumns = {
     default: 4, // Número de columnas en pantallas grandes
@@ -27,23 +29,40 @@ const Notes: React.FC = () => {
 };
 
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const response = await noteService.getNotes();
-        setNotes(response.notes || []);
-      } catch (err) {
-        const error = err as Error;
-        console.error('Error loading notes:', error.message);
-        if ((err as any)?.response?.status === 401) {
-          authService.logout();
-          navigate('/login', { replace: true });
-        }
+useEffect(() => {
+  const fetchNotesAndUnmark = async () => {
+    try {
+      const response = await noteService.getNotes();
+      const fetchedNotes = response.notes || [];
+      
+      // Especifica el tipo en filter
+      const markedNotes = fetchedNotes.filter((note: Note) => note.is_marked);
+      
+      if (markedNotes.length > 0) {
+        await Promise.all(
+          markedNotes.map((note: Note) => noteService.toggleMark(note.id))
+        );
+        
+        // Especifica el tipo en map
+        setNotes(fetchedNotes.map((note: Note) => ({
+          ...note,
+          is_marked: false
+        })));
+      } else {
+        setNotes(fetchedNotes);
       }
-    };
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error loading notes:', error.message);
+      if ((err as any)?.response?.status === 401) {
+        authService.logout();
+        navigate('/login', { replace: true });
+      }
+    }
+  };
 
-    fetchNotes();
-  }, [navigate]);
+  fetchNotesAndUnmark();
+}, [navigate]);
 
   useEffect(() => {
     const textareas = document.querySelectorAll('.note-card textarea');
@@ -76,6 +95,39 @@ const Notes: React.FC = () => {
     }
   }, [focusedNoteId]);
 
+  useEffect(() => {
+    const unmarkAllNotes = async () => {
+      try {
+        // Actualizar en la base de datos
+        await Promise.all(
+          notes
+            .filter(note => note.is_marked)
+            .map(note => noteService.toggleMark(note.id))
+        );
+        
+        // Actualizar el estado local
+        setNotes(prevNotes =>
+          prevNotes.map(note => ({
+            ...note,
+            is_marked: false
+          }))
+        );
+        setMarkedNotes([]);
+      } catch (error) {
+        console.error('Error al desmarcar las notas:', error);
+      }
+    };
+
+    unmarkAllNotes();
+  }, []);
+
+  useEffect(() => {
+    if (!focusedNoteId) {
+      setNotePositions({});
+    }
+  }, [focusedNoteId]);  
+
+
   const showFeedback = (message: string) => {
     setFeedback(message);
     setTimeout(() => setFeedback(''), 3000);
@@ -97,6 +149,12 @@ const Notes: React.FC = () => {
       if (result && result.note) {
         setNotes(prevNotes => [result.note, ...prevNotes]);
         setNewNote({ title: '', content: '' });
+        
+        const titleInput = document.querySelector('.create-note input[type="text"]') as HTMLInputElement;
+        if (titleInput) {
+          titleInput.value = '';
+        }
+
         showFeedback('Nota creada exitosamente');
       }
     } catch (error: any) {
@@ -108,21 +166,14 @@ const Notes: React.FC = () => {
   };
 
   const sortNotes = (notesToSort: Note[]) => {
-    const sortedNotes = [...notesToSort];
-    
-    switch (defaultNoteSort) {
-      case 'title':
-        return sortedNotes.sort((a, b) => a.title.localeCompare(b.title));
-      case 'lastModified':
-        return sortedNotes.sort((a, b) => 
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      case 'date':
-      default:
-        return sortedNotes.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-    }
+    return [...notesToSort].sort((a, b) => {
+      // Primero ordenar por pin
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+      
+      // Luego por la fecha de creación (o el criterio que prefieras)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   };
 
   const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
@@ -203,6 +254,7 @@ const Notes: React.FC = () => {
     try {
       await noteService.deleteNote(id);
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+      setMarkedNotes(prev => prev.filter(noteId => noteId !== id));
       showFeedback('Nota eliminada');
       if (focusedNoteId === id) {
         setFocusedNoteId(null);
@@ -214,29 +266,86 @@ const Notes: React.FC = () => {
     }
   };
 
-  const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
-    setFocusedNoteId(id);
-    document.body.style.overflow = 'hidden';
+  const handleDeleteMarkedNotes = async () => {
+    if (!markedNotes.length) return;
     
-    setTimeout(() => {
-      const textarea = document.querySelector('.note-card.focused textarea');
-      if (textarea) {
-        autoResizeTextarea(textarea as HTMLTextAreaElement);
+    if (window.confirm(`¿Estás seguro de que quieres eliminar ${markedNotes.length} nota(s)?`)) {
+      try {
+        await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
+        setNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
+        setMarkedNotes([]);
+        showFeedback('Notas eliminadas correctamente');
+      } catch (error) {
+        console.error('Error al eliminar notas:', error);
+        showFeedback('Error al eliminar las notas');
       }
-    }, 300);
+    }
   };
 
+  const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
+    const noteElement = event.currentTarget;
+    const rect = noteElement.getBoundingClientRect();
+    const columnPosition = getColumnPosition(noteElement);
+    
+    // Establecer las propiedades CSS iniciales
+    noteElement.style.setProperty('--original-width', `${rect.width}px`);
+    noteElement.style.setProperty('--original-height', `${rect.height}px`);
+    noteElement.style.setProperty('--original-top', `${rect.top}px`);
+    noteElement.style.setProperty('--original-left', `${rect.left}px`);
+    
+    setNotePositions(prev => ({
+      ...prev,
+      [id]: { rect, columnPosition }
+    }));
+    
+    noteElement.classList.add('focusing');
+    noteElement.setAttribute('data-column-position', columnPosition);
+    
+    // Usar requestAnimationFrame para asegurar que las propiedades CSS se apliquen
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        noteElement.classList.add('focused');
+      });
+    });
+    
+    setFocusedNoteId(id);
+    document.body.style.overflow = 'hidden';
+  };
+  
+
   const handleBlur = () => {
+    const focusedNote = document.querySelector('.note-card.focused');
+    if (focusedNote) {
+      const id = focusedNoteId as string;
+      const position = notePositions[id];
+      
+      if (position) {
+        const element = focusedNote as HTMLElement;
+        
+        // Restaurar las propiedades originales
+        element.style.setProperty('--original-width', `${position.rect.width}px`);
+        element.style.setProperty('--original-height', `${position.rect.height}px`);
+        element.style.setProperty('--original-top', `${position.rect.top}px`);
+        element.style.setProperty('--original-left', `${position.rect.left}px`);
+        
+        element.classList.remove('focused');
+        
+        setTimeout(() => {
+          element.classList.remove('focusing');
+          element.removeAttribute('data-column-position');
+          element.style.removeProperty('--original-width');
+          element.style.removeProperty('--original-height');
+          element.style.removeProperty('--original-top');
+          element.style.removeProperty('--original-left');
+        }, 300);
+      }
+    }
+    
     setFocusedNoteId(null);
     document.body.style.overflow = '';
-    
-    setTimeout(() => {
-      const textareas = document.querySelectorAll('.note-card textarea');
-      textareas.forEach((textarea) => {
-        autoResizeTextarea(textarea as HTMLTextAreaElement);
-      });
-    }, 0);
   };
+  
+  
 
   const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
@@ -248,28 +357,24 @@ const Notes: React.FC = () => {
     }
   };
 
-  const handleToggleMark = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleMark = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     try {
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
-  
-      setNotes(prevNotes => 
-        prevNotes.map(n => 
-          n.id === id ? { ...n, is_marked: !n.is_marked } : n
-        )
-      );
-  
       const response = await noteService.toggleMark(id);
-      
-      if (!response || !response.note) {
-        // Revertir el cambio si hay error
+      if (response && response.note) {
         setNotes(prevNotes => 
-          prevNotes.map(n => 
-            n.id === id ? { ...n, is_marked: note.is_marked } : n
+          prevNotes.map(note => 
+            note.id === id ? response.note : note
           )
         );
-        showFeedback('Error al marcar la nota');
+        
+        setMarkedNotes(prev => {
+          if (response.note.is_marked) {
+            return [...prev, id];
+          } else {
+            return prev.filter(noteId => noteId !== id);
+          }
+        });
       }
     } catch (error) {
       console.error('Error al marcar/desmarcar nota:', error);
@@ -277,33 +382,31 @@ const Notes: React.FC = () => {
     }
   };
   
-  const handleTogglePin = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleTogglePin = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     try {
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
-  
-      setNotes(prevNotes => 
-        prevNotes.map(n => 
-          n.id === id ? { ...n, is_pinned: !n.is_pinned } : n
-        )
-      );
-  
       const response = await noteService.togglePin(id);
-      
-      if (!response || !response.note) {
-        // Revertir el cambio si hay error
+      if (response && response.note) {
         setNotes(prevNotes => 
-          prevNotes.map(n => 
-            n.id === id ? { ...n, is_pinned: note.is_pinned } : n
+          prevNotes.map(note => 
+            note.id === id ? response.note : note
           )
         );
-        showFeedback('Error al fijar la nota');
+        showFeedback(response.note.is_pinned ? 'Nota fijada' : 'Nota desfijada');
       }
     } catch (error) {
       console.error('Error al fijar/desfijar nota:', error);
       showFeedback('Error al actualizar la nota');
     }
+  };
+
+  const getColumnPosition = (element: HTMLElement): 'left' | 'right' => {
+    const columnIndex = Array.from(element.closest('.masonry-grid')?.children || [])
+      .findIndex(col => col.contains(element));
+    const totalColumns = breakpointColumns.default;
+    
+    // Si está en las dos primeras columnas, considerarlo 'left'
+    return columnIndex < totalColumns / 2 ? 'left' : 'right';
   };
   
 
@@ -347,7 +450,7 @@ const Notes: React.FC = () => {
   
 
   return (
-    <div className="notes-container">
+    <div className={`notes-container ${markedNotes.length > 0 ? 'has-marked-notes' : ''}`}>
       {feedback && <div className="feedback-message">{feedback}</div>}
       
       <div 
@@ -355,25 +458,37 @@ const Notes: React.FC = () => {
         onClick={handleBlur}
       />
 
-      <div 
-        className={`create-note ${isExpanded ? 'expanded' : ''}`}
-      >
-        {!isExpanded ? (
-          <input
-            type="text"
-            placeholder="Añade una nota..."
-            onClick={() => setIsExpanded(true)}
-            readOnly
-          />
-        ) : (
+      {/* Menú de acciones en masa */}
+      <div className={`bulk-actions-menu ${markedNotes.length > 0 ? 'visible' : ''}`}>
+        <div className="left-section">
+          <span>{markedNotes.length} {markedNotes.length === 1 ? 'nota seleccionada' : 'notas seleccionadas'}</span>
+        </div>
+        <div className="right-section">
+          <button 
+            className="bulk-delete-button"
+            onClick={handleDeleteMarkedNotes}
+            title="Eliminar notas seleccionadas"
+          >
+            <i className="fas fa-trash"></i>
+            Eliminar seleccionadas
+          </button>
+        </div>
+      </div>
+
+      <div className="create-note">
+        <input
+          type="text"
+          placeholder="Añade una nota..."
+          value={newNote.title}
+          onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+          onClick={() => {
+            if (!isExpanded) {
+              setIsExpanded(true);
+            }
+          }}
+        />
+        {isExpanded && (
           <>
-            <input
-              type="text"
-              placeholder="Título"
-              value={newNote.title}
-              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-              required
-            />
             <textarea
               placeholder="Contenido de la nota..."
               value={newNote.content}
@@ -416,13 +531,8 @@ const Notes: React.FC = () => {
         {sortNotes(notes).map(note => (
           <div 
             key={note.id}
-            data-note-id={note.id}
             className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
-            onClick={(e) => {
-              if (!focusedNoteId) {
-                handleFocus(note.id, e);
-              }
-            }}
+            onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
           >
             <div className="note-actions">
               <button 
@@ -480,6 +590,7 @@ const Notes: React.FC = () => {
       </Masonry>
     </div>
   );
+  
 };
 
 export default Notes;

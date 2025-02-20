@@ -101,36 +101,23 @@ export const noteService = {
     }
   },
   
-  toggleMark: async (id: string) => {
-    try {
-      const response = await fetch(`/api/notes/${id}/toggle-mark`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) throw new Error('Error al marcar la nota');
-      return await response.json();
-    } catch (error) {
-      throw error;
-    }
+  togglePin: async (id: string) => {
+    const response = await api.patch(`/notes/${id}/pin`);
+    return response.data;
   },
 
-  togglePin: async (id: string) => {
-    try {
-      const response = await fetch(`/api/notes/${id}/toggle-pin`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) throw new Error('Error al fijar la nota');
-      return await response.json();
-    } catch (error) {
-      throw error;
-    }
+  toggleMark: async (id: string) => {
+    const response = await api.patch(`/notes/${id}/mark`);
+    return response.data;
+  },
+
+  unmarkAllNotes: async () => {
+    const response = await api.post('/notes/unmark-all');
+    return response.data;
   }
 };
+
+// Servicios de recordatorios
 export const calendarService = {
   getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {

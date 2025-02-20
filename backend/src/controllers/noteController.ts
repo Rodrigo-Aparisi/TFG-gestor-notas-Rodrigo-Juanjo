@@ -8,6 +8,11 @@ export class NoteController {
       const { title, content } = req.body;
       const userId = req.user.id; // Obtenido del token JWT
 
+      if (!title || title.trim() === '') {
+        res.status(400).json({ error: 'El título es requerido' });
+        return;
+      }
+
       const result = await pool.query(
         'INSERT INTO notes (title, content, user_id) VALUES ($1, $2, $3) RETURNING *',
         [title, content, userId]
@@ -28,7 +33,9 @@ export class NoteController {
       const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT * FROM notes WHERE user_id = $1 ORDER BY updated_at DESC',
+        `SELECT * FROM notes 
+         WHERE user_id = $1 
+         ORDER BY is_pinned DESC, updated_at DESC`,
         [userId]
       );
 
@@ -151,6 +158,63 @@ export class NoteController {
       res.json({ note: result.rows[0] });
     } catch (error) {
       res.status(500).json({ error: 'Error al actualizar la nota' });
+    }
+  }
+
+  // Método para desmarcar todas las notas
+  async unmarkAllNotes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+  
+      await pool.query(
+        'UPDATE notes SET is_marked = false WHERE user_id = $1',
+        [userId]
+      );
+  
+      res.json({ message: 'Todas las notas han sido desmarcadas' });
+    } catch (error) {
+      res.status(500).json({ error: 'Error al desmarcar las notas' });
+    }
+  }
+
+  // Método para eliminar múltiples notas
+async deleteMultipleNotes(req: Request, res: Response): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Verificación y eliminación
+    const { noteIds } = req.body;
+    const userId = req.user.id;
+    
+    await client.query(
+      'DELETE FROM notes WHERE id = ANY($1) AND user_id = $2',
+      [noteIds, userId]
+    );
+    
+    await client.query('COMMIT');
+    res.json({ message: 'Notas eliminadas exitosamente' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+  // Método para obtener notas marcadas
+  async getMarkedNotes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+
+      const result = await pool.query(
+        'SELECT * FROM notes WHERE user_id = $1 AND is_marked = true ORDER BY updated_at DESC',
+        [userId]
+      );
+
+      res.json({ notes: result.rows });
+    } catch (error) {
+      res.status(500).json({ error: 'Error al obtener las notas marcadas' });
     }
   }
 

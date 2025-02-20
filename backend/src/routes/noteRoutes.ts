@@ -15,4 +15,6 @@ router.delete('/:id', noteController.deleteNote);
 router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);
 
+router.post('/notes/unmark-all', noteController.unmarkAllNotes);
+
 export default router;
