@@ -2,8 +2,108 @@ import { Request, Response } from 'express';
 import { pool } from '../config/database';
 import bcrypt from 'bcrypt';
 import { QueryResult } from 'pg';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+interface RequestWithFile extends Request {
+    file: Express.Multer.File;
+    user: {
+        id: string;
+        [key: string]: any;
+    };
+}
 
 export const accountController = {
+    uploadProfileImage: async (req: RequestWithFile, res: Response): Promise<void> => {
+        try {
+            if (!req.file) {
+                res.status(400).json({ error: 'No se ha proporcionado ninguna imagen' });
+                return;
+            }
+    
+            console.log('Información de la imagen:', {
+                filename: req.file.filename,
+                mimetype: req.file.mimetype,
+                size: req.file.size,
+                path: req.file.path
+            });
+    
+            const userId = req.user.id;
+            const baseUrl = process.env.API_URL || 'http://localhost:3001';
+            const imageUrl = `/uploads/profile-images/${req.file.filename}`;
+            const fullImageUrl = `${baseUrl}${imageUrl}`;
+    
+            console.log('URL base:', baseUrl);
+            console.log('URL relativa:', imageUrl);
+            console.log('URL completa:', fullImageUrl);
+    
+            // Obtener la imagen anterior si existe
+            const previousImageResult: QueryResult = await pool.query(
+                'SELECT profile_image FROM users WHERE id = $1',
+                [userId]
+            );
+    
+            // Eliminar la imagen anterior si existe
+            if (previousImageResult.rows[0]?.profile_image) {
+                const previousImagePath = previousImageResult.rows[0].profile_image;
+                const fullPreviousPath = path.join(__dirname, '..', '..', previousImagePath.replace(/^\/uploads\//, ''));
+                console.log('Intentando eliminar imagen anterior:', fullPreviousPath);
+                if (fs.existsSync(fullPreviousPath)) {
+                    fs.unlinkSync(fullPreviousPath);
+                    console.log('Imagen anterior eliminada con éxito');
+                }
+            }
+    
+            // Actualizar la imagen de perfil en la base de datos
+            const result: QueryResult = await pool.query(
+                'UPDATE users SET profile_image = $1, updated_at = NOW() WHERE id = $2 RETURNING id, username, email, profile_image',
+                [imageUrl, userId]
+            );
+    
+            if (result.rows.length === 0) {
+                // Si no se encuentra el usuario, eliminar la imagen subida
+                const uploadedImagePath = path.join(__dirname, '..', '..', 'uploads', 'profile-images', req.file.filename);
+                if (fs.existsSync(uploadedImagePath)) {
+                    fs.unlinkSync(uploadedImagePath);
+                }
+                res.status(404).json({ error: 'Usuario no encontrado' });
+                return;
+            }
+    
+            // Construir el objeto de respuesta con la URL completa
+            const userResponse = {
+                ...result.rows[0],
+                profile_image: fullImageUrl
+            };
+    
+            console.log('Respuesta al cliente:', userResponse);
+    
+            res.json({
+                message: 'Imagen de perfil actualizada correctamente',
+                profile_image: fullImageUrl,
+                user: userResponse
+            });
+    
+        } catch (error) {
+            // Si hay error, intentar eliminar la imagen subida
+            if (req.file) {
+                const uploadedImagePath = path.join(__dirname, '..', '..', 'uploads', 'profile-images', req.file.filename);
+                if (fs.existsSync(uploadedImagePath)) {
+                    fs.unlinkSync(uploadedImagePath);
+                }
+            }
+    
+            console.error('Error al subir la imagen de perfil:', error);
+            res.status(500).json({ 
+                error: 'Error al procesar la imagen de perfil',
+                details: error instanceof Error ? error.message : 'Error desconocido'
+            });
+        }
+    },
+
     updateUser: async (req: Request, res: Response): Promise<void> => {
         try {
             console.log('1. Request user:', req.user);
@@ -62,7 +162,7 @@ export const accountController = {
                 values.push(hashedPassword);
             }
 
-            query += ', updated_at = NOW() WHERE id = $' + (values.length + 1) + ' RETURNING id, username, email';
+            query += ', updated_at = NOW() WHERE id = $' + (values.length + 1) + ' RETURNING id, username, email, profile_image';
             values.push(userId);
 
             console.log('10. Query de actualización:', {
@@ -73,9 +173,18 @@ export const accountController = {
             const result: QueryResult = await pool.query(query, values);
             console.log('11. Resultado de la actualización:', result.rows[0]);
 
+            // Construir respuesta con URL completa de la imagen si existe
+            const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
+            const userResponse = {
+                ...result.rows[0],
+                profile_image: result.rows[0].profile_image ? 
+                    `${baseUrl}${result.rows[0].profile_image}` : 
+                    null
+            };
+
             res.json({
                 message: 'Usuario actualizado exitosamente',
-                user: result.rows[0]
+                user: userResponse
             });
         } catch (error) {
             console.error('ERROR COMPLETO:', error);
@@ -95,7 +204,7 @@ export const accountController = {
             const userId = req.user.id;
 
             const result: QueryResult = await pool.query(
-                'SELECT id, username, email, created_at FROM users WHERE id = $1',
+                'SELECT id, username, email, profile_image, created_at FROM users WHERE id = $1',
                 [userId]
             );
 
@@ -104,7 +213,16 @@ export const accountController = {
                 return;
             }
 
-            res.json({ user: result.rows[0] });
+            // Construir respuesta con URL completa de la imagen si existe
+            const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
+            const userResponse = {
+                ...result.rows[0],
+                profile_image: result.rows[0].profile_image ? 
+                    `${baseUrl}${result.rows[0].profile_image}` : 
+                    null
+            };
+
+            res.json({ user: userResponse });
         } catch (error) {
             console.error('Error al obtener perfil:', error);
             res.status(500).json({ error: 'Error al obtener el perfil del usuario' });
@@ -134,6 +252,14 @@ export const accountController = {
                 return;
             }
 
+            // Eliminar la imagen de perfil si existe
+            if (user.profile_image) {
+                const fullImagePath = path.join(__dirname, '..', '..', user.profile_image.replace(/^\/uploads\//, ''));
+                if (fs.existsSync(fullImagePath)) {
+                    fs.unlinkSync(fullImagePath);
+                }
+            }
+
             await pool.query('DELETE FROM users WHERE id = $1', [userId]);
 
             res.json({ message: 'Cuenta eliminada exitosamente' });
@@ -155,11 +281,10 @@ export const accountController = {
     
             if (result.rows.length === 0) {
                 console.log('No se encontró configuración, creando por defecto');
-                // Valores por defecto actualizados
                 const defaultSettings = {
-                    theme: 'dark',            // Cambiado a dark
+                    theme: 'dark',
                     notifications_enabled: true,
-                    language: 'es'            // Cambiado a es
+                    language: 'es'
                 };
     
                 const newSettingsResult: QueryResult = await pool.query(
@@ -204,7 +329,7 @@ export const accountController = {
                     `INSERT INTO settings (user_id, theme, notifications_enabled, language)
                      VALUES ($1, $2, $3, $4)
                      RETURNING *`,
-                    [userId, theme || 'dark', notifications_enabled || true, language || 'es'] // Valores por defecto actualizados
+                    [userId, theme || 'dark', notifications_enabled || true, language || 'es']
                 );
             } else {
                 console.log('Actualizando configuración existente');
