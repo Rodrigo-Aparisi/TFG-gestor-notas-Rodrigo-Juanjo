@@ -18,7 +18,7 @@ dotenv.config();
 const app = express();
 
 // Crear directorios necesarios si no existen
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+const uploadsDir = path.join(__dirname, 'uploads');
 const profileImagesDir = path.join(uploadsDir, 'profile-images');
 
 if (!fs.existsSync(uploadsDir)) {
@@ -28,6 +28,12 @@ if (!fs.existsSync(profileImagesDir)) {
   fs.mkdirSync(profileImagesDir, { recursive: true });
 }
 
+app.use('/uploads', (req, res, next) => {
+  console.log('Solicitud de archivo estático:', req.url);
+  console.log('Ruta completa:', path.join(__dirname, 'uploads', req.url));
+  next();
+});
+
 // Middleware básico
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -36,7 +42,7 @@ app.use(cors({
 app.use(express.json());
 
 // Configurar servicio de archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Configurar conexión a base de datos
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -60,9 +66,15 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Configurar rutas
 app.use('/api/auth', authRoutes);
-app.use('/api/notes', notesRoutes);
 app.use('/api/account', accountRoutes);
+app.use('/api/notes', notesRoutes);
 app.use('/api/reminders', reminderRoutes);
+
+// Añadir un middleware de logging para depuración
+app.use((req, res, next) => {
+    console.log('Ruta solicitada:', req.method, req.url);
+    next();
+});
 
 // Ruta de prueba para la base de datos
 app.get('/test-db', async (req, res) => {

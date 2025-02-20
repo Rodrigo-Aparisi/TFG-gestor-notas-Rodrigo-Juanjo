@@ -2,9 +2,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-// Crear el directorio de uploads si no existe
-const uploadDir = path.join(__dirname, '..','..','public', 'uploads');
-const profileImagesDir = path.join('profile-images');
+
+const uploadDir = path.join(__dirname, '..', 'uploads');
+const profileImagesDir = path.join(__dirname, '..', 'uploads', 'profile-images');
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -33,6 +33,6 @@ export const upload = multer({
         }
     },
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
+        fileSize: 5 * 1024 * 1024
     }
 });

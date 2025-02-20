@@ -21,9 +21,14 @@ const router = Router();
 router.use(authenticateToken);
 
 // Rutas de perfil y cuenta
-router.put('/update', (req: Request, res: Response) => {
+router.put('/update', authenticateToken, (req: Request, res: Response) => {
+  console.log('Ruta de actualización alcanzada', {
+      body: req.body,
+      user: req.user
+  });
   return accountController.updateUser(req, res);
 });
+
 
 router.get('/profile', (req: Request, res: Response) => {
   return accountController.getProfile(req, res);
