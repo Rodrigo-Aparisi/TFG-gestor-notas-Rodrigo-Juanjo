@@ -310,7 +310,10 @@ const Notes: React.FC = () => {
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
     if (!element) return;
     
+    // Guarda la posición actual del scroll
     const scrollPos = element.scrollTop;
+    
+    // Resetea la altura para obtener la altura real del contenido
     element.style.height = 'auto';
     
     const isCreateNote = element.closest('.create-note');
@@ -320,31 +323,24 @@ const Notes: React.FC = () => {
     if (isCreateNote) {
       // Para el textarea de crear nota
       element.style.height = 'auto';
-      element.style.maxHeight = '200px';
-      
-      if (element.scrollHeight <= 200) {
-        element.style.height = `${element.scrollHeight}px`;
-      }
+      const newHeight = Math.min(element.scrollHeight, 200);
+      element.style.height = `${newHeight}px`;
     } else if (isFocused) {
       // Para notas enfocadas
       element.style.height = 'auto';
-      element.style.maxHeight = '60vh';
-      
-      if (element.scrollHeight <= parseInt(element.style.maxHeight)) {
-        element.style.height = `${element.scrollHeight}px`;
-      }
+      const maxHeight = Math.min(window.innerHeight * 0.6, element.scrollHeight);
+      element.style.height = `${maxHeight}px`;
     } else {
       // Para notas normales
       element.style.height = 'auto';
-      element.style.maxHeight = '300px';
-      
-      if (element.scrollHeight <= 300) {
-        element.style.height = `${element.scrollHeight}px`;
-      }
+      const newHeight = Math.min(element.scrollHeight, 500);
+      element.style.height = `${newHeight}px`;
     }
     
+    // Restaura la posición del scroll
     element.scrollTop = scrollPos;
   };
+  
   
   
   
