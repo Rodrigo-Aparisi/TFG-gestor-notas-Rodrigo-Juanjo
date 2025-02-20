@@ -13,6 +13,8 @@ import {
   AiOutlineUser,
 } from "react-icons/ai";
 import "../styles/settings.css";
+import { setUser, updateUserProfile } from "../store/slices/authSlice";
+
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -21,6 +23,49 @@ const Settings = () => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const reduxSettings = useSelector((state: RootState) => state.settings);
+  const [profileImage, setProfileImage] = useState<string>(
+    user?.profile_image || ""
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (event.target.files && event.target.files[0]) {
+      const formData = new FormData();
+      formData.append("image", event.target.files[0]);
+
+      try {
+        setIsUploadingImage(true);
+        const imageUrl = await accountService.updateUserProfileImage(formData);
+
+        // Actualizar tanto el estado local como el global
+        setProfileImage(imageUrl);
+        if (user) {
+          dispatch(updateUserProfile({ profile_image: imageUrl }));
+        }
+
+        // Guardar en localStorage si es necesario
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...currentUser,
+            profile_image: imageUrl,
+          })
+        );
+
+        showMessage("Imagen de perfil actualizada correctamente", "success");
+      } catch (error) {
+        console.error("Error subiendo la imagen:", error);
+        showMessage("Error al subir la imagen", "error");
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
+  };
+
   const [theme, setTheme] = useState<ThemeType>("dark");
   const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -39,18 +84,21 @@ const Settings = () => {
   };
 
   const [settings, setSettings] = useState<SettingsState>({
-    theme: reduxSettings?.theme || 'dark',
-    defaultPage: reduxSettings?.defaultPage || 'notes',
-    defaultNoteSort: reduxSettings?.defaultNoteSort || 'date',
-    confirmDelete: reduxSettings?.confirmDelete ?? true
+    theme: reduxSettings?.theme || "dark",
+    defaultPage: reduxSettings?.defaultPage || "notes",
+    defaultNoteSort: reduxSettings?.defaultNoteSort || "date",
+    confirmDelete: reduxSettings?.confirmDelete ?? true,
   });
-  
 
-  const [activeMainTab, setActiveMainTab] = useState<string>("general");
-  const [activeSubTab, setActiveSubTab] = useState<string>("preferencias");
-  const [expandedMenu, setExpandedMenu] = useState<string | null>("general");
+  const [activeMainTab, setActiveMainTab] = useState<string>("cuenta");
+  const [activeSubTab, setActiveSubTab] = useState<string>("informacion");
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("cuenta");
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const [showPasswords, setShowPasswords] = useState<{
@@ -81,7 +129,7 @@ const Settings = () => {
   const loadTheme = useCallback(async () => {
     try {
       if (user?.id) {
-        const savedTheme = localStorage.getItem('userTheme') as ThemeType;
+        const savedTheme = localStorage.getItem("userTheme") as ThemeType;
         if (savedTheme && savedTheme in themeConfig.themes) {
           setTheme(savedTheme);
           themeService.setTheme(savedTheme);
@@ -89,107 +137,116 @@ const Settings = () => {
 
         const userSettings = await accountService.getUserSettings(user.id);
         const initialTheme = (userSettings?.theme as ThemeType) || "dark";
-        
+
         if (initialTheme in themeConfig.themes) {
           setTheme(initialTheme);
           themeService.setTheme(initialTheme);
-          localStorage.setItem('userTheme', initialTheme);
+          localStorage.setItem("userTheme", initialTheme);
         }
       } else {
         const defaultTheme: ThemeType = "dark";
         setTheme(defaultTheme);
         themeService.setTheme(defaultTheme);
-        localStorage.setItem('userTheme', defaultTheme);
+        localStorage.setItem("userTheme", defaultTheme);
       }
     } catch (error) {
       console.error("Error al cargar configuración:", error);
       const defaultTheme: ThemeType = "dark";
       setTheme(defaultTheme);
       themeService.setTheme(defaultTheme);
-      localStorage.setItem('userTheme', defaultTheme);
+      localStorage.setItem("userTheme", defaultTheme);
     }
   }, [user]);
 
-  const handleSettingsChange = async (newSettings: Partial<typeof settings>) => {
+  const handleSettingsChange = async (
+    newSettings: Partial<typeof settings>
+  ) => {
     try {
       // Actualizar estado local
-      setSettings(prev => ({
+      setSettings((prev) => ({
         ...prev,
-        ...newSettings
+        ...newSettings,
       }));
-  
+
       // Actualizar Redux
       dispatch(updateSettings(newSettings));
-  
+
       // Guardar en localStorage
       const updatedSettings = {
         ...settings,
-        ...newSettings
+        ...newSettings,
       };
-      localStorage.setItem('userSettings', JSON.stringify(updatedSettings));
-  
+      localStorage.setItem("userSettings", JSON.stringify(updatedSettings));
+
       // Actualizar en el backend
       if (user?.id) {
         await accountService.updateUserSettings(user.id, newSettings);
       }
-  
+
       showMessage("Configuración actualizada correctamente", "success");
     } catch (error) {
       console.error("Error al actualizar la configuración:", error);
       showMessage("Error al actualizar la configuración", "error");
     }
   };
-  
 
-useEffect(() => {
-  const initializeSettings = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
+  useEffect(() => {
+    if (user?.profile_image) {
+      setProfileImage(user.profile_image);
     }
-
-    try {
-      // Cargar tema
-      await loadTheme();
-
-      // Cargar configuraciones
-      const savedSettings = localStorage.getItem('userSettings');
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings) as SettingsState;
-        setSettings(parsedSettings);
-        dispatch(updateSettings(parsedSettings));
-      } else if (user?.id) {
-        const userSettings = await accountService.getUserSettings(user.id);
-        if (userSettings) {
-          const settingsToSave: SettingsState = {
-            theme: userSettings.theme === 'light' ? 'light' : 'dark',
-            defaultPage: ['notes', 'calendar', 'home'].includes(userSettings.defaultPage as string) 
-              ? (userSettings.defaultPage as 'notes' | 'calendar' | 'home') 
-              : 'notes',
-            defaultNoteSort: ['date', 'title', 'lastModified'].includes(userSettings.defaultNoteSort as string)
-              ? (userSettings.defaultNoteSort as 'date' | 'title' | 'lastModified')
-              : 'date',
-            confirmDelete: Boolean(userSettings.confirmDelete)
-          };
-          setSettings(settingsToSave);
-          dispatch(updateSettings(settingsToSave));
-          localStorage.setItem('userSettings', JSON.stringify(settingsToSave));
-        }
+    const initializeSettings = async () => {
+      if (!user) {
+        navigate("/login");
+        return;
       }
 
-      setIsLoaded(true);
-    } catch (error) {
-      console.error("Error initializing settings:", error);
-    }
-  };
+      try {
+        // Cargar tema
+        await loadTheme();
 
-  initializeSettings();
-}, [user, navigate, loadTheme, dispatch]);
+        // Cargar configuraciones
+        const savedSettings = localStorage.getItem("userSettings");
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings) as SettingsState;
+          setSettings(parsedSettings);
+          dispatch(updateSettings(parsedSettings));
+        } else if (user?.id) {
+          const userSettings = await accountService.getUserSettings(user.id);
+          if (userSettings) {
+            const settingsToSave: SettingsState = {
+              theme: userSettings.theme === "light" ? "light" : "dark",
+              defaultPage: ["notes", "calendar", "home"].includes(
+                userSettings.defaultPage as string
+              )
+                ? (userSettings.defaultPage as "notes" | "calendar" | "home")
+                : "notes",
+              defaultNoteSort: ["date", "title", "lastModified"].includes(
+                userSettings.defaultNoteSort as string
+              )
+                ? (userSettings.defaultNoteSort as
+                    | "date"
+                    | "title"
+                    | "lastModified")
+                : "date",
+              confirmDelete: Boolean(userSettings.confirmDelete),
+            };
+            setSettings(settingsToSave);
+            dispatch(updateSettings(settingsToSave));
+            localStorage.setItem(
+              "userSettings",
+              JSON.stringify(settingsToSave)
+            );
+          }
+        }
 
-  
-  
-  
-  
+        setIsLoaded(true);
+      } catch (error) {
+        console.error("Error initializing settings:", error);
+      }
+    };
+
+    initializeSettings();
+  }, [user, navigate, loadTheme, dispatch]);
 
   const handleMainTabClick = (tab: string) => {
     if (subMenus[tab]) {
@@ -231,17 +288,23 @@ useEffect(() => {
 
     try {
       if (!userData.currentPassword) {
-        throw new Error("Debes introducir tu contraseña actual para realizar cambios");
+        throw new Error(
+          "Debes introducir tu contraseña actual para realizar cambios"
+        );
       }
 
-      if (userData.newPassword && userData.newPassword !== userData.confirmNewPassword) {
+      if (
+        userData.newPassword &&
+        userData.newPassword !== userData.confirmNewPassword
+      ) {
         throw new Error("Las contraseñas nuevas no coinciden");
       }
 
       const response = await accountService.updateUser(userData);
 
       if (response.user) {
-        const requiresRelogin = userData.email !== user?.email || userData.newPassword;
+        const requiresRelogin =
+          userData.email !== user?.email || userData.newPassword;
         if (requiresRelogin) {
           showMessage(
             "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
@@ -281,7 +344,7 @@ useEffect(() => {
       setTheme(newTheme);
       themeService.setTheme(newTheme);
       await accountService.updateUserSettings(user.id, { theme: newTheme });
-      localStorage.setItem('userTheme', newTheme);
+      localStorage.setItem("userTheme", newTheme);
       showMessage("Tema actualizado correctamente", "success");
     } catch (error) {
       console.error("Error al actualizar el tema:", error);
@@ -292,20 +355,21 @@ useEffect(() => {
   };
 
   return (
-    <div className={`settings-container ${isLoaded ? 'loaded' : ''}`}>
-      {/* Resto del JSX igual que antes */}
+    <div className={`settings-container ${isLoaded ? "loaded" : ""}`}>
       <div className="settings-sidebar">
         {[
-          { key: "general", label: "General" },
           { key: "cuenta", label: "Cuenta" },
+          { key: "general", label: "General" },
           { key: "privacidad", label: "Privacidad" },
         ].map((item) => (
           <div key={item.key}>
             <button
               type="button"
-              className={`sidebar-button ${activeMainTab === item.key ? "active" : ""} ${
-                expandedMenu === item.key ? "" : "collapsed"
-              } ${subMenus[item.key] ? "" : "no-arrow"}`}
+              className={`sidebar-button ${
+                activeMainTab === item.key ? "active" : ""
+              } ${expandedMenu === item.key ? "" : "collapsed"} ${
+                subMenus[item.key] ? "" : "no-arrow"
+              }`}
               onClick={() => handleMainTabClick(item.key)}
             >
               {item.label}
@@ -316,7 +380,9 @@ useEffect(() => {
                   <button
                     key={subitem.key}
                     type="button"
-                    className={`submenu-button ${activeSubTab === subitem.key ? "active" : ""}`}
+                    className={`submenu-button ${
+                      activeSubTab === subitem.key ? "active" : ""
+                    }`}
                     onClick={() => handleSubTabClick(item.key, subitem.key)}
                   >
                     {subitem.label}
@@ -329,115 +395,52 @@ useEffect(() => {
       </div>
 
       <div className="settings-sections">
-        {message && <div className={`message ${message.type}`}>{message.text}</div>}
-
-        <section id="general-section">
-          <h2>General</h2>
-          <div id="general-preferencias">
-            <h3>Preferencias</h3>
-            <div className="theme-selector">
-              <h4>Apariencia</h4>
-              <div className="theme-options">
-                <div
-                  className={`theme-option ${theme === "dark" ? "active" : ""}`}
-                  onClick={() => setTheme("dark")}
-                >
-                  <div className="theme-preview dark-theme">
-                    <div className="preview-header"></div>
-                    <div className="preview-content">
-                      <div className="preview-line"></div>
-                      <div className="preview-line short"></div>
-                    </div>
-                  </div>
-                  <span>Tema Oscuro</span>
-                </div>
-
-                <div
-                  className={`theme-option ${theme === "light" ? "active" : ""}`}
-                  onClick={() => setTheme("light")}
-                >
-                  <div className="theme-preview light-theme">
-                    <div className="preview-header"></div>
-                    <div className="preview-content">
-                      <div className="preview-line"></div>
-                      <div className="preview-line short"></div>
-                    </div>
-                  </div>
-                  <span>Tema Claro</span>
-                </div>
-              </div>
-              <button
-                className="save-theme-button"
-                onClick={() => handleThemeChange(theme)}
-                disabled={isSavingTheme}
-              >
-                {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
-              </button>
-            </div>
-            <div className="behavior-settings">
-              <h4>Comportamiento</h4>
-              
-              <div className="setting-option">
-                <label>Página de inicio predeterminada</label>
-                <select 
-                  value={settings.defaultPage}
-                  onChange={(e) => handleSettingsChange({
-                    defaultPage: e.target.value as 'notes' | 'calendar' | 'home'
-                  })}
-                >
-                  <option value="notes">Notas</option>
-                  <option value="calendar">Calendario</option>
-                  <option value="home">Inicio</option>
-                </select>
-              </div>
-            <div className="setting-option">
-              <label>Ordenación predeterminada de notas</label>
-              <select
-                value={settings.defaultNoteSort}
-                onChange={(e) => handleSettingsChange({
-                  defaultNoteSort: e.target.value as 'date' | 'title' | 'lastModified'
-                })}
-              >
-                <option value="date">Fecha de creación</option>
-                <option value="title">Título</option>
-                <option value="lastModified">Última modificación</option>
-              </select>
-            </div>
-            <div className="setting-option">
-              <label className="toggle-label">
-                <span>Confirmar antes de eliminar</span>
-                <div className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.confirmDelete}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      confirmDelete: e.target.checked
-                    }))}
-                  />
-                  <span className="toggle-slider"></span>
-                </div>
-              </label>
-            </div>
-            <div className="settings-buttons">
-              <button
-                className="save-settings-button"
-                onClick={() => handleSettingsChange(settings)}
-                disabled={loading}
-              >
-                {loading ? "Guardando..." : "Guardar cambios"}
-              </button>
-            </div>
-          </div>
-          </div>
-          <div id="general-notificaciones">
-            <h3>Notificaciones</h3>
-            <p>Contenido de Notificaciones generales.</p>
-          </div>
-        </section>
+        {message && (
+          <div className={`message ${message.type}`}>{message.text}</div>
+        )}
 
         <section id="cuenta-section">
           <h2>Cuenta</h2>
+          <div className="profile-section">
+            <label>Imagen de perfil</label>
+            <div className="profile-image-container">
+              {profileImage && !imageError ? (
+                <img
+                  src={profileImage}
+                  alt="Perfil"
+                  className="profile-image"
+                  onError={(e) => {
+                    console.error("Error cargando imagen:", profileImage);
+                    setImageError(true);
+                    e.currentTarget.src = "/default-avatar.png"; // Imagen por defecto
+                  }}
+                />
+              ) : (
+                <AiOutlineUser size={50} />
+              )}
+            </div>
+
+            <div className="image-upload-container">
+              <input
+                type="file"
+                id="profile-image-input"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: "none" }}
+              />
+              <button
+                type="button"
+                className="upload-image-button"
+                onClick={() =>
+                  document.getElementById("profile-image-input")?.click()
+                }
+                disabled={isUploadingImage}
+              >
+                {isUploadingImage ? "Subiendo..." : "Seleccionar imagen"}
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit}>
             <div id="cuenta-informacion" className="account-section">
               <h3>Información de la cuenta</h3>
@@ -492,7 +495,9 @@ useEffect(() => {
                     <label>Contraseña actual</label>
                     <div className="password-input-container">
                       <input
-                        type={showPasswords.currentPassword ? "text" : "password"}
+                        type={
+                          showPasswords.currentPassword ? "text" : "password"
+                        }
                         name="currentPassword"
                         value={userData.currentPassword}
                         onChange={handleChange}
@@ -552,7 +557,9 @@ useEffect(() => {
                     <label>Confirmar nueva contraseña</label>
                     <div className="password-input-container">
                       <input
-                        type={showPasswords.confirmNewPassword ? "text" : "password"}
+                        type={
+                          showPasswords.confirmNewPassword ? "text" : "password"
+                        }
                         name="confirmNewPassword"
                         value={userData.confirmNewPassword}
                         onChange={handleChange}
@@ -577,7 +584,9 @@ useEffect(() => {
                     {userData.newPassword &&
                       userData.confirmNewPassword &&
                       userData.newPassword !== userData.confirmNewPassword && (
-                        <small className="warning-text">Las contraseñas no coinciden</small>
+                        <small className="warning-text">
+                          Las contraseñas no coinciden
+                        </small>
                       )}
                   </div>
                 </>
@@ -586,12 +595,20 @@ useEffect(() => {
 
             <div className="button-group">
               {!isEditing ? (
-                <button type="button" onClick={() => setIsEditing(true)} className="edit-button">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="edit-button"
+                >
                   Editar datos
                 </button>
               ) : (
                 <>
-                  <button type="submit" disabled={loading} className="save-button">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="save-button"
+                  >
                     {loading ? "Guardando..." : "Guardar cambios"}
                   </button>
                   <button
@@ -619,6 +636,124 @@ useEffect(() => {
               )}
             </div>
           </form>
+        </section>
+
+        <section id="general-section">
+          <h2>General</h2>
+          <div id="general-preferencias">
+            <h3>Preferencias</h3>
+            <div className="theme-selector">
+              <h4>Apariencia</h4>
+              <div className="theme-options">
+                <div
+                  className={`theme-option ${theme === "dark" ? "active" : ""}`}
+                  onClick={() => setTheme("dark")}
+                >
+                  <div className="theme-preview dark-theme">
+                    <div className="preview-header"></div>
+                    <div className="preview-content">
+                      <div className="preview-line"></div>
+                      <div className="preview-line short"></div>
+                    </div>
+                  </div>
+                  <span>Tema Oscuro</span>
+                </div>
+
+                <div
+                  className={`theme-option ${
+                    theme === "light" ? "active" : ""
+                  }`}
+                  onClick={() => setTheme("light")}
+                >
+                  <div className="theme-preview light-theme">
+                    <div className="preview-header"></div>
+                    <div className="preview-content">
+                      <div className="preview-line"></div>
+                      <div className="preview-line short"></div>
+                    </div>
+                  </div>
+                  <span>Tema Claro</span>
+                </div>
+              </div>
+              <button
+                className="save-theme-button"
+                onClick={() => handleThemeChange(theme)}
+                disabled={isSavingTheme}
+              >
+                {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
+              </button>
+            </div>
+            <div className="behavior-settings">
+              <h4>Comportamiento</h4>
+              <div className="setting-option">
+                <label>Página de inicio predeterminada</label>
+                <select
+                  value={settings.defaultPage}
+                  onChange={(e) =>
+                    handleSettingsChange({
+                      defaultPage: e.target.value as
+                        | "notes"
+                        | "calendar"
+                        | "home",
+                    })
+                  }
+                >
+                  <option value="notes">Notas</option>
+                  <option value="calendar">Calendario</option>
+                  <option value="home">Inicio</option>
+                </select>
+              </div>
+              <div className="setting-option">
+                <label>Ordenación predeterminada de notas</label>
+                <select
+                  value={settings.defaultNoteSort}
+                  onChange={(e) =>
+                    handleSettingsChange({
+                      defaultNoteSort: e.target.value as
+                        | "date"
+                        | "title"
+                        | "lastModified",
+                    })
+                  }
+                >
+                  <option value="date">Fecha de creación</option>
+                  <option value="title">Título</option>
+                  <option value="lastModified">Última modificación</option>
+                </select>
+              </div>
+              <div className="setting-option">
+                <label className="toggle-label">
+                  <span>Confirmar antes de eliminar</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={settings.confirmDelete}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          confirmDelete: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span className="toggle-slider"></span>
+                  </div>
+                </label>
+              </div>
+              <div className="settings-buttons">
+                <button
+                  className="save-settings-button"
+                  onClick={() => handleSettingsChange(settings)}
+                  disabled={loading}
+                >
+                  {loading ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="general-notificaciones">
+            <h3>Notificaciones</h3>
+            <p>Contenido de Notificaciones generales.</p>
+          </div>
         </section>
 
         <section id="privacidad-section">
