@@ -248,6 +248,63 @@ const Notes: React.FC = () => {
     }
   };
 
+  const handleToggleMark = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+  
+      setNotes(prevNotes => 
+        prevNotes.map(n => 
+          n.id === id ? { ...n, is_marked: !n.is_marked } : n
+        )
+      );
+  
+      const response = await noteService.toggleMark(id);
+      
+      if (!response || !response.note) {
+        // Revertir el cambio si hay error
+        setNotes(prevNotes => 
+          prevNotes.map(n => 
+            n.id === id ? { ...n, is_marked: note.is_marked } : n
+          )
+        );
+        showFeedback('Error al marcar la nota');
+      }
+    } catch (error) {
+      console.error('Error al marcar/desmarcar nota:', error);
+      showFeedback('Error al actualizar la nota');
+    }
+  };
+  
+  const handleTogglePin = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
+  
+      setNotes(prevNotes => 
+        prevNotes.map(n => 
+          n.id === id ? { ...n, is_pinned: !n.is_pinned } : n
+        )
+      );
+  
+      const response = await noteService.togglePin(id);
+      
+      if (!response || !response.note) {
+        // Revertir el cambio si hay error
+        setNotes(prevNotes => 
+          prevNotes.map(n => 
+            n.id === id ? { ...n, is_pinned: note.is_pinned } : n
+          )
+        );
+        showFeedback('Error al fijar la nota');
+      }
+    } catch (error) {
+      console.error('Error al fijar/desfijar nota:', error);
+      showFeedback('Error al actualizar la nota');
+    }
+  };
   
 
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
@@ -256,19 +313,42 @@ const Notes: React.FC = () => {
     const scrollPos = element.scrollTop;
     element.style.height = 'auto';
     
-    let newHeight;
+    const isCreateNote = element.closest('.create-note');
     const parentNote = element.closest('.note-card');
     const isFocused = parentNote?.classList.contains('focused');
     
-    if (isFocused) {
-      newHeight = Math.min(element.scrollHeight, window.innerHeight * 0.6);
+    if (isCreateNote) {
+      // Para el textarea de crear nota
+      element.style.height = 'auto';
+      element.style.maxHeight = '200px';
+      
+      if (element.scrollHeight <= 200) {
+        element.style.height = `${element.scrollHeight}px`;
+      }
+    } else if (isFocused) {
+      // Para notas enfocadas
+      element.style.height = 'auto';
+      element.style.maxHeight = '60vh';
+      
+      if (element.scrollHeight <= parseInt(element.style.maxHeight)) {
+        element.style.height = `${element.scrollHeight}px`;
+      }
     } else {
-      newHeight = element.scrollHeight;
+      // Para notas normales
+      element.style.height = 'auto';
+      element.style.maxHeight = '300px';
+      
+      if (element.scrollHeight <= 300) {
+        element.style.height = `${element.scrollHeight}px`;
+      }
     }
     
-    element.style.height = `${newHeight}px`;
     element.scrollTop = scrollPos;
   };
+  
+  
+  
+  
 
   return (
     <div className="notes-container">
@@ -305,6 +385,7 @@ const Notes: React.FC = () => {
                 setNewNote(prev => ({ ...prev, content: e.target.value }));
                 autoResizeTextarea(e.target as HTMLTextAreaElement);
               }}
+              onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
             />
             <div className="button-container">
               <button 
