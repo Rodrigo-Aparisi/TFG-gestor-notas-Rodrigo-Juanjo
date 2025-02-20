@@ -17,15 +17,45 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
-  const [profileImage, setProfileImage] = useState<string>(user?.profile_image || "");
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [profileImage, setProfileImage] = useState<string>("");
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const getFullImageUrl = (url: string | undefined): string => {
+    if (!url) return '';
+    const filename = url.split('/').pop();
+    return `http://localhost:3001/uploads/profile-images/${filename}`;
+  };
+
+  // Efecto para manejar la carga inicial y la imagen
   useEffect(() => {
+    if (user?.profile_image) {
+      const fullUrl = getFullImageUrl(user.profile_image);
+      setProfileImage(fullUrl);
+      
+      const img = new Image();
+      img.onload = () => {
+        setImageLoaded(true);
+        setImageError(false);
+      };
+      img.onerror = () => {
+        setImageError(true);
+        setImageLoaded(false);
+      };
+      img.src = fullUrl;
+    }
     setIsLoaded(true);
+  }, [user?.profile_image]);
+
+  // Efecto para manejar el click fuera del dropdown
+  useEffect(() => {
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -33,32 +63,18 @@ const Header: React.FC = () => {
     navigate("/login");
   };
 
-  // Manejadores para el menú desplegable
-  const handleMenuClick = () => {
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setShowDropdown(!showDropdown);
   };
 
   const handleClickOutside = (event: MouseEvent) => {
     const dropdown = document.getElementById("user-dropdown");
     const menuContainer = document.querySelector(".user-menu-container");
-    if (
-      dropdown &&
-      menuContainer &&
-      !menuContainer.contains(event.target as Node)
-    ) {
+    if (dropdown && menuContainer && !menuContainer.contains(event.target as Node)) {
       setShowDropdown(false);
     }
   };
-
-  useEffect(() => {
-    if (user?.profile_image) {
-      setProfileImage(user.profile_image);
-    }
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
 
   if (!isLoaded) {
     return (
@@ -112,18 +128,16 @@ const Header: React.FC = () => {
               onClick={handleMenuClick}
             >
               <div className="user-menu-icon">
-                {user?.profile_image ? (
+                {profileImage && !imageError ? (
                   <img
-                    src={user.profile_image}
+                    src={profileImage}
                     alt="Usuario"
-                    className="header-profile-image"
+                    className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
+                    onLoad={() => setImageLoaded(true)}
                     onError={(e) => {
-                      console.error(
-                        "Error cargando imagen:",
-                        user.profile_image
-                      );
-                      e.currentTarget.onerror = null; // Previene loop infinito
-                      e.currentTarget.src = ""; // O una imagen por defecto
+                      console.error("Error cargando imagen:", profileImage);
+                      setImageError(true);
+                      e.currentTarget.src = "";
                     }}
                   />
                 ) : (

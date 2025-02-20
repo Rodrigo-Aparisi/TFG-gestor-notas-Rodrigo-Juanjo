@@ -105,56 +105,53 @@ export const accountService = {
 
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No hay token de autenticación");
-      }
+        console.log('Datos a enviar:', userData); // Para depuración
 
-      const response = await api.put<UpdateResponse>("/auth/update", userData);
+        const response = await api.put<UpdateResponse>('/account/update', userData);
 
-      if (!response.data) {
-        throw new Error("No se recibió respuesta del servidor");
-      }
-
-      return response.data;
+        console.log('Respuesta del servidor:', response.data); // Para depuración
+        return response.data;
     } catch (error: any) {
-      console.error("Error al actualizar el usuario:", error);
-      throw new Error(
-        error.response?.data?.message || "Error al actualizar el usuario"
-      );
+        console.error("Error detallado:", {
+            config: error.config,
+            response: error.response,
+            message: error.message
+        });
+        
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status === 401) {
+                throw new Error('Contraseña actual incorrecta');
+            } else if (error.response?.status === 404) {
+                throw new Error('Usuario no encontrado');
+            } else if (error.response?.data?.error) {
+                throw new Error(error.response.data.error);
+            }
+        }
+        throw new Error('Error al actualizar el usuario');
     }
-  },
+},
 
   updateUserProfileImage: async (formData: FormData): Promise<string> => {
     try {
-      const response = await api.post(
-        "/account/upload-profile-image",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        const response = await api.post("/account/upload-profile-image", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+
+        if (!response.data || !response.data.profile_image) {
+            throw new Error("No se recibió la URL de la imagen");
         }
-      );
 
-      if (!response.data || !response.data.profile_image) {
-        throw new Error("No se recibió la URL de la imagen");
-      }
-
-      // Construir la URL completa
-      const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:3001";
-      const imageUrl = response.data.profile_image;
-      const fullImageUrl = imageUrl.startsWith("http")
-        ? imageUrl
-        : `${baseUrl}${imageUrl}`;
-
-      console.log("URL completa de la imagen:", fullImageUrl);
-      return fullImageUrl;
+        // Extraer solo la parte relativa de la URL
+        const imageUrl = response.data.profile_image;
+        return imageUrl.replace('http://localhost:3001/api', '');
     } catch (error) {
-      console.error("Error en updateUserProfileImage:", error);
-      throw error;
+        console.error("Error en updateUserProfileImage:", error);
+        throw error;
     }
-  },
+}
+,
 };
 
 // Interceptor para añadir el token a todas las peticiones

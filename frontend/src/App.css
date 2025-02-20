@@ -84,6 +84,12 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--dorado);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.header-profile-image.loaded {
+  opacity: 1;
 }
 
 .user-menu-icon {
@@ -92,8 +98,9 @@ body {
   justify-content: center;
   width: 32px;
   height: 32px;
-  overflow: hidden;
   border-radius: 50%;
+  background-color: var(--background-darker);
+  overflow: hidden;
 }
 
 

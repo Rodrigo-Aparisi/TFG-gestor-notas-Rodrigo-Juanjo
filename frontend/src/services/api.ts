@@ -24,9 +24,10 @@ interface ProfileImageResponse {
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
   headers: {
-    'Content-Type': 'application/json'
+      'Content-Type': 'application/json'
   }
 });
+
 
 // Interceptor para añadir el token
 api.interceptors.request.use((config) => {

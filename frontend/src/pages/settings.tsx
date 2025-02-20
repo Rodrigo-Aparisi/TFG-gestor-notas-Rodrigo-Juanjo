@@ -13,8 +13,7 @@ import {
   AiOutlineUser,
 } from "react-icons/ai";
 import "../styles/settings.css";
-import { setUser, updateUserProfile } from "../store/slices/authSlice";
-
+import { logout, setUser, updateUserProfile } from "../store/slices/authSlice";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -22,12 +21,20 @@ const Settings = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const reduxSettings = useSelector((state: RootState) => state.settings);
+  // Función helper para construir la URL completa de la imagen
+  const getFullImageUrl = (url: string | undefined): string => {
+    if (!url) return "";
+    const filename = url.split("/").pop(); // Obtener solo el nombre del archivo
+    return `http://localhost:3001/uploads/profile-images/${filename}`;
+  };
+
   const [profileImage, setProfileImage] = useState<string>(
-    user?.profile_image || ""
+    user?.profile_image ? getFullImageUrl(user.profile_image) : ""
   );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -38,28 +45,29 @@ const Settings = () => {
 
       try {
         setIsUploadingImage(true);
-        const imageUrl = await accountService.updateUserProfileImage(formData);
+        setImageLoaded(false);
+        const response = await accountService.updateUserProfileImage(formData);
 
-        // Actualizar tanto el estado local como el global
-        setProfileImage(imageUrl);
+        const fullUrl = getFullImageUrl(response);
+        setProfileImage(fullUrl);
+
         if (user) {
-          dispatch(updateUserProfile({ profile_image: imageUrl }));
+          dispatch(updateUserProfile({ profile_image: response }));
         }
 
-        // Guardar en localStorage si es necesario
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...currentUser,
-            profile_image: imageUrl,
-          })
-        );
+        // Precargar la imagen
+        const img = new Image();
+        img.onload = () => {
+          setImageLoaded(true);
+          setImageError(false);
+        };
+        img.src = fullUrl;
 
         showMessage("Imagen de perfil actualizada correctamente", "success");
       } catch (error) {
         console.error("Error subiendo la imagen:", error);
         showMessage("Error al subir la imagen", "error");
+        setImageError(true);
       } finally {
         setIsUploadingImage(false);
       }
@@ -190,10 +198,28 @@ const Settings = () => {
     }
   };
 
+  // Efecto para manejar la imagen de perfil
   useEffect(() => {
     if (user?.profile_image) {
-      setProfileImage(user.profile_image);
+        const fullUrl = getFullImageUrl(user.profile_image);
+        setProfileImage(fullUrl);
+        
+        const img = new Image();
+        img.onload = () => {
+            setImageLoaded(true);
+            setImageError(false);
+        };
+        img.onerror = () => {
+            setImageError(true);
+            setImageLoaded(false);
+        };
+        img.src = fullUrl;
     }
+}, [user?.profile_image]);
+
+
+  // Efecto para inicializar configuraciones
+  useEffect(() => {
     const initializeSettings = async () => {
       if (!user) {
         navigate("/login");
@@ -287,54 +313,55 @@ const Settings = () => {
     setLoading(true);
 
     try {
-      if (!userData.currentPassword) {
-        throw new Error(
-          "Debes introducir tu contraseña actual para realizar cambios"
-        );
-      }
-
-      if (
-        userData.newPassword &&
-        userData.newPassword !== userData.confirmNewPassword
-      ) {
-        throw new Error("Las contraseñas nuevas no coinciden");
-      }
-
-      const response = await accountService.updateUser(userData);
-
-      if (response.user) {
-        const requiresRelogin =
-          userData.email !== user?.email || userData.newPassword;
-        if (requiresRelogin) {
-          showMessage(
-            "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
-            "success"
-          );
-          setTimeout(() => {
-            navigate("/login");
-          }, 2000);
-        } else {
-          showMessage("Datos actualizados correctamente", "success");
-          setIsEditing(false);
-          setUserData((prev) => ({
-            ...prev,
-            currentPassword: "",
-            newPassword: "",
-            confirmNewPassword: "",
-          }));
-          setShowPasswords({
-            currentPassword: false,
-            newPassword: false,
-            confirmNewPassword: false,
-          });
+        if (!userData.currentPassword) {
+            throw new Error("Debes introducir tu contraseña actual para realizar cambios");
         }
-      }
+
+        if (userData.newPassword && userData.newPassword !== userData.confirmNewPassword) {
+            throw new Error("Las contraseñas nuevas no coinciden");
+        }
+
+        const response = await accountService.updateUser(userData);
+
+        if (response.user) {
+            const requiresRelogin = userData.email !== user?.email || userData.newPassword;
+            
+            if (requiresRelogin) {
+                showMessage(
+                    "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
+                    "success"
+                );
+                
+                // Primero hacer logout
+                dispatch(logout());
+                
+                // Después de un breve delay, redirigir a login
+                setTimeout(() => {
+                    navigate("/login", { replace: true });
+                }, 2000);
+            } else {
+                showMessage("Datos actualizados correctamente", "success");
+                setIsEditing(false);
+                setUserData((prev) => ({
+                    ...prev,
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmNewPassword: "",
+                }));
+                setShowPasswords({
+                    currentPassword: false,
+                    newPassword: false,
+                    confirmNewPassword: false,
+                });
+            }
+        }
     } catch (error: any) {
-      showMessage(error.message || "Error al actualizar los datos", "error");
+        showMessage(error.message || "Error al actualizar los datos", "error");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
 
   const handleThemeChange = async (newTheme: ThemeType) => {
     if (!user?.id) return;
@@ -408,18 +435,18 @@ const Settings = () => {
                 <img
                   src={profileImage}
                   alt="Perfil"
-                  className="profile-image"
+                  className={`profile-image ${imageLoaded ? "loaded" : ""}`}
+                  onLoad={() => setImageLoaded(true)}
                   onError={(e) => {
                     console.error("Error cargando imagen:", profileImage);
                     setImageError(true);
-                    e.currentTarget.src = "/default-avatar.png"; // Imagen por defecto
+                    e.currentTarget.src = "";
                   }}
                 />
               ) : (
                 <AiOutlineUser size={50} />
               )}
             </div>
-
             <div className="image-upload-container">
               <input
                 type="file"
