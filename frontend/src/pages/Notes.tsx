@@ -17,6 +17,7 @@ const Notes: React.FC = () => {
   const [feedback, setFeedback] = useState('');
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const breakpointColumns = {
     default: 4, // Número de columnas en pantallas grandes
@@ -247,6 +248,8 @@ const Notes: React.FC = () => {
     }
   };
 
+  
+
   const autoResizeTextarea = (element: HTMLTextAreaElement) => {
     if (!element) return;
     
@@ -277,74 +280,55 @@ const Notes: React.FC = () => {
       />
 
       <div 
-        className="create-note"
-        onMouseEnter={e => {
-          const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
-          if (textarea) {
-            textarea.style.opacity = '1';
-            autoResizeTextarea(textarea);
-            if (textarea.value.trim() === '') {
-              textarea.setAttribute('placeholder', 'Contenido de la nota...');
-            }
-          }
-        }}
-        onMouseLeave={e => {
-          const textarea = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
-          if (textarea && textarea.value.trim() === '' && !textarea.matches(':focus')) {
-            textarea.style.opacity = '0';
-            autoResizeTextarea(textarea);
-          }
-        }}
-      >        
-        <input
-          type="text"
-          placeholder="Título"
-          value={newNote.title}
-          onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-          required
-        />
-        <textarea
-          placeholder="Contenido de la nota..."
-          value={newNote.content}
-          onChange={e => {
-            setNewNote(prev => ({ ...prev, content: e.target.value }));
-            const textarea = e.target as HTMLTextAreaElement;
-            textarea.style.opacity = '1';
-            
-            if (e.target.value.trim() === '') {
-              textarea.setAttribute('placeholder', 'Contenido de la nota...');
-              autoResizeTextarea(textarea);
-            } else {
-              autoResizeTextarea(textarea);
-            }
-          }}
-          onBlur={e => {
-            const textarea = e.target as HTMLTextAreaElement;
-            if (newNote.content.trim() === '') {
-              e.target.style.opacity = '0';
-              autoResizeTextarea(textarea);
-              e.target.setAttribute('placeholder', 'Contenido de la nota...');
-            } else {
-              autoResizeTextarea(textarea);
-            }
-          }}
-          onFocus={e => {
-            e.target.style.opacity = '1';
-            e.target.style.height = 'auto';
-          }}
-          onClick={e => {}}
-          onMouseLeave={e => {
-            const textarea = e.target as HTMLTextAreaElement;
-            autoResizeTextarea(textarea);
-          }}
-        />
-        <button 
-          onClick={handleCreateNote}
-          disabled={isLoading}
-          className={isLoading ? 'loading' : ''}
-        >
-          {isLoading ? 'Creando...' : 'Crear Nota'}
-        </button>
+        className={`create-note ${isExpanded ? 'expanded' : ''}`}
+      >
+        {!isExpanded ? (
+          <input
+            type="text"
+            placeholder="Añade una nota..."
+            onClick={() => setIsExpanded(true)}
+            readOnly
+          />
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Título"
+              value={newNote.title}
+              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+              required
+            />
+            <textarea
+              placeholder="Contenido de la nota..."
+              value={newNote.content}
+              onChange={e => {
+                setNewNote(prev => ({ ...prev, content: e.target.value }));
+                autoResizeTextarea(e.target as HTMLTextAreaElement);
+              }}
+            />
+            <div className="button-container">
+              <button 
+                className="cancel-button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setNewNote({ title: '', content: '' });
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="create-button"
+                onClick={() => {
+                  handleCreateNote();
+                  setIsExpanded(false);
+                }}
+                disabled={isLoading}
+              >
+                Crear Nota
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <Masonry
@@ -363,6 +347,22 @@ const Notes: React.FC = () => {
               }
             }}
           >
+            <div className="note-actions">
+              <button 
+                className={`action-button ${note.is_marked ? 'marked' : ''}`}
+                onClick={(e) => handleToggleMark(note.id, e)}
+                title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+              >
+                <i className="fas fa-check-circle"></i>
+              </button>
+              <button 
+                className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
+                onClick={(e) => handleTogglePin(note.id, e)}
+                title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+              >
+                <i className="fas fa-thumbtack"></i>
+              </button>
+            </div>
             <div 
               className="focus-indicator"
               onClick={(e) => handleFocusIndicatorClick(e, note.id)}

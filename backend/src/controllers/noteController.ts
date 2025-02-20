@@ -96,4 +96,45 @@ export class NoteController {
       res.status(500).json({ error: 'Error al eliminar la nota' });
     }
   }
+
+  export const togglePin = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const note = await prisma.note.findUnique({ where: { id } });
+      
+      if (!note) {
+        return res.status(404).json({ error: 'Nota no encontrada' });
+      }
+  
+      const updatedNote = await prisma.note.update({
+        where: { id },
+        data: { is_pinned: !note.is_pinned }
+      });
+  
+      res.json({ note: updatedNote });
+    } catch (error) {
+      res.status(500).json({ error: 'Error al actualizar la nota' });
+    }
+  };
+  
+  export const toggleMark = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const note = await prisma.note.findUnique({ where: { id } });
+      
+      if (!note) {
+        return res.status(404).json({ error: 'Nota no encontrada' });
+      }
+  
+      const updatedNote = await prisma.note.update({
+        where: { id },
+        data: { is_marked: !note.is_marked }
+      });
+  
+      res.json({ note: updatedNote });
+    } catch (error) {
+      res.status(500).json({ error: 'Error al actualizar la nota' });
+    }
+  };
+
 }

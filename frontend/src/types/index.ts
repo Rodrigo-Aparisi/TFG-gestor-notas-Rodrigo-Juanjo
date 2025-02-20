@@ -11,12 +11,14 @@ export interface User {
 }
 
 export interface Note {
-  id: UUID;     
+  id: string;
   title: string;
-  content: string | null;
-  user_id: UUID;
+  content: string;
   created_at: Date;
   updated_at: Date;
+  user_id: string;
+  is_pinned: boolean;
+  is_marked: boolean;
 }
 
 export interface Reminder {

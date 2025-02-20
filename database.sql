@@ -38,9 +38,36 @@ CREATE TABLE notes (
     title VARCHAR(255) NOT NULL,
     content TEXT,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    is_pinned BOOLEAN DEFAULT FALSE, -- Nuevo campo para notas fijadas
+    is_marked BOOLEAN DEFAULT FALSE, -- Nuevo campo para notas marcadas
+    color VARCHAR(7) DEFAULT NULL,   -- Nuevo campo para color de nota (formato hex: #RRGGBB)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Crear tabla de etiquetas
+CREATE TABLE tags (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    color VARCHAR(7) DEFAULT '#000000',
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear tabla de relación entre notas y etiquetas
+CREATE TABLE note_tags (
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (note_id, tag_id)
+);
+
+-- Crear índices para notas
+CREATE INDEX idx_notes_user_id ON notes(user_id);
+CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
+CREATE INDEX idx_notes_is_marked ON notes(is_marked);
+CREATE INDEX idx_users_email ON users(email);
 
 -- Crear índices para notas
 CREATE INDEX idx_notes_user_id ON notes(user_id);
@@ -133,3 +160,48 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON reminders TO postgres;
 GRANT SELECT ON reminder_status TO postgres;
 GRANT SELECT, INSERT, UPDATE, DELETE ON reminder_recurrence TO postgres;
 GRANT SELECT ON v_reminders TO postgres;
+
+-- Crear triggers para actualizar updated_at automáticamente
+CREATE TRIGGER update_notes_updated_at
+    BEFORE UPDATE ON notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_tags_updated_at
+    BEFORE UPDATE ON tags
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear vista para notas con sus etiquetas
+CREATE VIEW v_notes_with_tags AS
+SELECT 
+    n.id,
+    n.title,
+    n.content,
+    n.user_id,
+    n.is_pinned,
+    n.is_marked,
+    n.color,
+    n.created_at,
+    n.updated_at,
+    ARRAY_AGG(JSONB_BUILD_OBJECT(
+        'id', t.id,
+        'name', t.name,
+        'color', t.color
+    )) FILTER (WHERE t.id IS NOT NULL) as tags
+FROM notes n
+LEFT JOIN note_tags nt ON n.id = nt.note_id
+LEFT JOIN tags t ON nt.tag_id = t.id
+GROUP BY n.id;
+
+-- Agregar permisos necesarios
+GRANT SELECT, INSERT, UPDATE, DELETE ON notes TO postgres;
+GRANT SELECT, INSERT, UPDATE, DELETE ON tags TO postgres;
+GRANT SELECT, INSERT, UPDATE, DELETE ON note_tags TO postgres;
+GRANT SELECT ON v_notes_with_tags TO postgres;
+
+-- Crear índices adicionales para mejorar el rendimiento
+CREATE INDEX idx_notes_created_at ON notes(created_at);
+CREATE INDEX idx_notes_updated_at ON notes(updated_at);
+CREATE INDEX idx_tags_user_id ON tags(user_id);
+CREATE INDEX idx_note_tags_tag_id ON note_tags(tag_id);
