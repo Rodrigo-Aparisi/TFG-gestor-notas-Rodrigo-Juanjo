@@ -97,44 +97,61 @@ export class NoteController {
     }
   }
 
-  export const togglePin = async (req: Request, res: Response) => {
+  async togglePin(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const note = await prisma.note.findUnique({ where: { id } });
-      
-      if (!note) {
-        return res.status(404).json({ error: 'Nota no encontrada' });
+      const userId = req.user.id;
+
+      // Primero verificamos si la nota existe y pertenece al usuario
+      const note = await pool.query(
+        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
+
+      if (note.rows.length === 0) {
+        res.status(404).json({ error: 'Nota no encontrada' });
+        return;
       }
-  
-      const updatedNote = await prisma.note.update({
-        where: { id },
-        data: { is_pinned: !note.is_pinned }
-      });
-  
-      res.json({ note: updatedNote });
+
+      // Actualizamos el estado de is_pinned
+      const result = await pool.query(
+        'UPDATE notes SET is_pinned = NOT is_pinned WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
+      );
+
+      res.json({ note: result.rows[0] });
     } catch (error) {
       res.status(500).json({ error: 'Error al actualizar la nota' });
     }
-  };
-  
-  export const toggleMark = async (req: Request, res: Response) => {
+  }
+
+  // Método toggleMark dentro de la clase
+  async toggleMark(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const note = await prisma.note.findUnique({ where: { id } });
-      
-      if (!note) {
-        return res.status(404).json({ error: 'Nota no encontrada' });
+      const userId = req.user.id;
+
+      // Primero verificamos si la nota existe y pertenece al usuario
+      const note = await pool.query(
+        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
+
+      if (note.rows.length === 0) {
+        res.status(404).json({ error: 'Nota no encontrada' });
+        return;
       }
-  
-      const updatedNote = await prisma.note.update({
-        where: { id },
-        data: { is_marked: !note.is_marked }
-      });
-  
-      res.json({ note: updatedNote });
+
+      // Actualizamos el estado de is_marked
+      const result = await pool.query(
+        'UPDATE notes SET is_marked = NOT is_marked WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
+      );
+
+      res.json({ note: result.rows[0] });
     } catch (error) {
       res.status(500).json({ error: 'Error al actualizar la nota' });
     }
-  };
+  }
 
 }

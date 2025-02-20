@@ -13,6 +13,7 @@ CREATE TABLE users (
     username VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    profile_image VARCHAR (500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -38,9 +39,9 @@ CREATE TABLE notes (
     title VARCHAR(255) NOT NULL,
     content TEXT,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    is_pinned BOOLEAN DEFAULT FALSE, -- Nuevo campo para notas fijadas
-    is_marked BOOLEAN DEFAULT FALSE, -- Nuevo campo para notas marcadas
-    color VARCHAR(7) DEFAULT NULL,   -- Nuevo campo para color de nota (formato hex: #RRGGBB)
+    is_pinned BOOLEAN DEFAULT FALSE,
+    is_marked BOOLEAN DEFAULT FALSE,
+    color VARCHAR(7) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -67,10 +68,6 @@ CREATE TABLE note_tags (
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
 CREATE INDEX idx_notes_is_marked ON notes(is_marked);
-CREATE INDEX idx_users_email ON users(email);
-
--- Crear índices para notas
-CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_users_email ON users(email);
 
 -- Crear tabla de estados de recordatorios

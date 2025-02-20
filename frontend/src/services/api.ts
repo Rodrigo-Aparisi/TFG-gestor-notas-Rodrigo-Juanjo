@@ -100,15 +100,35 @@ export const noteService = {
       throw error;
     }
   },
-
-  togglePin: async (id: string) => {
-    const response = await api.patch(`/notes/${id}/pin`);
-    return response.data;
+  
+  toggleMark: async (id: string) => {
+    try {
+      const response = await fetch(`/api/notes/${id}/toggle-mark`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Error al marcar la nota');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
   },
 
-  toggleMark: async (id: string) => {
-    const response = await api.patch(`/notes/${id}/mark`);
-    return response.data;
+  togglePin: async (id: string) => {
+    try {
+      const response = await fetch(`/api/notes/${id}/toggle-pin`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Error al fijar la nota');
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
   }
 };
 export const calendarService = {
