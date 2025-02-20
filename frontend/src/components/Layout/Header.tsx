@@ -1,18 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
-import { logout } from '../../store/slices/authSlice';
-import { FaCalendar } from 'react-icons/fa';
-import { AiOutlineUser } from 'react-icons/ai';
-import { BsStickyFill } from 'react-icons/bs'; // Importamos el icono de notas
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../store";
+import { logout } from "../../store/slices/authSlice";
+import { FaCalendar } from "react-icons/fa";
+import { AiOutlineUser } from "react-icons/ai";
+import { BsStickyFill } from "react-icons/bs";
+
+interface User {
+  id: string;
+  username: string;
+  profile_image?: string;
+}
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const [profileImage, setProfileImage] = useState<string>(user?.profile_image || "");
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -20,8 +30,35 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    navigate("/login");
   };
+
+  // Manejadores para el menú desplegable
+  const handleMenuClick = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  const handleClickOutside = (event: MouseEvent) => {
+    const dropdown = document.getElementById("user-dropdown");
+    const menuContainer = document.querySelector(".user-menu-container");
+    if (
+      dropdown &&
+      menuContainer &&
+      !menuContainer.contains(event.target as Node)
+    ) {
+      setShowDropdown(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.profile_image) {
+      setProfileImage(user.profile_image);
+    }
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   if (!isLoaded) {
     return (
@@ -30,7 +67,7 @@ const Header: React.FC = () => {
           <div className="nav-left">
             <span className="logo">Gestor de Notas</span>
           </div>
-          <div className="auth-container" style={{ visibility: 'hidden' }}>
+          <div className="auth-container" style={{ visibility: "hidden" }}>
             <div className="user-menu-container">
               <div className="user-menu-icon">
                 <AiOutlineUser size={24} />
@@ -51,16 +88,16 @@ const Header: React.FC = () => {
           </Link>
           {isAuthenticated && (
             <div className="nav-icons">
-              <button 
+              <button
                 className="icon-button"
-                onClick={() => navigate('/notes')}
+                onClick={() => navigate("/notes")}
                 aria-label="Ir a notas"
               >
                 <BsStickyFill size={20} />
               </button>
-              <button 
+              <button
                 className="icon-button"
-                onClick={() => navigate('/calendar')}
+                onClick={() => navigate("/calendar")}
                 aria-label="Ir a calendario"
               >
                 <FaCalendar />
@@ -70,22 +107,50 @@ const Header: React.FC = () => {
         </div>
         <div className="auth-container">
           {isAuthenticated && user ? (
-            <div className="user-menu-container">
+            <div
+              className={`user-menu-container ${showDropdown ? "active" : ""}`}
+              onClick={handleMenuClick}
+            >
               <div className="user-menu-icon">
-                <AiOutlineUser size={24} />
+                {user?.profile_image ? (
+                  <img
+                    src={user.profile_image}
+                    alt="Usuario"
+                    className="header-profile-image"
+                    onError={(e) => {
+                      console.error(
+                        "Error cargando imagen:",
+                        user.profile_image
+                      );
+                      e.currentTarget.onerror = null; // Previene loop infinito
+                      e.currentTarget.src = ""; // O una imagen por defecto
+                    }}
+                  />
+                ) : (
+                  <AiOutlineUser size={24} />
+                )}
               </div>
-              <span className="user-name">
-                {user.username}
-              </span>
-              <div className="dropdown-menu" id="user-dropdown" role="menu">
-                <button 
-                  onClick={() => navigate('/settings')}
+
+              <span className="user-name">{user.username}</span>
+              <div
+                className={`dropdown-menu ${showDropdown ? "show" : ""}`}
+                id="user-dropdown"
+                role="menu"
+              >
+                <button
+                  onClick={() => {
+                    navigate("/settings");
+                    setShowDropdown(false);
+                  }}
                   role="menuitem"
                 >
                   Configuración
                 </button>
-                <button 
-                  onClick={handleLogout}
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setShowDropdown(false);
+                  }}
                   role="menuitem"
                 >
                   Cerrar Sesión
@@ -93,8 +158,8 @@ const Header: React.FC = () => {
               </div>
             </div>
           ) : (
-            <button 
-              onClick={() => navigate('/login')}
+            <button
+              onClick={() => navigate("/login")}
               className="login-button"
               type="button"
             >

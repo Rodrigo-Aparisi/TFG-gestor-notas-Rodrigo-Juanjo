@@ -1,13 +1,13 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:3001/api",
 });
 
 interface UserSettings {
-  theme?: 'light' | 'dark';
-  defaultPage?: 'notes' | 'calendar' | 'home';
-  defaultNoteSort?: 'date' | 'title' | 'lastModified';
+  theme?: "light" | "dark";
+  defaultPage?: "notes" | "calendar" | "home";
+  defaultNoteSort?: "date" | "title" | "lastModified";
   confirmDelete?: boolean;
   notifications_enabled?: boolean;
   language?: string;
@@ -28,94 +28,139 @@ interface UpdateResponse {
 export const accountService = {
   getUserSettings: async (userId: string): Promise<UserSettings> => {
     try {
-      const response = await api.get('/account/settings');
-      
+      const response = await api.get("/account/settings");
+
       if (!response.data) {
-        throw new Error('No se encontró la configuración');
+        throw new Error("No se encontró la configuración");
       }
-      
+
       return response.data;
     } catch (error: any) {
-      console.error('Error al obtener la configuración:', error);
-      
+      console.error("Error al obtener la configuración:", error);
+
       if (error.response?.status === 404) {
         try {
           const defaultSettings: UserSettings = {
-            theme: 'dark',
-            defaultPage: 'notes',
-            defaultNoteSort: 'date',
+            theme: "dark",
+            defaultPage: "notes",
+            defaultNoteSort: "date",
             confirmDelete: true,
             notifications_enabled: true,
-            language: 'es'
+            language: "es",
           };
-          
-          const newSettings = await accountService.updateUserSettings(userId, defaultSettings);
+
+          const newSettings = await accountService.updateUserSettings(
+            userId,
+            defaultSettings
+          );
           return newSettings;
         } catch (createError) {
-          console.error('Error al crear configuración por defecto:', createError);
-          return { 
-            theme: 'dark',
-            defaultPage: 'notes',
-            defaultNoteSort: 'date',
-            confirmDelete: true
+          console.error(
+            "Error al crear configuración por defecto:",
+            createError
+          );
+          return {
+            theme: "dark",
+            defaultPage: "notes",
+            defaultNoteSort: "date",
+            confirmDelete: true,
           };
         }
       }
-      
-      return { 
-        theme: 'dark',
-        defaultPage: 'notes',
-        defaultNoteSort: 'date',
-        confirmDelete: true
+
+      return {
+        theme: "dark",
+        defaultPage: "notes",
+        defaultNoteSort: "date",
+        confirmDelete: true,
       };
     }
   },
 
-  updateUserSettings: async (userId: string, settings: UserSettings): Promise<UserSettings> => {
+  updateUserSettings: async (
+    userId: string,
+    settings: UserSettings
+  ): Promise<UserSettings> => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No hay token de autenticación');
+        throw new Error("No hay token de autenticación");
       }
 
-      const response = await api.put('/account/settings', settings);
+      const response = await api.put("/account/settings", settings);
 
       if (!response.data) {
-        throw new Error('No se recibió respuesta del servidor');
+        throw new Error("No se recibió respuesta del servidor");
       }
 
       return response.data;
     } catch (error: any) {
-      console.error('Error al actualizar la configuración:', error);
-      throw new Error(error.response?.data?.message || 'Error al actualizar la configuración del usuario');
+      console.error("Error al actualizar la configuración:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          "Error al actualizar la configuración del usuario"
+      );
     }
   },
 
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error('No hay token de autenticación');
+        throw new Error("No hay token de autenticación");
       }
 
-      const response = await api.put<UpdateResponse>('/auth/update', userData);
+      const response = await api.put<UpdateResponse>("/auth/update", userData);
 
       if (!response.data) {
-        throw new Error('No se recibió respuesta del servidor');
+        throw new Error("No se recibió respuesta del servidor");
       }
 
       return response.data;
     } catch (error: any) {
-      console.error('Error al actualizar el usuario:', error);
-      throw new Error(error.response?.data?.message || 'Error al actualizar el usuario');
+      console.error("Error al actualizar el usuario:", error);
+      throw new Error(
+        error.response?.data?.message || "Error al actualizar el usuario"
+      );
     }
-  }
+  },
+
+  updateUserProfileImage: async (formData: FormData): Promise<string> => {
+    try {
+      const response = await api.post(
+        "/account/upload-profile-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (!response.data || !response.data.profile_image) {
+        throw new Error("No se recibió la URL de la imagen");
+      }
+
+      // Construir la URL completa
+      const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:3001";
+      const imageUrl = response.data.profile_image;
+      const fullImageUrl = imageUrl.startsWith("http")
+        ? imageUrl
+        : `${baseUrl}${imageUrl}`;
+
+      console.log("URL completa de la imagen:", fullImageUrl);
+      return fullImageUrl;
+    } catch (error) {
+      console.error("Error en updateUserProfileImage:", error);
+      throw error;
+    }
+  },
 };
 
 // Interceptor para añadir el token a todas las peticiones
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -131,9 +176,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
