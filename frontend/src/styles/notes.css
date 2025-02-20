@@ -38,6 +38,8 @@ html, body {
   min-width: 450px;
   overflow: hidden;
   transition: max-height 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .create-note.expanded {
@@ -89,23 +91,6 @@ html, body {
   background: var(--dorado);
   border-radius: 4px;
 }
-
-
-/* Estilos del scrollbar para el textarea de crear nota */
-.create-note textarea::-webkit-scrollbar {
-  width: 8px;
-}
-
-.create-note textarea::-webkit-scrollbar-track {
-  background: rgba(54, 54, 54, 0.8);
-  border-radius: 4px;
-}
-
-.create-note textarea::-webkit-scrollbar-thumb {
-  background: var(--dorado);
-  border-radius: 4px;
-}
-
 
 .create-note textarea::placeholder {
   color: #999;
@@ -160,14 +145,14 @@ html, body {
   margin-bottom: 15px;
   break-inside: avoid;
   transition: transform 0.2s ease;
-  padding-right: calc(15px + 8px); /* Añade espacio extra para la scrollbar */
+  padding-right: calc(15px + 8px);
   box-sizing: border-box;
 }
 
 .note-actions {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 8px;
+  right: 8px;
   display: flex;
   gap: 8px;
   opacity: 0;
@@ -217,6 +202,40 @@ html, body {
   flex-direction: column;
   flex: 1;
   width: 100%;
+}
+
+.note-card.focusing {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  width: var(--original-width);
+  height: var(--original-height);
+  top: var(--original-top);
+  left: var(--original-left);
+  transform: none;
+  transition: none;
+}
+
+/* Animación desde la izquierda */
+.note-card.focusing[data-column-position="left"].focused {
+  transform-origin: left center;
+  animation: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-card.focusing[data-column-position="left"] {
+  transform-origin: left center;
+}
+
+/* Animación desde la derecha */
+.note-card.focusing[data-column-position="right"].focused {
+  transform-origin: right center;
+  animation: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-card.focusing[data-column-position="right"] {
+  transform-origin: right center;
 }
 
 /* === INPUTS Y TEXTAREAS === */
@@ -269,13 +288,12 @@ html, body {
   max-height: 90vh;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
   z-index: 1000;
   padding: 40px;
-  display: flex;
-  flex-direction: column;
   background: #fff;
-  overflow: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .note-card.focused .note-content {
@@ -362,11 +380,15 @@ button:focus {
   padding: 5px;
   cursor: pointer;
   color: #666;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-button:hover {
   color: #000;
+  transform: scale(1.1);
 }
 
 .action-button.marked {
@@ -375,6 +397,10 @@ button:focus {
 
 .action-button.pinned {
   color: #2ecc71;
+}
+
+.action-button i {
+  font-size: 1.2rem;
 }
 
 /* === BOTÓN DE ELIMINAR === */
@@ -419,15 +445,15 @@ button:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0);
   z-index: 999;
-  opacity: 0;
   visibility: hidden;
-  transition: all 0.5s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .overlay.active {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.7);
   visibility: visible;
 }
 
@@ -473,6 +499,73 @@ button:focus {
   background: #555;
 }
 
+
+
+/* === MENU SUPERIOR === */
+.bulk-actions-menu {
+  position: relative;
+  width: 100%;
+  min-width: 450px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin-bottom: 0;
+  transform-origin: top;
+  transition: all 0.3s ease-in-out;
+}
+
+.bulk-actions-menu.visible {
+  opacity: 1;
+  max-height: 60px;
+  margin-bottom: 20px;
+  transform: scaleY(1);
+}
+
+.bulk-actions-menu .left-section {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.bulk-actions-menu .right-section {
+  display: flex;
+  gap: 15px;
+}
+
+.bulk-delete-button {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.bulk-delete-button:hover {
+  background-color: #ff6b81;
+}
+
+.has-marked-notes .note-actions {
+  opacity: 1;
+}
+
+.create-note,
+.bulk-actions-menu {
+  z-index: 2;
+}
+
 /* === ANIMACIONES === */
 @keyframes fadeIn {
   from {
@@ -484,6 +577,82 @@ button:focus {
     transform: translateY(0);
   }
 }
+
+/* === ANIMACIONES FOCUS === */
+/* Animaciones para la entrada */
+@keyframes expandFromLeft {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+}
+
+@keyframes expandFromRight {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+}
+
+/* Animaciones para la salida */
+@keyframes collapseToLeft {
+  0% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes collapseToRight {
+  0% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
 
 /* === RESPONSIVE === */
 @media (max-width: 1200px) {
@@ -497,3 +666,4 @@ button:focus {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
+
