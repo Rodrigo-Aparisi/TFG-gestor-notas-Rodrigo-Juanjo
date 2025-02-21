@@ -13,7 +13,7 @@ import {
   AiOutlineUser,
 } from "react-icons/ai";
 import "../styles/settings.css";
-import { logout, setUser, updateUserProfile } from "../store/slices/authSlice";
+import { logout, updateUserProfile } from "../store/slices/authSlice";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -21,13 +21,15 @@ const Settings = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
+  const reduxSettings = useSelector((state: RootState) => state.settings);
+
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const reduxSettings = useSelector((state: RootState) => state.settings);
+
   // Función helper para construir la URL completa de la imagen
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return "";
-    const filename = url.split("/").pop(); // Obtener solo el nombre del archivo
+    const filename = url.split("/").pop();
     return `http://localhost:3001/uploads/profile-images/${filename}`;
   };
 
@@ -42,7 +44,6 @@ const Settings = () => {
     if (event.target.files && event.target.files[0]) {
       const formData = new FormData();
       formData.append("image", event.target.files[0]);
-
       try {
         setIsUploadingImage(true);
         setImageLoaded(false);
@@ -87,7 +88,7 @@ const Settings = () => {
     cuenta: [
       { key: "informacion", label: "Información de la cuenta" },
       { key: "email", label: "Email" },
-      { key: "contrasena", label: "Contraseña" },
+      // La sección de contraseña se modificará a continuación
     ],
   };
 
@@ -201,22 +202,21 @@ const Settings = () => {
   // Efecto para manejar la imagen de perfil
   useEffect(() => {
     if (user?.profile_image) {
-        const fullUrl = getFullImageUrl(user.profile_image);
-        setProfileImage(fullUrl);
-        
-        const img = new Image();
-        img.onload = () => {
-            setImageLoaded(true);
-            setImageError(false);
-        };
-        img.onerror = () => {
-            setImageError(true);
-            setImageLoaded(false);
-        };
-        img.src = fullUrl;
-    }
-}, [user?.profile_image]);
+      const fullUrl = getFullImageUrl(user.profile_image);
+      setProfileImage(fullUrl);
 
+      const img = new Image();
+      img.onload = () => {
+        setImageLoaded(true);
+        setImageError(false);
+      };
+      img.onerror = () => {
+        setImageError(true);
+        setImageLoaded(false);
+      };
+      img.src = fullUrl;
+    }
+  }, [user?.profile_image]);
 
   // Efecto para inicializar configuraciones
   useEffect(() => {
@@ -225,7 +225,6 @@ const Settings = () => {
         navigate("/login");
         return;
       }
-
       try {
         // Cargar tema
         await loadTheme();
@@ -249,10 +248,7 @@ const Settings = () => {
               defaultNoteSort: ["date", "title", "lastModified"].includes(
                 userSettings.defaultNoteSort as string
               )
-                ? (userSettings.defaultNoteSort as
-                    | "date"
-                    | "title"
-                    | "lastModified")
+                ? (userSettings.defaultNoteSort as "date" | "title" | "lastModified")
                 : "date",
               confirmDelete: Boolean(userSettings.confirmDelete),
             };
@@ -264,7 +260,6 @@ const Settings = () => {
             );
           }
         }
-
         setIsLoaded(true);
       } catch (error) {
         console.error("Error initializing settings:", error);
@@ -311,57 +306,55 @@ const Settings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-        if (!userData.currentPassword) {
-            throw new Error("Debes introducir tu contraseña actual para realizar cambios");
-        }
+      if (!userData.currentPassword) {
+        throw new Error("Debes introducir tu contraseña actual para realizar cambios");
+      }
 
-        if (userData.newPassword && userData.newPassword !== userData.confirmNewPassword) {
-            throw new Error("Las contraseñas nuevas no coinciden");
-        }
+      if (
+        userData.newPassword &&
+        userData.newPassword !== userData.confirmNewPassword
+      ) {
+        throw new Error("Las contraseñas nuevas no coinciden");
+      }
 
-        const response = await accountService.updateUser(userData);
+      const response = await accountService.updateUser(userData);
 
-        if (response.user) {
-            const requiresRelogin = userData.email !== user?.email || userData.newPassword;
-            
-            if (requiresRelogin) {
-                showMessage(
-                    "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
-                    "success"
-                );
-                
-                // Primero hacer logout
-                dispatch(logout());
-                
-                // Después de un breve delay, redirigir a login
-                setTimeout(() => {
-                    navigate("/login", { replace: true });
-                }, 2000);
-            } else {
-                showMessage("Datos actualizados correctamente", "success");
-                setIsEditing(false);
-                setUserData((prev) => ({
-                    ...prev,
-                    currentPassword: "",
-                    newPassword: "",
-                    confirmNewPassword: "",
-                }));
-                setShowPasswords({
-                    currentPassword: false,
-                    newPassword: false,
-                    confirmNewPassword: false,
-                });
-            }
+      if (response.user) {
+        const requiresRelogin =
+          userData.email !== user?.email || userData.newPassword;
+
+        if (requiresRelogin) {
+          showMessage(
+            "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
+            "success"
+          );
+          dispatch(logout());
+          setTimeout(() => {
+            navigate("/login", { replace: true });
+          }, 2000);
+        } else {
+          showMessage("Datos actualizados correctamente", "success");
+          setIsEditing(false);
+          setUserData((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmNewPassword: "",
+          }));
+          setShowPasswords({
+            currentPassword: false,
+            newPassword: false,
+            confirmNewPassword: false,
+          });
         }
+      }
     } catch (error: any) {
-        showMessage(error.message || "Error al actualizar los datos", "error");
+      showMessage(error.message || "Error al actualizar los datos", "error");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
-
+  };
 
   const handleThemeChange = async (newTheme: ThemeType) => {
     if (!user?.id) return;
@@ -382,152 +375,153 @@ const Settings = () => {
   };
 
   return (
-    <div className={`settings-container ${isLoaded ? "loaded" : ""}`}>
-      <div className="settings-sidebar">
-        {[
-          { key: "cuenta", label: "Cuenta" },
-          { key: "general", label: "General" },
-          { key: "privacidad", label: "Privacidad" },
-        ].map((item) => (
-          <div key={item.key}>
-            <button
-              type="button"
-              className={`sidebar-button ${
-                activeMainTab === item.key ? "active" : ""
-              } ${expandedMenu === item.key ? "" : "collapsed"} ${
-                subMenus[item.key] ? "" : "no-arrow"
-              }`}
-              onClick={() => handleMainTabClick(item.key)}
-            >
-              {item.label}
-            </button>
-            {expandedMenu === item.key && subMenus[item.key] && (
-              <div className="submenu-container">
-                {subMenus[item.key].map((subitem) => (
-                  <button
-                    key={subitem.key}
-                    type="button"
-                    className={`submenu-button ${
-                      activeSubTab === subitem.key ? "active" : ""
-                    }`}
-                    onClick={() => handleSubTabClick(item.key, subitem.key)}
-                  >
-                    {subitem.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="settings-sections">
-        {message && (
-          <div className={`message ${message.type}`}>{message.text}</div>
-        )}
-
-        <section id="cuenta-section">
-          <h2>Cuenta</h2>
-          <div className="profile-section">
-            <label>Imagen de perfil</label>
-            <div className="profile-image-container">
-              {profileImage && !imageError ? (
-                <img
-                  src={profileImage}
-                  alt="Perfil"
-                  className={`profile-image ${imageLoaded ? "loaded" : ""}`}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={(e) => {
-                    console.error("Error cargando imagen:", profileImage);
-                    setImageError(true);
-                    e.currentTarget.src = "";
-                  }}
-                />
-              ) : (
-                <AiOutlineUser size={50} />
-              )}
-            </div>
-            <div className="image-upload-container">
-              <input
-                type="file"
-                id="profile-image-input"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: "none" }}
-              />
+    <div className="settings-page">
+      {message && (
+        <div className={`feedback-message ${message.type}`}>
+          {message.text}
+        </div>
+      )}
+      <div className={`settings-container ${isLoaded ? "loaded" : ""}`}>
+        <div className="settings-sidebar">
+          {[
+            { key: "cuenta", label: "Cuenta" },
+            { key: "general", label: "General" },
+            { key: "privacidad", label: "Privacidad" },
+          ].map((item) => (
+            <div key={item.key}>
               <button
                 type="button"
-                className="upload-image-button"
-                onClick={() =>
-                  document.getElementById("profile-image-input")?.click()
-                }
-                disabled={isUploadingImage}
+                className={`sidebar-button ${
+                  activeMainTab === item.key ? "active" : ""
+                } ${expandedMenu === item.key ? "" : "collapsed"} ${
+                  subMenus[item.key] ? "" : "no-arrow"
+                }`}
+                onClick={() => handleMainTabClick(item.key)}
               >
-                {isUploadingImage ? "Subiendo..." : "Seleccionar imagen"}
+                {item.label}
               </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div id="cuenta-informacion" className="account-section">
-              <h3>Información de la cuenta</h3>
-              <div className="form-group">
-                <label>Nombre de usuario</label>
-                <div className="input-container">
-                  <input
-                    type="text"
-                    name="username"
-                    value={userData.username}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    required
-                  />
-                  <span className="account-icon">
-                    <AiOutlineUser />
-                  </span>
+              {expandedMenu === item.key && subMenus[item.key] && (
+                <div className="submenu-container">
+                  {subMenus[item.key].map((subitem) => (
+                    <button
+                      key={subitem.key}
+                      type="button"
+                      className={`submenu-button ${
+                        activeSubTab === subitem.key ? "active" : ""
+                      }`}
+                      onClick={() => handleSubTabClick(item.key, subitem.key)}
+                    >
+                      {subitem.label}
+                    </button>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
-
-            <div id="cuenta-email" className="account-section">
-              <h3>Email</h3>
-              <div className="form-group">
-                <label>Email</label>
-                <div className="input-container">
-                  <input
-                    type="email"
-                    name="email"
-                    value={userData.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    required
+          ))}
+        </div>
+        <div className="settings-sections">
+          <section id="cuenta-section">
+            <h2>Cuenta</h2>
+            <div className="profile-section">
+              <label>Imagen de perfil</label>
+              <div className="profile-image-container">
+                {profileImage && !imageError ? (
+                  <img
+                    src={profileImage}
+                    alt="Perfil"
+                    className={`profile-image ${imageLoaded ? "loaded" : ""}`}
+                    onLoad={() => setImageLoaded(true)}
+                    onError={(e) => {
+                      console.error("Error cargando imagen:", profileImage);
+                      setImageError(true);
+                      e.currentTarget.src = "";
+                    }}
                   />
-                  <span className="account-icon">
-                    <AiOutlineMail />
-                  </span>
-                </div>
-                {isEditing && userData.email !== user?.email && (
-                  <small className="warning-text">
-                    Cambiar el email requerirá volver a iniciar sesión
-                  </small>
+                ) : (
+                  <AiOutlineUser size={50} />
                 )}
               </div>
+              <div className="image-upload-container">
+                <input
+                  type="file"
+                  id="profile-image-input"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  className="upload-image-button"
+                  onClick={() =>
+                    document.getElementById("profile-image-input")?.click()
+                  }
+                  disabled={isUploadingImage}
+                >
+                  {isUploadingImage ? "Subiendo..." : "Seleccionar imagen"}
+                </button>
+              </div>
             </div>
 
-            <div id="cuenta-contrasena" className="account-section">
-              <h3>Contraseña</h3>
-              {isEditing && (
-                <>
-                  <div className="form-group">
+            <form onSubmit={handleSubmit}>
+              <div id="cuenta-informacion" className="account-section">
+                <h3>Información de la cuenta</h3>
+                <div className="form-group">
+                  <label>Nombre de usuario</label>
+                  <div className="input-container">
+                    <input
+                      type="text"
+                      name="username"
+                      value={userData.username}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      required
+                    />
+                    <span className="account-icon">
+                      <AiOutlineUser />
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="cuenta-email" className="account-section">
+                <h3>Email</h3>
+                <div className="form-group">
+                  <label>Email</label>
+                  <div className="input-container">
+                    <input
+                      type="email"
+                      name="email"
+                      value={userData.email}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      required
+                    />
+                    <span className="account-icon">
+                      <AiOutlineMail />
+                    </span>
+                  </div>
+                  {isEditing && userData.email !== user?.email && (
+                    <small className="warning-text">
+                      Cambiar el email requerirá volver a iniciar sesión
+                    </small>
+                  )}
+                </div>
+              </div>
+
+              {/* Sección de Contraseña – campos deshabilitados hasta pulsar “Editar datos” */}
+              <div id="cuenta-contrasena" className="account-section">
+                <h3>Contraseña</h3>
+                <div className="password-container">
+                  {/* Contraseña actual – Ocupa toda la fila */}
+                  <div className="form-group password-full">
                     <label>Contraseña actual</label>
                     <div className="password-input-container">
                       <input
-                        type={
-                          showPasswords.currentPassword ? "text" : "password"
-                        }
+                        type={showPasswords.currentPassword ? "text" : "password"}
                         name="currentPassword"
                         value={userData.currentPassword}
                         onChange={handleChange}
+                        disabled={!isEditing}
                         required
                       />
                       <span
@@ -548,7 +542,8 @@ const Settings = () => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  {/* Nueva contraseña – Columna izquierda */}
+                  <div className="form-group password-left">
                     <label>Nueva contraseña (opcional)</label>
                     <div className="password-input-container">
                       <input
@@ -556,6 +551,7 @@ const Settings = () => {
                         name="newPassword"
                         value={userData.newPassword}
                         onChange={handleChange}
+                        disabled={!isEditing}
                       />
                       <span
                         className="password-toggle"
@@ -573,14 +569,10 @@ const Settings = () => {
                         )}
                       </span>
                     </div>
-                    {userData.newPassword && (
-                      <small className="warning-text">
-                        Cambiar la contraseña requerirá volver a iniciar sesión
-                      </small>
-                    )}
                   </div>
 
-                  <div className="form-group">
+                  {/* Confirmar nueva contraseña – Columna derecha */}
+                  <div className="form-group password-right">
                     <label>Confirmar nueva contraseña</label>
                     <div className="password-input-container">
                       <input
@@ -590,7 +582,7 @@ const Settings = () => {
                         name="confirmNewPassword"
                         value={userData.confirmNewPassword}
                         onChange={handleChange}
-                        required={!!userData.newPassword}
+                        disabled={!isEditing}
                       />
                       <span
                         className="password-toggle"
@@ -608,185 +600,153 @@ const Settings = () => {
                         )}
                       </span>
                     </div>
-                    {userData.newPassword &&
-                      userData.confirmNewPassword &&
-                      userData.newPassword !== userData.confirmNewPassword && (
-                        <small className="warning-text">
-                          Las contraseñas no coinciden
-                        </small>
-                      )}
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+              {/* Fin sección Contraseña */}
 
-            <div className="button-group">
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="edit-button"
-                >
-                  Editar datos
-                </button>
-              ) : (
-                <>
+              <div className="button-group">
+                {!isEditing ? (
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="edit-button"
+                  >
+                    Editar datos
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="save-button"
+                    >
+                      {loading ? "Guardando..." : "Guardar cambios"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setUserData({
+                          username: user?.username || "",
+                          email: user?.email || "",
+                          currentPassword: "",
+                          newPassword: "",
+                          confirmNewPassword: "",
+                        });
+                        setShowPasswords({
+                          currentPassword: false,
+                          newPassword: false,
+                          confirmNewPassword: false,
+                        });
+                      }}
+                      className="cancel-button"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
+          </section>
+
+          <section id="general-section">
+            <h2>General</h2>
+            <div id="general-preferencias">
+              <h3>Preferencias</h3>
+              <div className="theme-selector">
+                <h4>Apariencia</h4>
+                <div className="theme-options">
+                  <div
+                    className={`theme-option ${theme === "dark" ? "active" : ""}`}
+                    onClick={() => setTheme("dark")}
+                  >
+                    <div className="theme-preview dark-theme">
+                      <div className="preview-header"></div>
+                      <div className="preview-content">
+                        <div className="preview-line"></div>
+                        <div className="preview-line short"></div>
+                      </div>
+                    </div>
+                    <span>Tema Oscuro</span>
+                  </div>
+
+                  <div
+                    className={`theme-option ${theme === "light" ? "active" : ""}`}
+                    onClick={() => setTheme("light")}
+                  >
+                    <div className="theme-preview light-theme">
+                      <div className="preview-header"></div>
+                      <div className="preview-content">
+                        <div className="preview-line"></div>
+                        <div className="preview-line short"></div>
+                      </div>
+                    </div>
+                    <span>Tema Claro</span>
+                  </div>
+                </div>
+                <button
+                  className="save-theme-button"
+                  onClick={() => handleThemeChange(theme)}
+                  disabled={isSavingTheme}
+                >
+                  {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
+                </button>
+              </div>
+              <div className="behavior-settings">
+                <h4>Comportamiento</h4>
+                <div className="setting-option">
+                  <label>Página de inicio predeterminada</label>
+                  <select
+                    value={settings.defaultPage}
+                    onChange={(e) =>
+                      handleSettingsChange({
+                        defaultPage: e.target.value as "notes" | "calendar" | "home",
+                      })
+                    }
+                  >
+                    <option value="notes">Notas</option>
+                    <option value="calendar">Calendario</option>
+                    <option value="home">Inicio</option>
+                  </select>
+                </div>
+                <div className="setting-option">
+                  <label>Ordenación predeterminada de notas</label>
+                  <select
+                    value={settings.defaultNoteSort}
+                    onChange={(e) =>
+                      handleSettingsChange({
+                        defaultNoteSort: e.target.value as "date" | "title" | "lastModified",
+                      })
+                    }
+                  >
+                    <option value="date">Fecha de creación</option>
+                    <option value="title">Título</option>
+                    <option value="lastModified">Última modificación</option>
+                  </select>
+                </div>
+                <div className="settings-buttons">
+                  <button
+                    className="save-settings-button"
+                    onClick={() => handleSettingsChange(settings)}
                     disabled={loading}
-                    className="save-button"
                   >
                     {loading ? "Guardando..." : "Guardar cambios"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setUserData({
-                        username: user?.username || "",
-                        email: user?.email || "",
-                        currentPassword: "",
-                        newPassword: "",
-                        confirmNewPassword: "",
-                      });
-                      setShowPasswords({
-                        currentPassword: false,
-                        newPassword: false,
-                        confirmNewPassword: false,
-                      });
-                    }}
-                    className="cancel-button"
-                  >
-                    Cancelar
-                  </button>
-                </>
-              )}
-            </div>
-          </form>
-        </section>
-
-        <section id="general-section">
-          <h2>General</h2>
-          <div id="general-preferencias">
-            <h3>Preferencias</h3>
-            <div className="theme-selector">
-              <h4>Apariencia</h4>
-              <div className="theme-options">
-                <div
-                  className={`theme-option ${theme === "dark" ? "active" : ""}`}
-                  onClick={() => setTheme("dark")}
-                >
-                  <div className="theme-preview dark-theme">
-                    <div className="preview-header"></div>
-                    <div className="preview-content">
-                      <div className="preview-line"></div>
-                      <div className="preview-line short"></div>
-                    </div>
-                  </div>
-                  <span>Tema Oscuro</span>
-                </div>
-
-                <div
-                  className={`theme-option ${
-                    theme === "light" ? "active" : ""
-                  }`}
-                  onClick={() => setTheme("light")}
-                >
-                  <div className="theme-preview light-theme">
-                    <div className="preview-header"></div>
-                    <div className="preview-content">
-                      <div className="preview-line"></div>
-                      <div className="preview-line short"></div>
-                    </div>
-                  </div>
-                  <span>Tema Claro</span>
                 </div>
               </div>
-              <button
-                className="save-theme-button"
-                onClick={() => handleThemeChange(theme)}
-                disabled={isSavingTheme}
-              >
-                {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
-              </button>
             </div>
-            <div className="behavior-settings">
-              <h4>Comportamiento</h4>
-              <div className="setting-option">
-                <label>Página de inicio predeterminada</label>
-                <select
-                  value={settings.defaultPage}
-                  onChange={(e) =>
-                    handleSettingsChange({
-                      defaultPage: e.target.value as
-                        | "notes"
-                        | "calendar"
-                        | "home",
-                    })
-                  }
-                >
-                  <option value="notes">Notas</option>
-                  <option value="calendar">Calendario</option>
-                  <option value="home">Inicio</option>
-                </select>
-              </div>
-              <div className="setting-option">
-                <label>Ordenación predeterminada de notas</label>
-                <select
-                  value={settings.defaultNoteSort}
-                  onChange={(e) =>
-                    handleSettingsChange({
-                      defaultNoteSort: e.target.value as
-                        | "date"
-                        | "title"
-                        | "lastModified",
-                    })
-                  }
-                >
-                  <option value="date">Fecha de creación</option>
-                  <option value="title">Título</option>
-                  <option value="lastModified">Última modificación</option>
-                </select>
-              </div>
-              <div className="setting-option">
-                <label className="toggle-label">
-                  <span>Confirmar antes de eliminar</span>
-                  <div className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={settings.confirmDelete}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          confirmDelete: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span className="toggle-slider"></span>
-                  </div>
-                </label>
-              </div>
-              <div className="settings-buttons">
-                <button
-                  className="save-settings-button"
-                  onClick={() => handleSettingsChange(settings)}
-                  disabled={loading}
-                >
-                  {loading ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
+            <div id="general-notificaciones">
+              <h3>Notificaciones</h3>
+              <p>Contenido de Notificaciones generales.</p>
             </div>
-          </div>
-          <div id="general-notificaciones">
-            <h3>Notificaciones</h3>
-            <p>Contenido de Notificaciones generales.</p>
-          </div>
-        </section>
+          </section>
 
-        <section id="privacidad-section">
-          <h2>Privacidad</h2>
-          <p>Contenido de configuraciones de Privacidad.</p>
-        </section>
+          <section id="privacidad-section">
+            <h2>Privacidad</h2>
+            <p>Contenido de configuraciones de Privacidad.</p>
+          </section>
+        </div>
       </div>
     </div>
   );
