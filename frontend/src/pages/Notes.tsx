@@ -20,6 +20,13 @@ const Notes: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [markedNotes, setMarkedNotes] = useState<string[]>([]);
   const [notePositions, setNotePositions] = useState<{[key: string]: NotePosition}>({});
+  const [groups, setGroups] = useState([
+    { id: 'main', name: 'Todas las notas', color: '#f1c40f', isDefault: true, noteIds: [] }
+  ]);
+  const [activeGroup, setActiveGroup] = useState('main');
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: '', color: '#f1c40f' });
+  
 
   const breakpointColumns = {
     default: 4, // Número de columnas en pantallas grandes
@@ -282,6 +289,51 @@ useEffect(() => {
     }
   };
 
+
+  const handleCreateGroup = async () => {
+    try {
+      if (!newGroup.name.trim()) {
+        showFeedback('El nombre del grupo es requerido');
+        return;
+      }
+  
+      const newGroupData = {
+        id: Date.now().toString(),
+        name: newGroup.name.trim(),
+        color: newGroup.color,
+        isDefault: false,
+        noteIds: markedNotes
+      };
+      
+      setGroups(prev => [...prev, newGroupData]);
+      setMarkedNotes([]);
+      setShowGroupModal(false);
+      setNewGroup({ name: '', color: '#f1c40f' });
+      showFeedback('Grupo creado exitosamente');
+    } catch (error) {
+      console.error('Error al crear grupo:', error);
+      showFeedback('Error al crear el grupo');
+    }
+  };
+  
+  const handleDeleteGroup = async (groupId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (window.confirm('¿Estás seguro de que quieres eliminar este grupo?')) {
+      try {
+        setGroups(prev => prev.filter(group => group.id !== groupId));
+        if (activeGroup === groupId) {
+          setActiveGroup('main');
+        }
+        showFeedback('Grupo eliminado exitosamente');
+      } catch (error) {
+        console.error('Error al eliminar grupo:', error);
+        showFeedback('Error al eliminar el grupo');
+      }
+    }
+  };
+  
+
+
   const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
     const noteElement = event.currentTarget;
     const rect = noteElement.getBoundingClientRect();
@@ -450,146 +502,217 @@ useEffect(() => {
   
 
   return (
-    <div className={`notes-container ${markedNotes.length > 0 ? 'has-marked-notes' : ''}`}>
-      {feedback && <div className="feedback-message">{feedback}</div>}
-      
-      <div 
-        className={`overlay ${focusedNoteId ? 'active' : ''}`}
-        onClick={handleBlur}
-      />
-
-      {/* Menú de acciones en masa */}
-      <div className={`bulk-actions-menu ${markedNotes.length > 0 ? 'visible' : ''}`}>
-        <div className="left-section">
-          <span>{markedNotes.length} {markedNotes.length === 1 ? 'nota seleccionada' : 'notas seleccionadas'}</span>
-        </div>
-        <div className="right-section">
-          <button 
-            className="bulk-delete-button"
-            onClick={handleDeleteMarkedNotes}
-            title="Eliminar notas seleccionadas"
-          >
-            <i className="fas fa-trash"></i>
-            Eliminar seleccionadas
-          </button>
-        </div>
-      </div>
-
-      <div className="create-note">
-        <input
-          type="text"
-          placeholder="Añade una nota..."
-          value={newNote.title}
-          onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-          onClick={() => {
-            if (!isExpanded) {
-              setIsExpanded(true);
-            }
-          }}
-        />
-        {isExpanded && (
-          <>
-            <textarea
-              placeholder="Contenido de la nota..."
-              value={newNote.content}
-              onChange={e => {
-                setNewNote(prev => ({ ...prev, content: e.target.value }));
-                autoResizeTextarea(e.target as HTMLTextAreaElement);
-              }}
-              onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-            />
-            <div className="button-container">
-              <button 
-                className="cancel-button"
-                onClick={() => {
-                  setIsExpanded(false);
-                  setNewNote({ title: '', content: '' });
-                }}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="create-button"
-                onClick={() => {
-                  handleCreateNote();
-                  setIsExpanded(false);
-                }}
-                disabled={isLoading}
-              >
-                Crear Nota
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <Masonry
-        breakpointCols={breakpointColumns}
-        className="masonry-grid"
-        columnClassName="masonry-grid_column"
-      >
-        {sortNotes(notes).map(note => (
-          <div 
-            key={note.id}
-            className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
-            onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
-          >
-            <div className="note-actions">
-              <button 
-                className={`action-button ${note.is_marked ? 'marked' : ''}`}
-                onClick={(e) => handleToggleMark(note.id, e)}
-                title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
-              >
-                <i className="fas fa-check-circle"></i>
-              </button>
-              <button 
-                className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
-                onClick={(e) => handleTogglePin(note.id, e)}
-                title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
-              >
-                <i className="fas fa-thumbtack"></i>
-              </button>
-            </div>
+    <div className="notes-layout">
+      {/* Sidebar */}
+      <div className="notes-sidebar">
+        <div className="group-list">
+          {groups.map(group => (
             <div 
-              className="focus-indicator"
-              onClick={(e) => handleFocusIndicatorClick(e, note.id)}
-            />
-            <div className="note-content">
-              <input
-                type="text"
-                value={editingNote[note.id]?.title ?? note.title}
-                onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-                onBlur={() => handleUpdateNote(note.id, 'title')}
-                onClick={e => e.stopPropagation()}
+              key={group.id}
+              className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+              onClick={() => setActiveGroup(group.id)}
+            >
+              <div 
+                className="group-color" 
+                style={{ backgroundColor: group.color }}
               />
+              <span className="group-name">{group.name}</span>
+              {!group.isDefault && (
+                <button 
+                  className="action-button"
+                  onClick={(e) => handleDeleteGroup(group.id, e)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+  
+      {/* Contenido principal */}
+      <div className="notes-main">
+        {feedback && <div className="feedback-message">{feedback}</div>}
+        
+        <div 
+          className={`overlay ${focusedNoteId ? 'active' : ''}`}
+          onClick={handleBlur}
+        />
+  
+        {/* Menú de acciones en masa */}
+        <div className={`bulk-actions-menu ${markedNotes.length > 0 ? 'visible' : ''}`}>
+          <div className="left-section">
+            <span>{markedNotes.length} {markedNotes.length === 1 ? 'nota seleccionada' : 'notas seleccionadas'}</span>
+          </div>
+          <div className="right-section">
+            <button 
+              className="create-group-button"
+              onClick={() => setShowGroupModal(true)}
+              disabled={markedNotes.length === 0}
+            >
+              <i className="fas fa-layer-group"></i>
+              Crear grupo
+            </button>
+            <button 
+              className="bulk-delete-button"
+              onClick={handleDeleteMarkedNotes}
+              title="Eliminar notas seleccionadas"
+            >
+              <i className="fas fa-trash"></i>
+              Eliminar seleccionadas
+            </button>
+          </div>
+        </div>
+  
+        {/* Crear nota */}
+        <div className="create-note">
+          <input
+            type="text"
+            placeholder="Añade una nota..."
+            value={newNote.title}
+            onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+            onClick={() => {
+              if (!isExpanded) {
+                setIsExpanded(true);
+              }
+            }}
+          />
+          {isExpanded && (
+            <>
               <textarea
-                value={editingNote[note.id]?.content ?? note.content}
-                onChange={(e) => {
-                  handleNoteChange(note.id, 'content', e.target.value);
+                placeholder="Contenido de la nota..."
+                value={newNote.content}
+                onChange={e => {
+                  setNewNote(prev => ({ ...prev, content: e.target.value }));
                   autoResizeTextarea(e.target as HTMLTextAreaElement);
                 }}
                 onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                onBlur={(e) => {
-                  handleUpdateNote(note.id, 'content');
-                  autoResizeTextarea(e.target as HTMLTextAreaElement);
-                }}
-                onClick={(e) => e.stopPropagation()}
               />
-            </div>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteNote(note.id);
-              }}
-              className="delete-button"
+              <div className="button-container">
+                <button 
+                  className="cancel-button"
+                  onClick={() => {
+                    setIsExpanded(false);
+                    setNewNote({ title: '', content: '' });
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  className="create-button"
+                  onClick={() => {
+                    handleCreateNote();
+                    setIsExpanded(false);
+                  }}
+                  disabled={isLoading}
+                >
+                  Crear Nota
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+  
+        {/* Grid de notas */}
+        <Masonry
+          breakpointCols={breakpointColumns}
+          className="masonry-grid"
+          columnClassName="masonry-grid_column"
+        >
+          {sortNotes(notes).map(note => (
+            <div 
+              key={note.id}
+              className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+              onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
             >
-              Eliminar
-            </button>
+              <div className="note-actions">
+                <button 
+                  className={`action-button ${note.is_marked ? 'marked' : ''}`}
+                  onClick={(e) => handleToggleMark(note.id, e)}
+                  title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+                >
+                  <i className="fas fa-check-circle"></i>
+                </button>
+                <button 
+                  className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
+                  onClick={(e) => handleTogglePin(note.id, e)}
+                  title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+                >
+                  <i className="fas fa-thumbtack"></i>
+                </button>
+              </div>
+              <div 
+                className="focus-indicator"
+                onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+              />
+              <div className="note-content">
+                <input
+                  type="text"
+                  value={editingNote[note.id]?.title ?? note.title}
+                  onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+                  onBlur={() => handleUpdateNote(note.id, 'title')}
+                  onClick={e => e.stopPropagation()}
+                />
+                <textarea
+                  value={editingNote[note.id]?.content ?? note.content}
+                  onChange={(e) => {
+                    handleNoteChange(note.id, 'content', e.target.value);
+                    autoResizeTextarea(e.target as HTMLTextAreaElement);
+                  }}
+                  onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                  onBlur={(e) => {
+                    handleUpdateNote(note.id, 'content');
+                    autoResizeTextarea(e.target as HTMLTextAreaElement);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteNote(note.id);
+                }}
+                className="delete-button"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+        </Masonry>
+  
+        {/* Modal de creación de grupo */}
+        {showGroupModal && (
+          <div className="modal-overlay" onClick={() => setShowGroupModal(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <h2>Crear nuevo grupo</h2>
+              <div className="form-group">
+                <label>Nombre del grupo</label>
+                <input
+                  type="text"
+                  value={newGroup.name}
+                  onChange={(e) => setNewGroup(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ingrese el nombre del grupo"
+                />
+              </div>
+              <div className="form-group">
+                <label>Color del grupo</label>
+                <input
+                  type="color"
+                  value={newGroup.color}
+                  onChange={(e) => setNewGroup(prev => ({ ...prev, color: e.target.value }))}
+                />
+              </div>
+              <div className="modal-actions">
+                <button onClick={() => setShowGroupModal(false)}>Cancelar</button>
+                <button onClick={handleCreateGroup}>Crear grupo</button>
+              </div>
+            </div>
           </div>
-        ))}
-      </Masonry>
+        )}
+      </div>
     </div>
   );
+  
   
 };
 
