@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
+import groupRoutes from './routes/groupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 
@@ -31,6 +32,7 @@ const pool = new Pool({
 // Configurar rutas
 app.use('/api/auth', authRoutes);     // Rutas de autenticación
 app.use('/api/notes', notesRoutes);   // Rutas de notas
+app.use('/api/groups', groupRoutes);
 app.use('/api/reminders', reminderRoutes);
 
 // Ruta de prueba para la base de datos

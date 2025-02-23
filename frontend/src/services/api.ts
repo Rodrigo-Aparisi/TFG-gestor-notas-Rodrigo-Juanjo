@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData } from '../types';
+import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData, Note } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -114,6 +114,36 @@ export const noteService = {
   unmarkAllNotes: async () => {
     const response = await api.post('/notes/unmark-all');
     return response.data;
+  },
+
+  createGroup: async (groupData: { name: string; color: string; noteIds: string[] }) => {
+    try {
+      const response = await api.post('/groups', groupData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating group:', error);
+      throw error;
+    }
+  },
+
+  getGroups: async () => {
+    try {
+      const response = await api.get('/groups');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+      throw error;
+    }
+  },
+
+  deleteGroup: async (groupId: string) => {
+    try {
+      const response = await api.delete(`/groups/${groupId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      throw error;
+    }
   }
 };
 

@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
-import { Note, NotePosition } from '../types';
+import { Note, NotePosition, Group, GroupResponse } from '../types';
 import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
 
@@ -20,10 +20,17 @@ const Notes: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [markedNotes, setMarkedNotes] = useState<string[]>([]);
   const [notePositions, setNotePositions] = useState<{[key: string]: NotePosition}>({});
-  const [groups, setGroups] = useState([
-    { id: 'main', name: 'Todas las notas', color: '#f1c40f', isDefault: true, noteIds: [] }
+  const [groups, setGroups] = useState<Group[]>([
+    {
+      id: 'main',
+      name: 'Todas las notas',
+      color: '#f1c40f',
+      isDefault: true,
+      noteIds: []
+    }
   ]);
-  const [activeGroup, setActiveGroup] = useState('main');
+  const [activeGroup, setActiveGroup] = useState<string>('main');
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroup, setNewGroup] = useState({ name: '', color: '#f1c40f' });
   
@@ -36,39 +43,39 @@ const Notes: React.FC = () => {
 };
 
 
-useEffect(() => {
-  const fetchNotesAndUnmark = async () => {
-    try {
-      const response = await noteService.getNotes();
-      const fetchedNotes = response.notes || [];
-      
-      // Especifica el tipo en filter
-      const markedNotes = fetchedNotes.filter((note: Note) => note.is_marked);
-      
-      if (markedNotes.length > 0) {
-        await Promise.all(
-          markedNotes.map((note: Note) => noteService.toggleMark(note.id))
-        );
+  useEffect(() => {
+    const fetchNotesAndUnmark = async () => {
+      try {
+        const response = await noteService.getNotes();
+        const fetchedNotes = response.notes || [];
         
-        // Especifica el tipo en map
-        setNotes(fetchedNotes.map((note: Note) => ({
-          ...note,
-          is_marked: false
-        })));
-      } else {
-        setNotes(fetchedNotes);
+        // Especifica el tipo en filter
+        const markedNotes = fetchedNotes.filter((note: Note) => note.is_marked);
+        
+        if (markedNotes.length > 0) {
+          await Promise.all(
+            markedNotes.map((note: Note) => noteService.toggleMark(note.id))
+          );
+          
+          // Especifica el tipo en map
+          setNotes(fetchedNotes.map((note: Note) => ({
+            ...note,
+            is_marked: false
+          })));
+        } else {
+          setNotes(fetchedNotes);
+        }
+      } catch (err) {
+        const error = err as Error;
+        console.error('Error loading notes:', error.message);
+        if ((err as any)?.response?.status === 401) {
+          authService.logout();
+          navigate('/login', { replace: true });
+        }
       }
-    } catch (err) {
-      const error = err as Error;
-      console.error('Error loading notes:', error.message);
-      if ((err as any)?.response?.status === 401) {
-        authService.logout();
-        navigate('/login', { replace: true });
-      }
-    }
-  };
+    };
 
-  fetchNotesAndUnmark();
+    fetchNotesAndUnmark();
 }, [navigate]);
 
   useEffect(() => {
@@ -132,7 +139,57 @@ useEffect(() => {
     if (!focusedNoteId) {
       setNotePositions({});
     }
-  }, [focusedNoteId]);  
+  }, [focusedNoteId]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        console.log('Fetching groups...');
+        const response = await noteService.getGroups();
+        console.log('Groups response:', response);
+        
+        if (response && response.groups) {
+          const formattedGroups = response.groups.map(group => ({
+            id: group.id.toString(),
+            name: group.name,
+            color: group.color,
+            noteIds: Array.isArray(group.note_ids) 
+              ? group.note_ids.filter(Boolean).map(id => id.toString())
+              : []
+          }));
+          
+          setGroups(prev => {
+            const mainGroup = prev.find(g => g.isDefault);
+            return mainGroup ? [mainGroup, ...formattedGroups] : formattedGroups;
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      }
+    };
+  
+    fetchGroups();
+  }, []);
+  
+  // Actualiza el efecto que filtra las notas
+  useEffect(() => {
+    if (activeGroup === 'main') {
+      setFilteredNotes(notes);
+    } else {
+      const currentGroup = groups.find(g => g.id === activeGroup);
+      if (currentGroup && Array.isArray(currentGroup.noteIds)) {
+        const groupNotes = notes.filter(note => 
+          currentGroup.noteIds.includes(note.id.toString())
+        );
+        setFilteredNotes(groupNotes);
+      } else {
+        setFilteredNotes([]);
+      }
+    }
+  }, [activeGroup, notes, groups]);
+  
+  
+
 
 
   const showFeedback = (message: string) => {
@@ -298,23 +355,36 @@ useEffect(() => {
       }
   
       const newGroupData = {
-        id: Date.now().toString(),
         name: newGroup.name.trim(),
-        color: newGroup.color,
-        isDefault: false,
+        color: newGroup.color || '#f1c40f',
         noteIds: markedNotes
       };
+  
+      console.log('Creating group with data:', newGroupData);
+  
+      const response = await noteService.createGroup(newGroupData);
       
-      setGroups(prev => [...prev, newGroupData]);
-      setMarkedNotes([]);
-      setShowGroupModal(false);
-      setNewGroup({ name: '', color: '#f1c40f' });
-      showFeedback('Grupo creado exitosamente');
+      if (response && response.group) {
+        const formattedGroup = {
+          ...response.group,
+          id: response.group.id.toString(),
+          noteIds: response.group.note_ids || [],
+          isDefault: false
+        };
+  
+        setGroups(prev => [...prev, formattedGroup]);
+        setMarkedNotes([]);
+        setShowGroupModal(false);
+        setNewGroup({ name: '', color: '#f1c40f' });
+        showFeedback('Grupo creado exitosamente');
+      }
     } catch (error) {
       console.error('Error al crear grupo:', error);
       showFeedback('Error al crear el grupo');
     }
   };
+  
+
   
   const handleDeleteGroup = async (groupId: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -495,7 +565,40 @@ useEffect(() => {
     // Restaura la posición del scroll
     element.scrollTop = scrollPos;
   };
-  
+
+  const handleGroupSelect = (groupId: string) => {
+    console.log('Selecting group:', groupId);
+    setActiveGroup(groupId);
+  };  
+
+  const renderGroups = () => (
+    <div className="group-list">
+      {groups.map((group) => (
+        <div 
+          key={`group-${group.id}`}
+          className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+          onClick={() => handleGroupSelect(group.id)}
+        >
+          <div 
+            className="group-color" 
+            style={{ backgroundColor: group.color }}
+          />
+          <span className="group-name">{group.name}</span>
+          {!group.isDefault && (
+            <button 
+              className="action-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteGroup(group.id, e);
+              }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
   
   
   
@@ -505,29 +608,7 @@ useEffect(() => {
     <div className="notes-layout">
       {/* Sidebar */}
       <div className="notes-sidebar">
-        <div className="group-list">
-          {groups.map(group => (
-            <div 
-              key={group.id}
-              className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
-              onClick={() => setActiveGroup(group.id)}
-            >
-              <div 
-                className="group-color" 
-                style={{ backgroundColor: group.color }}
-              />
-              <span className="group-name">{group.name}</span>
-              {!group.isDefault && (
-                <button 
-                  className="action-button"
-                  onClick={(e) => handleDeleteGroup(group.id, e)}
-                >
-                  <i className="fas fa-times"></i>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        {renderGroups()}
       </div>
   
       {/* Contenido principal */}
@@ -619,7 +700,7 @@ useEffect(() => {
           className="masonry-grid"
           columnClassName="masonry-grid_column"
         >
-          {sortNotes(notes).map(note => (
+          {sortNotes(filteredNotes).map(note => (
             <div 
               key={note.id}
               className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
