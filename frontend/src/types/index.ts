@@ -21,6 +21,11 @@ export interface Note {
   is_marked: boolean;
 }
 
+export interface NotePosition {
+  rect: DOMRect;
+  columnPosition: 'left' | 'right';
+}
+
 export interface Reminder {
   id: UUID;
   title: string;
@@ -91,4 +96,19 @@ export interface EditingReminder {
   description: string;
   dateTime: Date;
   hasTime: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  color: string;
+  isDefault?: boolean;
+  noteIds: string[];
+}
+
+export interface GroupResponse {
+  id: string | number;
+  name: string;
+  color: string;
+  note_ids: (string | null)[];
 }

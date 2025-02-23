@@ -47,6 +47,21 @@ CREATE TABLE notes (
     CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
 );
 
+-- Crear tabla de grupos de notas
+CREATE TABLE note_groups (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    color VARCHAR(50) DEFAULT '#f1c40f',
+    user_id UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE note_group_items (
+    group_id INTEGER REFERENCES note_groups(id) ON DELETE CASCADE,
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    PRIMARY KEY (group_id, note_id)
+);
+
 -- Crear tabla de etiquetas
 CREATE TABLE tags (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
