@@ -76,7 +76,7 @@ const Notes: React.FC = () => {
     };
 
     fetchNotesAndUnmark();
-}, [navigate]);
+  }, [navigate]);
 
   useEffect(() => {
     const textareas = document.querySelectorAll('.note-card textarea');
@@ -110,32 +110,6 @@ const Notes: React.FC = () => {
   }, [focusedNoteId]);
 
   useEffect(() => {
-    const unmarkAllNotes = async () => {
-      try {
-        // Actualizar en la base de datos
-        await Promise.all(
-          notes
-            .filter(note => note.is_marked)
-            .map(note => noteService.toggleMark(note.id))
-        );
-        
-        // Actualizar el estado local
-        setNotes(prevNotes =>
-          prevNotes.map(note => ({
-            ...note,
-            is_marked: false
-          }))
-        );
-        setMarkedNotes([]);
-      } catch (error) {
-        console.error('Error al desmarcar las notas:', error);
-      }
-    };
-
-    unmarkAllNotes();
-  }, []);
-
-  useEffect(() => {
     if (!focusedNoteId) {
       setNotePositions({});
     }
@@ -149,13 +123,14 @@ const Notes: React.FC = () => {
         console.log('Groups response:', response);
         
         if (response && response.groups) {
-          const formattedGroups = response.groups.map(group => ({
+          const formattedGroups: Group[] = response.groups.map((group: GroupResponse) => ({
             id: group.id.toString(),
             name: group.name,
             color: group.color,
             noteIds: Array.isArray(group.note_ids) 
-              ? group.note_ids.filter(Boolean).map(id => id.toString())
-              : []
+              ? group.note_ids.filter((id): id is string => id !== null)
+              : [],
+            isDefault: false
           }));
           
           setGroups(prev => {
@@ -170,6 +145,7 @@ const Notes: React.FC = () => {
   
     fetchGroups();
   }, []);
+  
   
   // Actualiza el efecto que filtra las notas
   useEffect(() => {
@@ -187,8 +163,6 @@ const Notes: React.FC = () => {
       }
     }
   }, [activeGroup, notes, groups]);
-  
-  
 
 
 
@@ -346,6 +320,13 @@ const Notes: React.FC = () => {
     }
   };
 
+  
+  const getNoteGroup = (noteId: string) => {
+    return groups.find(group => 
+      !group.isDefault && group.noteIds.includes(noteId)
+    );
+  };
+  
 
   const handleCreateGroup = async () => {
     try {
@@ -360,15 +341,16 @@ const Notes: React.FC = () => {
         noteIds: markedNotes
       };
   
-      console.log('Creating group with data:', newGroupData);
-  
       const response = await noteService.createGroup(newGroupData);
       
       if (response && response.group) {
-        const formattedGroup = {
-          ...response.group,
+        const formattedGroup: Group = {
           id: response.group.id.toString(),
-          noteIds: response.group.note_ids || [],
+          name: response.group.name,
+          color: response.group.color,
+          noteIds: Array.isArray(response.group.note_ids) 
+            ? response.group.note_ids.filter((id): id is string => id !== null)
+            : [],
           isDefault: false
         };
   
@@ -383,6 +365,7 @@ const Notes: React.FC = () => {
       showFeedback('Error al crear el grupo');
     }
   };
+  
   
 
   
@@ -706,7 +689,7 @@ const Notes: React.FC = () => {
               className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
               onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
             >
-              <div className="note-actions">
+            <div className="note-actions">
                 <button 
                   className={`action-button ${note.is_marked ? 'marked' : ''}`}
                   onClick={(e) => handleToggleMark(note.id, e)}
