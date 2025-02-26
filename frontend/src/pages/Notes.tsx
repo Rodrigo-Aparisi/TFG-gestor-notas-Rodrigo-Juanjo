@@ -598,6 +598,20 @@ const Notes: React.FC = () => {
       <div className="notes-main">
         {feedback && <div className="feedback-message">{feedback}</div>}
         
+        {/* Añadir encabezado del grupo activo */}
+        {activeGroup && (
+          <div className="active-group-header" style={{
+            color: groups.find(g => g.id === activeGroup)?.color || '#f1c40f'
+          }}>
+            {groups.find(g => g.id === activeGroup)?.name || 'Todas las notas'}
+          </div>
+        )}
+        
+        <div 
+          className={`overlay ${focusedNoteId ? 'active' : ''}`}
+          onClick={handleBlur}
+        />
+
         <div 
           className={`overlay ${focusedNoteId ? 'active' : ''}`}
           onClick={handleBlur}
@@ -683,66 +697,77 @@ const Notes: React.FC = () => {
           className="masonry-grid"
           columnClassName="masonry-grid_column"
         >
-          {sortNotes(filteredNotes).map(note => (
-            <div 
-              key={note.id}
-              className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
-              onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
-            >
-            <div className="note-actions">
-                <button 
-                  className={`action-button ${note.is_marked ? 'marked' : ''}`}
-                  onClick={(e) => handleToggleMark(note.id, e)}
-                  title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
-                >
-                  <i className="fas fa-check-circle"></i>
-                </button>
-                <button 
-                  className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
-                  onClick={(e) => handleTogglePin(note.id, e)}
-                  title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
-                >
-                  <i className="fas fa-thumbtack"></i>
-                </button>
-              </div>
+          
+          {sortNotes(filteredNotes).map(note => {
+            // Obtener el color del grupo activo
+            const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+            
+            return (
               <div 
-                className="focus-indicator"
-                onClick={(e) => handleFocusIndicatorClick(e, note.id)}
-              />
-              <div className="note-content">
-                <input
-                  type="text"
-                  value={editingNote[note.id]?.title ?? note.title}
-                  onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-                  onBlur={() => handleUpdateNote(note.id, 'title')}
-                  onClick={e => e.stopPropagation()}
-                />
-                <textarea
-                  value={editingNote[note.id]?.content ?? note.content}
-                  onChange={(e) => {
-                    handleNoteChange(note.id, 'content', e.target.value);
-                    autoResizeTextarea(e.target as HTMLTextAreaElement);
-                  }}
-                  onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                  onBlur={(e) => {
-                    handleUpdateNote(note.id, 'content');
-                    autoResizeTextarea(e.target as HTMLTextAreaElement);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteNote(note.id);
+                key={note.id}
+                className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+                onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
+                style={{
+                  borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
+                  borderWidth: activeGroup !== 'main' ? '2px' : '1px'
                 }}
-                className="delete-button"
               >
-                Eliminar
-              </button>
-            </div>
-          ))}
+                <div className="note-actions">
+                  <button 
+                    className={`action-button ${note.is_marked ? 'marked' : ''}`}
+                    onClick={(e) => handleToggleMark(note.id, e)}
+                    title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+                  >
+                    <i className="fas fa-check-circle"></i>
+                  </button>
+                  <button 
+                    className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
+                    onClick={(e) => handleTogglePin(note.id, e)}
+                    title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+                  >
+                    <i className="fas fa-thumbtack"></i>
+                  </button>
+                </div>
+                <div 
+                  className="focus-indicator"
+                  onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+                />
+                <div className="note-content">
+                  <input
+                    type="text"
+                    value={editingNote[note.id]?.title ?? note.title}
+                    onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+                    onBlur={() => handleUpdateNote(note.id, 'title')}
+                    onClick={e => e.stopPropagation()}
+                  />
+                  <textarea
+                    value={editingNote[note.id]?.content ?? note.content}
+                    onChange={(e) => {
+                      handleNoteChange(note.id, 'content', e.target.value);
+                      autoResizeTextarea(e.target as HTMLTextAreaElement);
+                    }}
+                    onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                    onBlur={(e) => {
+                      handleUpdateNote(note.id, 'content');
+                      autoResizeTextarea(e.target as HTMLTextAreaElement);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteNote(note.id);
+                  }}
+                  className="delete-button"
+                >
+                  Eliminar
+                </button>
+              </div>
+            );
+          })}
         </Masonry>
+
   
         {/* Modal de creación de grupo */}
         {showGroupModal && (

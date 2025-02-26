@@ -145,7 +145,7 @@ html, body {
   width: 100%;
   margin-bottom: 15px;
   break-inside: avoid;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.3s ease;
   padding-right: calc(15px + 8px);
   box-sizing: border-box;
 }
@@ -604,7 +604,8 @@ button:focus {
   margin-bottom: 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border-left: 3px solid transparent;
 }
 
 .group-item:hover {
@@ -612,8 +613,9 @@ button:focus {
 }
 
 .group-item.active {
-  background-color: var(--dorado);
-  color: #000;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left-color: currentColor;
+  color: inherit;
 }
 
 .group-color {
@@ -628,6 +630,24 @@ button:focus {
   font-size: 14px;
 }
 
+.active-group-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px 0;
+  text-align: center;
+  border-bottom: 2px solid;
+  width: 100%;
+}
+
+.note-card.group-note {
+  border-width: 2px;
+}
+
+.notes-container.group-active {
+  border-top: 2px solid;
+  border-color: inherit;
+}
 
 
 /* Modal */
