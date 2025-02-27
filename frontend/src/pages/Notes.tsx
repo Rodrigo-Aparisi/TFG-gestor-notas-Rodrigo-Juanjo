@@ -373,6 +373,8 @@ const Notes: React.FC = () => {
     event.stopPropagation();
     if (window.confirm('¿Estás seguro de que quieres eliminar este grupo?')) {
       try {
+        await noteService.deleteGroup(groupId);
+        
         setGroups(prev => prev.filter(group => group.id !== groupId));
         if (activeGroup === groupId) {
           setActiveGroup('main');
