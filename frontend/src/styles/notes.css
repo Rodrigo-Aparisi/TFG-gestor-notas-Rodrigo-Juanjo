@@ -20,7 +20,7 @@ html, body {
   width: 100%;
   min-height: 100%;
   padding: 20px;
-  margin: 0;
+  margin-top: 12px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -33,9 +33,18 @@ html, body {
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  margin-bottom: 20px;
   width: 450px;
   min-width: 450px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto 10px auto;
+}
+
+.create-note.expanded {
+  max-height: 500px;
 }
 
 .create-note input,
@@ -48,18 +57,40 @@ html, body {
   padding: 8px;
 }
 
-.create-note textarea {
+.create-note input {
   width: 100%;
-  resize: none;
-  overflow: auto;
-  line-height: 1.5;
-  padding: 8px;
   border: none;
   outline: none;
+  padding: 8px;
   font-size: 16px;
-  margin-bottom: 10px;
-  transition: all 0.2s ease;
-  opacity: 0;
+  background: transparent;
+}
+.create-note textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 8px;
+  font-size: 14px;
+  resize: none;
+  min-height: 60px;
+  max-height: 200px;
+  background: transparent;
+  overflow: auto;
+}
+
+/* Estilos del scrollbar para el textarea de crear nota */
+.create-note textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.create-note textarea::-webkit-scrollbar-track {
+  background: rgba(54, 54, 54, 0.8);
+  border-radius: 4px;
+}
+
+.create-note textarea::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
 }
 
 .create-note textarea::placeholder {
@@ -90,7 +121,7 @@ html, body {
 .masonry-grid {
   display: flex;
   margin-left: -15px;
-  width: 100%;
+  width: 90%;
 }
 
 /* Columnas de Masonry */
@@ -114,7 +145,23 @@ html, body {
   width: 100%;
   margin-bottom: 15px;
   break-inside: avoid;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.3s ease;
+  padding-right: calc(15px + 8px);
+  box-sizing: border-box;
+}
+
+.note-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
 }
 
 /* Focus Indicator */
@@ -158,6 +205,40 @@ html, body {
   width: 100%;
 }
 
+.note-card.focusing {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  width: var(--original-width);
+  height: var(--original-height);
+  top: var(--original-top);
+  left: var(--original-left);
+  transform: none;
+  transition: none;
+}
+
+/* Animación desde la izquierda */
+.note-card.focusing[data-column-position="left"].focused {
+  transform-origin: left center;
+  animation: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-card.focusing[data-column-position="left"] {
+  transform-origin: left center;
+}
+
+/* Animación desde la derecha */
+.note-card.focusing[data-column-position="right"].focused {
+  transform-origin: right center;
+  animation: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-card.focusing[data-column-position="right"] {
+  transform-origin: right center;
+}
+
 /* === INPUTS Y TEXTAREAS === */
 .note-card input,
 .note-card textarea {
@@ -185,10 +266,10 @@ html, body {
   width: 100%;
   min-height: 10px;
   resize: none;
-  overflow: auto;
+  overflow-y: auto;
   line-height: 1.5;
   font-size: 14px;
-  padding: 8px 0;
+  padding: 8px 8px;
   border: none;
   background: transparent;
   transition: height 0.2s ease;
@@ -196,9 +277,8 @@ html, body {
   overflow-wrap: break-word;
   white-space: pre-wrap;
   margin-bottom: 35px;
-/*  Max de altura
-  max-height: 70vh;
-  height: auto; */
+  max-height: 500px;
+  box-sizing: border-box;
 }
 
 /* === ESTADOS FOCUSED === */
@@ -209,28 +289,12 @@ html, body {
   max-height: 90vh;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) !important;
+  transform: translate(-50%, -50%);
+  opacity: 1;
   z-index: 1000;
   padding: 40px;
-  display: flex;
-  flex-direction: column;
   background: #fff;
-  overflow: auto;
-
-  /*position: fixed;
-  width: 800px;
-  max-height: 90vh;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) !important;
-  z-index: 1000;
-  padding: 40px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  overflow: visible;
-  margin: 0;  */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .note-card.focused .note-content {
@@ -242,12 +306,6 @@ html, body {
   gap: 20px;
   overflow: visible;
   flex: 1;
-
-  /*width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow: visible;*/
 }
 
 .note-card.focused input {
@@ -261,7 +319,7 @@ html, body {
 }
 
 .note-card.focused textarea {
-  max-height: 50vh;
+  max-height: 60vh;
   resize: none;
   overflow: auto;
   padding: 20px;
@@ -275,6 +333,8 @@ html, body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  padding-right: calc(20px + 8px);
+  box-sizing: border-box;
 }
 
 /* === BOTONES === */
@@ -297,6 +357,51 @@ button:hover {
 button:focus {
   outline: 2px solid #f1c40f;
   outline-offset: 2px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancel-button {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.create-button {
+  background: #f1c40f;
+  color: #000;
+}
+
+.action-button {
+  background: transparent;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button:hover {
+  color: #000;
+  transform: scale(1.1);
+}
+
+.action-button.marked {
+  color: #f1c40f;
+}
+
+.action-button.pinned {
+  color: #2ecc71;
+}
+
+.action-button i {
+  font-size: 1.2rem;
 }
 
 /* === BOTÓN DE ELIMINAR === */
@@ -341,15 +446,15 @@ button:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0);
   z-index: 999;
-  opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .overlay.active {
   opacity: 1;
+  background-color: rgba(0, 0, 0, 0.7);
   visibility: visible;
 }
 
@@ -379,17 +484,239 @@ button:focus {
 }
 
 .note-card textarea::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(54, 54, 54, 0.8);
   border-radius: 4px;
+  margin: 2px;
 }
 
 .note-card textarea::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--dorado);
   border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .note-card textarea::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+
+
+/* === MENU SUPERIOR === */
+.bulk-actions-menu {
+  position: relative;
+  width: 100%;
+  min-width: 450px;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin-bottom: 0;
+  transform-origin: top;
+  transition: all 0.3s ease-in-out;
+}
+
+.bulk-actions-menu.visible {
+  opacity: 1;
+  max-height: 60px;
+  margin-bottom: 20px;
+  transform: scaleY(1);
+}
+
+.bulk-actions-menu .left-section {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.bulk-actions-menu .right-section {
+  display: flex;
+  gap: 15px;
+}
+
+.bulk-delete-button {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.bulk-delete-button:hover {
+  background-color: #ff6b81;
+}
+
+.has-marked-notes .note-actions {
+  opacity: 1;
+}
+
+.create-note,
+.bulk-actions-menu {
+  z-index: 2;
+}
+
+.bulk-actions-menu.visible ~ .masonry-grid .note-actions {
+  opacity: 1;
+}
+
+/* Sidebar Styles */
+.notes-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.notes-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #1e1e1e;
+  padding: 20px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.notes-main {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+/* Grupos */
+.group-list {
+  margin-top: 20px;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.group-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.group-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left-color: currentColor;
+  color: inherit;
+}
+
+.group-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.group-name {
+  flex-grow: 1;
+  font-size: 14px;
+}
+
+.active-group-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px 0;
+  text-align: center;
+  border-bottom: 2px solid;
+  width: 100%;
+}
+
+.note-card.group-note {
+  border-width: 2px;
+}
+
+.notes-container.group-active {
+  border-top: 2px solid;
+  border-color: inherit;
+}
+
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Botón de crear grupo */
+.create-group-button {
+  background-color: var(--dorado);
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.create-group-button:hover {
+  opacity: 0.9;
+}
+
+.create-group-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* === ANIMACIONES === */
@@ -404,6 +731,82 @@ button:focus {
   }
 }
 
+/* === ANIMACIONES FOCUS === */
+/* Animaciones para la entrada */
+@keyframes expandFromLeft {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+}
+
+@keyframes expandFromRight {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+}
+
+/* Animaciones para la salida */
+@keyframes collapseToLeft {
+  0% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes collapseToRight {
+  0% {
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+    width: min(800px, 90vw);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-10%, -25%) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+
 /* === RESPONSIVE === */
 @media (max-width: 1200px) {
   .note-card {
@@ -416,3 +819,4 @@ button:focus {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
+
