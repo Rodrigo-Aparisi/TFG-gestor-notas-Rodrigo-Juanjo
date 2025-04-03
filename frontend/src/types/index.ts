@@ -1,30 +1,28 @@
-// Definir un tipo para UUID para mejor claridad
-type UUID = string;
-
 export interface User {
-  id: UUID;
+  id: string;
   username: string;
   email: string;
   password?: string;
+  profile_image?: string;
   created_at: Date;
   updated_at: Date;
 }
 
 export interface Note {
-  id: UUID;     
+  id: string;     
   title: string;
   content: string | null;
-  user_id: UUID;
+  user_id: string;
   created_at: Date;
   updated_at: Date;
 }
 
 export interface Reminder {
-  id: UUID;
+  id: string;
   title: string;
   description?: string;
   dateTime: Date;
-  userId: UUID; 
+  userId: string; 
   statusId: number;
   statusName?: string;
   createdAt: Date;
@@ -48,8 +46,8 @@ export interface ReminderStatus {
 }
 
 export interface ReminderRecurrence {
-  id: UUID;     
-  reminder_id: UUID;
+  id: string;     
+  reminder_id: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   interval_value: number; 
   end_date?: Date; 
