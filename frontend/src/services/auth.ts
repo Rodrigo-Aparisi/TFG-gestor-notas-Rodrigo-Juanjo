@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { store } from '../store';
-import { setUser, setToken, logout as logoutAction } from '../store/slices/authSlice';
+import { setUser, setToken, logout as logoutAction, updateUserProfile } from '../store/slices/authSlice';
 import { User } from '../types';
 import { themeService } from './themeService';
 
@@ -8,6 +8,7 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
 });
 
+// Interfaces
 interface LoginCredentials {
   email: string;
   password: string;
@@ -41,11 +42,15 @@ export const authService = {
     try {
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       if (response.data && response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        const { token, user } = response.data;
         
-        store.dispatch(setUser(response.data.user));
-        store.dispatch(setToken(response.data.token));
+        // Guardar datos en localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Actualizar estado global
+        store.dispatch(setUser(user));
+        store.dispatch(setToken(token));
       }
       return response.data;
     } catch (error: any) {
@@ -71,6 +76,7 @@ export const authService = {
       });
       
       if (response.data.user) {
+        // Actualizar localStorage y estado global
         localStorage.setItem('user', JSON.stringify(response.data.user));
         store.dispatch(setUser(response.data.user));
       }
@@ -81,8 +87,22 @@ export const authService = {
     }
   },
 
+  updateUserProfile: async (profileData: Partial<User>): Promise<void> => {
+    try {
+      const currentUser = store.getState().auth.user;
+      if (currentUser) {
+        const updatedUser = { ...currentUser, ...profileData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        store.dispatch(updateUserProfile(profileData));
+      }
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  },
+
   logout: () => {
-    themeService.resetToDefault(); // Restaurar tema por defecto
+    themeService.resetToDefault();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     store.dispatch(logoutAction());
@@ -115,6 +135,11 @@ export const authService = {
     return localStorage.getItem('token');
   },
 
+  getCurrentUser: (): User | null => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
   initializeAuth: () => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
@@ -142,5 +167,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor para manejar errores
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      authService.logout();
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default authService;

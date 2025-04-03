@@ -224,6 +224,31 @@ section p {
   margin-top: 0.5rem;
 }
 
+/* Botón de guardar tema */
+.save-theme-button {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: block;
+  margin-left: auto;
+}
+
+.save-theme-button:hover {
+  background-color: rgba(255, 198, 0, 0.8);
+}
+
+.save-theme-button:disabled {
+  background-color: var(--background-darker);
+  border: 1px solid var(--dorado);
+  color: var(--dorado);
+  cursor: not-allowed;
+}
+
 /* Account Section Styles */
 .account-section {
   background-color: var(--background-darker);
@@ -243,6 +268,39 @@ section p {
   color: var(--dorado);
 }
 
+.password-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.password-full {
+  grid-column: 1 / 2;
+}
+
+.password-left {
+  grid-column: 1 / 2;
+}
+
+.password-right {
+  grid-column: 2 / 3;
+}
+
+/* Responsivo: una sola columna en pantallas pequeñas */
+@media (max-width: 768px) {
+  .password-container {
+    grid-template-columns: 1fr;
+  }
+
+  .password-full,
+  .password-left,
+  .password-right {
+    grid-column: 1 / 2; 
+  }
+}
+
+/* Inputs y contenedores generales */
 .input-container,
 .password-input-container {
   position: relative;
@@ -300,8 +358,89 @@ section p {
   background: #e6b000;
 }
 
+/* Profile Section Styles */
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background-color: var(--background-darker);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+}
+
+.profile-image-container {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--background-darker);
+  border: 2px solid var(--dorado);
+}
+
+.profile-image-container:hover {
+  transform: scale(1.05);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.profile-image.loaded {
+  opacity: 1;
+}
+
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.upload-image-button {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.upload-image-button:hover {
+  background-color: var(--button-hover-background);
+  transform: translateY(-2px);
+}
+
+.upload-image-button:disabled {
+  background-color: var(--background-darker);
+  border: 1px solid var(--dorado);
+  color: var(--dorado);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button Groups */
 .button-group {
   margin-top: 2rem;
+  margin-bottom: 1rem;
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
@@ -334,23 +473,103 @@ section p {
 }
 
 /* Message Styles */
-.message {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border-radius: 4px;
-  text-align: center;
+.feedback-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in;
 }
 
-.message.success {
+.feedback-message.success {
   background-color: rgba(76, 175, 80, 0.1);
   border: 1px solid #4CAF50;
   color: #4CAF50;
 }
 
-.message.error {
+.feedback-message.error {
   background-color: rgba(244, 67, 54, 0.1);
   border: 1px solid #f44336;
   color: #f44336;
+}
+
+.behavior-settings {
+  background-color: var(--background-darker);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 198, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.behavior-settings h4 {
+  color: var(--dorado);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.setting-option {
+  margin-bottom: 1.2rem;
+}
+
+.setting-option label {
+  display: block;
+  color: var(--white);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.setting-option select {
+  background-color: var(--background-black);
+  color: var(--dorado);
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+}
+
+.setting-option select::-ms-expand {
+  display: none;
+}
+
+.setting-option select:hover {
+  background-color: var(--background-darker);
+}
+
+.setting-option select:focus {
+  outline: none;
+  border-color: var(--dorado);
+  box-shadow: 0 0 5px rgba(255, 198, 0, 0.5);
+}
+
+/* Botón de guardar cambios */
+.settings-buttons {
+  text-align: right;
+  margin-top: 1rem;
+}
+
+.save-settings-button {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-settings-button:hover {
+  background-color: rgba(255, 198, 0, 0.8);
+}
+
+.save-settings-button:disabled {
+  background-color: var(--background-darker);
+  border: 1px solid var(--dorado);
+  color: var(--dorado);
+  cursor: not-allowed;
 }
 
 /* Media Queries */
@@ -387,6 +606,11 @@ section p {
   .button-group button {
     width: 100%;
   }
+
+  .profile-image-container {
+    width: 120px;
+    height: 120px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -401,241 +625,9 @@ section p {
   .theme-selector {
     padding: 1rem;
   }
-}
 
-.save-theme-button {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  background-color: var(--dorado);
-  color: var(--background-dark);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.save-theme-button:hover {
-  background-color: #e6b000;
-}
-
-.save-theme-button:active {
-  transform: scale(0.98);
-}
-
-/* Estilos para las opciones de comportamiento */
-.behavior-settings {
-  background-color: var(--background-darker);
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 198, 0, 0.1);
-  margin-top: 2rem;
-}
-
-.behavior-settings h4 {
-  color: var(--dorado);
-  margin-bottom: 1.5rem;
-  font-size: 1.1rem;
-}
-
-.setting-option {
-  margin-bottom: 1.5rem;
-}
-
-.setting-option:last-child {
-  margin-bottom: 0;
-}
-
-.setting-option label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--white);
-}
-
-.setting-option select {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: var(--background-black);
-  border: 1px solid rgba(255, 198, 0, 0.2);
-  border-radius: 4px;
-  color: var(--white);
-  cursor: pointer;
-}
-
-.setting-option select:focus {
-  outline: none;
-  border-color: var(--dorado);
-}
-
-/* Estilos para el toggle switch */
-.toggle-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 60px;
-  height: 34px;
-}
-
-.behavior-settings {
-  background-color: var(--background-darker);
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 198, 0, 0.1);
-  margin-top: 2rem;
-}
-
-.setting-option {
-  margin-bottom: 1.5rem;
-}
-
-.toggle-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 60px;
-  height: 34px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--background-black);
-  border: 1px solid rgba(255, 198, 0, 0.2);
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 3px;
-  background-color: var(--dorado);
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: var(--dorado);
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
-  background-color: var(--white);
-}
-
-.settings-buttons {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.save-settings-button {
-  background-color: var(--dorado);
-  color: var(--background-dark);
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.save-settings-button:hover {
-  background-color: #e6b000;
-}
-
-.save-settings-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--background-black);
-  border: 1px solid rgba(255, 198, 0, 0.2);
-  transition: .4s;
-  border-radius: 34px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 3px;
-  background-color: var(--white);
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: var(--dorado);
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
-}
-
-/* Estilos responsive */
-@media (max-width: 768px) {
-  .setting-option {
-    margin-bottom: 1rem;
+  .profile-image-container {
+    width: 100px;
+    height: 100px;
   }
-
-  .toggle-label {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
-
-
-/* Estilos para inputs deshabilitados */
-.input-container input:disabled,
-.password-input-container input:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Estilos para botones deshabilitados */
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
