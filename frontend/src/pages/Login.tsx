@@ -102,7 +102,8 @@ const Login: React.FC = () => {
     try {
         const response = await authService.login(loginData);
         if (response && response.token && response.user) {
-            // Ya no intentamos obtener ni aplicar el tema aquí
+            // Asegurarnos de que tenemos la imagen de perfil
+            console.log('Usuario logueado:', response.user);
             navigate("/notes", { replace: true });
         }
     } catch (error: any) {
@@ -110,6 +111,7 @@ const Login: React.FC = () => {
         setError(error.message || "Error en el inicio de sesión");
     }
 };
+
 
 
   const handleRegister = async (e: React.FormEvent) => {

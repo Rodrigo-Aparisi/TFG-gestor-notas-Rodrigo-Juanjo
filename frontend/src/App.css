@@ -78,6 +78,32 @@ body {
   height: var(--header-height);
 }
 
+.header-profile-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--dorado);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.header-profile-image.loaded {
+  opacity: 1;
+}
+
+.user-menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--background-darker);
+  overflow: hidden;
+}
+
+
 /* Logo */
 .logo {
   color: var(--dorado);
@@ -263,21 +289,10 @@ button:hover {
 body.light-theme,
 .light-theme #root,
 .light-theme .app {
-  /* Fondo claro y texto oscuro */
   --theme-background: #f5f5f5;
   --theme-border: var(--dorado);
   background-color: #f5f5f5;
   color: #333;
-}
-
-body.light-theme {
-  background-color: var(--theme-background);
-  color: #333;
-}
-
-/* El resto de elementos que dependen de las variables continúan usando --theme-background */
-#root {
-  background-color: var(--theme-background);
 }
 
 /* Media Queries */
