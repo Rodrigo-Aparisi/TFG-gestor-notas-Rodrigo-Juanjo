@@ -15,13 +15,19 @@ interface UpdateResponse {
   message: string;
 }
 
+interface ProfileImageResponse {
+  profile_image: string;
+  message: string;
+}
+
 // Crear instancia de axios
 const api = axios.create({
-  baseURL: process.env.REACT_APP_api || 'http://localhost:3001/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
   headers: {
-    'Content-Type': 'application/json'
+      'Content-Type': 'application/json'
   }
 });
+
 
 // Interceptor para añadir el token
 api.interceptors.request.use((config) => {
@@ -68,7 +74,6 @@ export const noteService = {
 
   updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
     try {
-      // Asegurarse de que los datos no sean undefined
       const sanitizedData = {
         title: noteData.title || '',
         content: noteData.content || ''
@@ -147,7 +152,8 @@ export const noteService = {
   }
 };
 
-// Servicios de recordatorios
+
+// Servicios de calendario
 export const calendarService = {
   getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {
@@ -172,7 +178,6 @@ export const calendarService = {
         hasTime: data.hasTime
       };
       
-      console.log('Sending reminder data:', reminderData);
       const response = await api.post('/reminders', reminderData);
       return response.data;
     } catch (error) {
@@ -193,11 +198,6 @@ export const calendarService = {
 
   updateReminder: async (id: string, data: UpdateReminderData) => {
     try {
-      console.log('Datos a enviar:', {
-        id,
-        data
-      });
-
       const response = await api.put(`/reminders/${id}`, {
         title: data.title,
         description: data.description,
@@ -205,8 +205,6 @@ export const calendarService = {
         status_id: data.status_id,
         has_time: data.has_time
       });
-
-      console.log('Respuesta del servidor:', response.data);
       
       if (response.data?.reminder) {
         return {
@@ -234,7 +232,6 @@ export const calendarService = {
       throw error;
     }
   }
-
 };
 
 // Servicios de cuenta
@@ -258,6 +255,28 @@ export const accountService = {
     }
   },
 
+  updateUserProfileImage: async (formData: FormData): Promise<string> => {
+    try {
+      const response = await api.post<ProfileImageResponse>('/account/upload-profile-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (!response.data || !response.data.profile_image) {
+        throw new Error('No se recibió la URL de la imagen');
+      }
+
+      return response.data.profile_image;
+    } catch (error) {
+      console.error('Error en updateUserProfileImage:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Error al subir la imagen');
+      }
+      throw new Error('Error inesperado al subir la imagen');
+    }
+  },
+
   getProfile: async (): Promise<User> => {
     try {
       const response = await api.get('/account/profile');
@@ -273,6 +292,26 @@ export const accountService = {
       await api.delete('/account/delete', { data: { password } });
     } catch (error) {
       console.error('Error deleting account:', error);
+      throw error;
+    }
+  },
+
+  getUserSettings: async (userId: string) => {
+    try {
+      const response = await api.get('/account/settings');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      throw error;
+    }
+  },
+
+  updateUserSettings: async (userId: string, settings: any) => {
+    try {
+      const response = await api.put('/account/settings', settings);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user settings:', error);
       throw error;
     }
   }
