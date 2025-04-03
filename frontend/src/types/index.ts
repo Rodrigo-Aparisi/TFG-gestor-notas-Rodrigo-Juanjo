@@ -15,6 +15,14 @@ export interface Note {
   user_id: string;
   created_at: Date;
   updated_at: Date;
+  user_id: string;
+  is_pinned: boolean;
+  is_marked: boolean;
+}
+
+export interface NotePosition {
+  rect: DOMRect;
+  columnPosition: 'left' | 'right';
 }
 
 export interface Reminder {
@@ -87,4 +95,19 @@ export interface EditingReminder {
   description: string;
   dateTime: Date;
   hasTime: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  color: string;
+  isDefault?: boolean;
+  noteIds: string[];
+}
+
+export interface GroupResponse {
+  id: string | number;
+  name: string;
+  color: string;
+  note_ids: (string | null)[];
 }

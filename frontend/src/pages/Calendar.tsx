@@ -964,7 +964,7 @@ const Calendar: React.FC = () => {
               </button>
           </div>
   
-          <div className="main-content">
+          <div className="main">
             {generateWeekDaysHeader()}
             
             <div className="calendar-and-form">

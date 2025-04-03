@@ -7,6 +7,7 @@ import multer from 'multer';
 import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
+import groupRoutes from './routes/groupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import fs from 'fs';
@@ -65,9 +66,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Configurar rutas
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);     // Rutas de autenticación
+app.use('/api/notes', notesRoutes);   // Rutas de notas
+app.use('/api/groups', groupRoutes);
 app.use('/api/account', accountRoutes);
-app.use('/api/notes', notesRoutes);
 app.use('/api/reminders', reminderRoutes);
 
 // Añadir un middleware de logging para depuración
