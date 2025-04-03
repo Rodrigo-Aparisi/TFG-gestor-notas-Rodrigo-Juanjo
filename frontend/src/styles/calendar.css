@@ -21,7 +21,6 @@
   justify-content: space-between;
   text-align: center;
   padding: 10px 0;
-  margin: 60px 0 0 0;
   width: 100%;
   transition: all 0.3s ease;
   max-width: 950px;
@@ -224,15 +223,14 @@
   background-color: var(--dorado);
 }
 
-.main-content {
+.main {
   display: flex;
   gap: 5px;
   flex-direction: column;
   align-items: center;
   height: auto;
-  width: 100%;
+  width: 90%;
   max-width: none; 
-  margin: 0 auto;
 }
 
 .calendar-section {
@@ -808,7 +806,6 @@
   align-items: center;
   gap: 10px;
   flex: 1;
-  justify-content: space-between;
 }
 
 .reminder-actions {
