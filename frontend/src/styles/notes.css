@@ -52,7 +52,6 @@ html, body {
   width: 100%;
   border: none;
   outline: none;
-  margin-bottom: 10px;
   font-size: 16px;
   padding: 8px;
 }
@@ -243,11 +242,11 @@ html, body {
 .note-card input,
 .note-card textarea {
   width: 100%;
-  border: 1px solid transparent;
+  border: 1px solid;
   border-radius: 4px;
   padding: 8px;
-  background: transparent;
   transition: all 0.2s ease;
+  tab-size: 4;
 }
 
 .note-card input {
@@ -271,14 +270,19 @@ html, body {
   font-size: 14px;
   padding: 8px 8px;
   border: none;
-  background: transparent;
+  background-color: #f8f9fa;
   transition: height 0.2s ease;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
-  margin-bottom: 35px;
+  margin-bottom: 10px;
   max-height: 500px;
   box-sizing: border-box;
+  padding-left: 20px; 
+}
+
+.note-card textarea::placeholder {
+  color: #999;
 }
 
 /* === ESTADOS FOCUSED === */
@@ -359,6 +363,15 @@ button:focus {
   outline-offset: 2px;
 }
 
+.create-note .button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
 .button-container {
   display: flex;
   justify-content: flex-end;
@@ -373,6 +386,16 @@ button:focus {
 .create-button {
   background: #f1c40f;
   color: #000;
+}
+
+.create-note .left-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.create-note .right-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .action-button {
@@ -404,9 +427,73 @@ button:focus {
   font-size: 1.2rem;
 }
 
+.note-actions-bottom {
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  padding: 0 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-card.focused .note-actions-bottom {
+  bottom: 20px;
+  left: 20px;
+  padding: 0 20px;
+}
+
+.note-card.focused .delete-button {
+  bottom: 20px;
+  right: 20px;
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 0.9em;
+}
+
+
+.note-card:hover .note-actions-bottom,
+.note-card:hover .delete-button,
+.note-card.focused .note-actions-bottom,
+.note-card.focused .delete-button {
+  opacity: 1;
+}
+
+/* === BOTÓN DE LISTA === */
+.list-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.list-button {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #f1c40f;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.list-button:hover {
+  color: var(--dorado);
+  transform: scale(1.1);
+  background-color: rgba(241, 196, 15, 0.1);
+}
+
+.list-button i {
+  font-size: 1.1rem;
+}
+
 /* === BOTÓN DE ELIMINAR === */
 .delete-button {
-  position: absolute;
   bottom: 10px;
   right: 10px;
   background: #ff4757;
@@ -417,8 +504,7 @@ button:focus {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.3s ease;
-  margin-top: auto;
-  z-index: 2;
+  font-size: 0.9em;
 }
 
 .delete-button:hover {
@@ -428,15 +514,6 @@ button:focus {
 .note-card:hover .delete-button,
 .note-card.focused .delete-button {
   opacity: 1;
-}
-
-.note-card.focused .delete-button {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  margin: 0;
-  padding: 10px 20px;
-  font-size: 0.9em;
 }
 
 /* === OVERLAY === */

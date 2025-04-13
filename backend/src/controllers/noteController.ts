@@ -6,16 +6,21 @@ export class NoteController {
   async createNote(req: Request, res: Response): Promise<void> {
     try {
       const { title, content } = req.body;
-      const userId = req.user.id; // Obtenido del token JWT
+      const userId = req.user.id;
 
       if (!title || title.trim() === '') {
         res.status(400).json({ error: 'El título es requerido' });
         return;
       }
 
+      // Procesar el contenido para manejar listas
+      const processedContent = content.replace(/^- (.+)$/gm, '• $1')
+                                    .replace(/^\* (.+)$/gm, '• $1')
+                                    .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
+
       const result = await pool.query(
         'INSERT INTO notes (title, content, user_id) VALUES ($1, $2, $3) RETURNING *',
-        [title, content, userId]
+        [title, processedContent, userId]
       );
 
       res.status(201).json({
