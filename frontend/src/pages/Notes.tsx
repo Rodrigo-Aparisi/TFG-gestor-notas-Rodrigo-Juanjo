@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note, NotePosition, Group, GroupResponse } from '../types';
@@ -9,7 +7,6 @@ import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
 
 const Notes: React.FC = () => {
-  const defaultNoteSort = useSelector((state: RootState) => state.settings.defaultNoteSort);
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
@@ -36,11 +33,13 @@ const Notes: React.FC = () => {
   
 
   const breakpointColumns = {
-    default: 4, // Número de columnas en pantallas grandes
+    default: 5, // Número de columnas en pantallas grandes
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
 };
+
+  type ListType = 'bullet' | 'number';
 
 
   useEffect(() => {
@@ -288,6 +287,145 @@ const Notes: React.FC = () => {
     }
   };
 
+  const processContent = (content: string) => {
+    return content.split('\n').map((line, index) => {
+      // Detectar listas desordenadas
+      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+        return (
+          <div key={index} className="list-item">
+            <span className="bullet">•</span>
+            {line.trim().substring(1).trim()}
+          </div>
+        );
+      }
+      // Detectar listas ordenadas
+      const orderedMatch = line.match(/^\d+\./);
+      if (orderedMatch) {
+        return (
+          <div key={index} className="list-item ordered">
+            <span className="number">{orderedMatch[0]}</span>
+            {line.substring(orderedMatch[0].length).trim()}
+          </div>
+        );
+      }
+      // Línea normal
+      return <div key={index}>{line}</div>;
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      const lines = content.split('\n');
+      let currentLine = '';
+      let charCount = 0;
+      let indentLevel = 0;
+      
+      // Encontrar la línea actual y su nivel de indentación
+      for (const line of lines) {
+        if (charCount + line.length + 1 >= selectionStart) {
+          currentLine = line;
+          indentLevel = (line.match(/^\s*/) || [''])[0].length;
+          break;
+        }
+        charCount += line.length + 1;
+      }
+  
+      // Detectar si estamos en una lista
+      const bulletMatch = currentLine.match(/^(\s*)([•\-*]|\d+\.)\s*/);
+      if (bulletMatch) {
+        e.preventDefault();
+        
+        const [, indent, bullet] = bulletMatch;
+        
+        // Si la línea está vacía (excepto por el marcador), terminar la lista
+        if (currentLine.trim() === bullet.trim()) {
+          const newContent = content.slice(0, selectionStart - bulletMatch[0].length) + 
+                           '\n' + content.slice(selectionStart);
+          
+          if (isNewNote) {
+            setNewNote(prev => ({ ...prev, content: newContent }));
+          } else {
+            handleNoteChange(noteId, 'content', newContent);
+          }
+          return;
+        }
+  
+        // Continuar la lista con la misma indentación
+        const newBullet = bullet.match(/\d+\./) 
+          ? `${parseInt(bullet) + 1}.` 
+          : '•';
+        
+        const newContent = content.slice(0, selectionStart) + 
+                          '\n' + indent + newBullet + ' ' + 
+                          content.slice(selectionStart);
+        
+        if (isNewNote) {
+          setNewNote(prev => ({ ...prev, content: newContent }));
+        } else {
+          handleNoteChange(noteId, 'content', newContent);
+        }
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      
+      // Insertar tabulación
+      const newContent = content.slice(0, selectionStart) + 
+                        '    ' + // 4 espacios para la tabulación
+                        content.slice(selectionStart);
+      
+      if (isNewNote) {
+        setNewNote(prev => ({ ...prev, content: newContent }));
+      } else {
+        handleNoteChange(noteId, 'content', newContent);
+      }
+      
+      // Mover el cursor después de la tabulación
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = selectionStart + 4;
+      });
+    }
+  };
+  
+  
+
+  const insertList = (noteId: string, type: ListType, isNewNote = false) => {
+    let currentContent;
+    if (isNewNote) {
+      currentContent = newNote.content;
+    } else {
+      // Usar el contenido del estado de edición si existe, si no usar el contenido original de la nota
+      const note = notes.find(n => n.id === noteId);
+      currentContent = editingNote[noteId]?.content ?? note?.content ?? '';
+    }
+  
+    const selectionStart = document.activeElement instanceof HTMLTextAreaElement ? 
+      document.activeElement.selectionStart : currentContent.length;
+    
+    let insertText = '\n';
+    if (type === 'bullet') {
+      insertText += '• ';
+    } else {
+      insertText += '1. ';
+    }
+  
+    const newContent = currentContent.slice(0, selectionStart) + 
+                      insertText + 
+                      currentContent.slice(selectionStart);
+  
+    if (isNewNote) {
+      setNewNote(prev => ({ ...prev, content: newContent }));
+    } else {
+      handleNoteChange(noteId, 'content', newContent);
+    }
+  };
+  
+
   const handleDeleteNote = async (id: string) => {
     try {
       await noteService.deleteNote(id);
@@ -319,14 +457,6 @@ const Notes: React.FC = () => {
       }
     }
   };
-
-  
-  const getNoteGroup = (noteId: string) => {
-    return groups.find(group => 
-      !group.isDefault && group.noteIds.includes(noteId)
-    );
-  };
-  
 
   const handleCreateGroup = async () => {
     try {
@@ -658,17 +788,35 @@ const Notes: React.FC = () => {
             }}
           />
           {isExpanded && (
-            <>
-              <textarea
-                placeholder="Contenido de la nota..."
-                value={newNote.content}
-                onChange={e => {
-                  setNewNote(prev => ({ ...prev, content: e.target.value }));
-                  autoResizeTextarea(e.target as HTMLTextAreaElement);
-                }}
-                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-              />
-              <div className="button-container">
+          <>
+            <textarea
+              placeholder="Contenido de la nota..."
+              value={newNote.content}
+              onChange={e => {
+                setNewNote(prev => ({ ...prev, content: e.target.value }));
+                autoResizeTextarea(e.target as HTMLTextAreaElement);
+              }}
+              onKeyDown={e => handleKeyDown(e, '', true)}
+              onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+            />
+            <div className="button-container">
+              <div className="left-actions">
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'bullet', true)}
+                  title="Insertar lista con viñetas"
+                >
+                  <i className="fas fa-list-ul"></i>
+                </button>
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'number', true)}
+                  title="Insertar lista numerada"
+                >
+                  <i className="fas fa-list-ol"></i>
+                </button>
+              </div>
+              <div className="right-actions">
                 <button 
                   className="cancel-button"
                   onClick={() => {
@@ -689,8 +837,9 @@ const Notes: React.FC = () => {
                   Crear Nota
                 </button>
               </div>
-            </>
-          )}
+            </div>
+          </>
+        )}
         </div>
   
         {/* Grid de notas */}
@@ -748,6 +897,7 @@ const Notes: React.FC = () => {
                       handleNoteChange(note.id, 'content', e.target.value);
                       autoResizeTextarea(e.target as HTMLTextAreaElement);
                     }}
+                    onKeyDown={(e) => handleKeyDown(e, note.id)}
                     onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
                     onBlur={(e) => {
                       handleUpdateNote(note.id, 'content');
@@ -756,15 +906,39 @@ const Notes: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteNote(note.id);
-                  }}
-                  className="delete-button"
-                >
-                  Eliminar
-                </button>
+                <div className="note-actions-bottom">
+                  <div className="list-buttons">
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertList(note.id, 'bullet');
+                      }}
+                      title="Insertar lista con viñetas"
+                    >
+                      <i className="fas fa-list-ul"></i>
+                    </button>
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertList(note.id, 'number');
+                      }}
+                      title="Insertar lista numerada"
+                    >
+                      <i className="fas fa-list-ol"></i>
+                    </button>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNote(note.id);
+                    }}
+                    className="delete-button"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             );
           })}

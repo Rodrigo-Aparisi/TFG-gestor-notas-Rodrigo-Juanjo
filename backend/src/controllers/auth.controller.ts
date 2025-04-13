@@ -74,7 +74,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET!,
-      { expiresIn: '1d' }
     );
 
     // Construir URL completa de la imagen si existe
