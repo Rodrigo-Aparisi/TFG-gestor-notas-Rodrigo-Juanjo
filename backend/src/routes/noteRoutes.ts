@@ -1,6 +1,7 @@
 import express from 'express';
 import { NoteController } from '../controllers/noteController';
 import { authenticateToken } from '../middleware/auth';
+import { upload } from '../middleware/upload';
 
 const router = express.Router();
 const noteController = new NoteController();
@@ -11,6 +12,7 @@ router.use(authenticateToken);
 router.post('/', noteController.createNote);
 router.get('/', noteController.getNotes);
 router.put('/:id', noteController.updateNote);
+router.post('/upload-image', upload.single('image'), noteController.uploadNoteImage);
 router.delete('/:id', noteController.deleteNote);
 router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);

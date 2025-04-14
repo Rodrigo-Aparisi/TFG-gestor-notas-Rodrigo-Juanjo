@@ -1,5 +1,40 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
+
+// Configurar multer para el almacenamiento de imágenes
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'note-images');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB límite
+  },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Solo se permiten imágenes'));
+    }
+    cb(null, true);
+  }
+}).single('image');
+
+interface RequestWithFile extends Request {
+  file?: Express.Multer.File;
+}
 
 export class NoteController {
   // Crear una nueva nota
@@ -57,7 +92,6 @@ export class NoteController {
       const { title, content } = req.body;
       const userId = req.user.id;
   
-      // Primero verifico si la nota existe y pertenece al usuario
       const noteExists = await pool.query(
         'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
         [id, userId]
@@ -67,11 +101,19 @@ export class NoteController {
         res.status(404).json({ error: 'Nota no encontrada' });
         return;
       }
+
+      // Procesar el contenido para manejar listas e imágenes
+      let processedContent = content;
+      if (content) {
+        processedContent = content
+          .replace(/^- (.+)$/gm, '• $1')
+          .replace(/^\* (.+)$/gm, '• $1')
+          .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
+      }
   
-      // Realizo la actualización
       const result = await pool.query(
         'UPDATE notes SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
-        [title || noteExists.rows[0].title, content || noteExists.rows[0].content, id, userId]
+        [title || noteExists.rows[0].title, processedContent || noteExists.rows[0].content, id, userId]
       );
   
       res.status(200).json({
@@ -93,21 +135,67 @@ export class NoteController {
       const { id } = req.params;
       const userId = req.user.id;
 
-      const result = await pool.query(
-        'DELETE FROM notes WHERE id = $1 AND user_id = $2 RETURNING *',
+      // Obtener el contenido de la nota para buscar imágenes
+      const noteResult = await pool.query(
+        'SELECT content FROM notes WHERE id = $1 AND user_id = $2',
         [id, userId]
       );
 
-      if (result.rows.length === 0) {
+      if (noteResult.rows.length === 0) {
         res.status(404).json({ error: 'Nota no encontrada' });
         return;
       }
+
+      // Eliminar imágenes asociadas si existen
+      const content = noteResult.rows[0].content;
+      const imageRegex = /!$$.*?$$$(\/uploads\/note-images\/.*?)$/g;
+      let match;
+      
+      while ((match = imageRegex.exec(content)) !== null) {
+        const imagePath = path.join(__dirname, '..', '..', match[1]);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+
+      // Eliminar la nota
+      await pool.query(
+        'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
 
       res.json({ message: 'Nota eliminada exitosamente' });
     } catch (error) {
       res.status(500).json({ error: 'Error al eliminar la nota' });
     }
   }
+
+  // Añadir nuevo método para subir imágenes
+  async uploadNoteImage(req: RequestWithFile, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No se ha proporcionado ninguna imagen" });
+        return;
+      }
+  
+      const baseUrl = process.env.API_URL || 'http://localhost:3001';
+      const imageUrl = `/uploads/note-images/${req.file.filename}`;
+  
+      res.json({
+        message: "Imagen subida correctamente",
+        imageUrl: `${baseUrl}${imageUrl}`
+      });
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error eliminando archivo temporal:', err);
+        });
+      }
+      res.status(500).json({ error: "Error al procesar la imagen" });
+    }
+  } 
+  
 
   async togglePin(req: Request, res: Response): Promise<void> {
     try {

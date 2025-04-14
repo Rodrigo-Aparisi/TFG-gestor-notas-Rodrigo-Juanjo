@@ -97,6 +97,20 @@ export const noteService = {
     }
   },
 
+  uploadNoteImage: async (formData: FormData) => {
+    try {
+      const response = await api.post('/notes/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  },
+
   deleteNote: async (id: string) => {
     try {
       await api.delete(`/notes/${id}`);
