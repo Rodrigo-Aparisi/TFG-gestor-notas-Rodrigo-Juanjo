@@ -108,8 +108,6 @@ html, body {
 
 .create-note:hover textarea,
 .create-note textarea:focus {
-  min-height: 0px;
-  height: auto;
   opacity: 1;
 }
 
@@ -515,6 +513,45 @@ button:focus {
 .note-card.focused .delete-button {
   opacity: 1;
 }
+
+/* === IMAGEN DE NOTAS === */
+.note-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.list-button i.fa-image {
+  color: #f1c40f;
+}
+
+.note-image-container {
+  margin: 10px 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.note-card.focused .note-image {
+  max-width: 80%;
+  margin: 20px auto;
+}
+
+.note-image.loaded {
+  opacity: 1;
+}
+
 
 /* === OVERLAY === */
 .overlay {

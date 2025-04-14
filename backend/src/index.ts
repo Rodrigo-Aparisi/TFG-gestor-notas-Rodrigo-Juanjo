@@ -19,8 +19,9 @@ dotenv.config();
 const app = express();
 
 // Crear directorios necesarios si no existen
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(__dirname, '..', 'uploads');
 const profileImagesDir = path.join(uploadsDir, 'profile-images');
+const noteImagesDir = path.join(uploadsDir, 'note-images');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -28,6 +29,35 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(profileImagesDir)) {
   fs.mkdirSync(profileImagesDir, { recursive: true });
 }
+if (!fs.existsSync(noteImagesDir)) {
+  fs.mkdirSync(noteImagesDir, { recursive: true });
+}
+
+// Configurar multer para las imágenes de las notas
+const noteImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, noteImagesDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+export const uploadNoteImage = multer({
+  storage: noteImageStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB límite
+  },
+  fileFilter: (req, file, cb) => {
+    // Lista de tipos MIME permitidos
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      return cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPEG, PNG, GIF y WEBP'));
+    }
+    cb(null, true);
+  }
+}).single('image');
 
 app.use('/uploads', (req, res, next) => {
   console.log('Solicitud de archivo estático:', req.url);
@@ -38,12 +68,26 @@ app.use('/uploads', (req, res, next) => {
 // Middleware básico
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
+
+app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && err.code === 'EACCES') {
+    console.error('Error de permisos en el sistema de archivos:', err);
+    return res.status(500).json({
+      error: 'Error de permisos al acceder a los archivos'
+    });
+  }
+  next(err);
+});
 
 // Configurar servicio de archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Configurar conexión a base de datos
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -61,6 +105,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
         error: 'Archivo demasiado grande. Máximo 5MB'
       });
     }
+    return res.status(400).json({
+      error: 'Error al subir el archivo: ' + err.message
+    });
   }
   next(err);
 });

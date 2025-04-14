@@ -22,7 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Imagen de usuario
+# Imagenes
 /uploads/*
 !/uploads/.gitkeep
 !/uploads/profile-images/.gitkeep

@@ -289,6 +289,24 @@ const Notes: React.FC = () => {
 
   const processContent = (content: string) => {
     return content.split('\n').map((line, index) => {
+      // Detectar imágenes (formato Markdown)
+      const imageMatch = line.match(/!$$(.*?)$$$(.*?)$/);
+      if (imageMatch) {
+        return (
+          <div key={index} className="note-image-container">
+            <img 
+              src={imageMatch[2]} 
+              alt={imageMatch[1] || 'Imagen de nota'} 
+              className="note-image"
+              onError={(e) => {
+                console.error('Error loading image:', e);
+                e.currentTarget.src = 'ruta/a/imagen/por/defecto.png'; // Opcional: imagen por defecto
+              }}
+            />
+          </div>
+        );
+      }
+  
       // Detectar listas desordenadas
       if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
         return (
@@ -298,6 +316,7 @@ const Notes: React.FC = () => {
           </div>
         );
       }
+  
       // Detectar listas ordenadas
       const orderedMatch = line.match(/^\d+\./);
       if (orderedMatch) {
@@ -308,10 +327,42 @@ const Notes: React.FC = () => {
           </div>
         );
       }
+  
       // Línea normal
       return <div key={index}>{line}</div>;
     });
   };
+  
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    if (!e.target.files || !e.target.files[0]) return;
+  
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+  
+    try {
+      showFeedback('Subiendo imagen...');
+      const response = await noteService.uploadNoteImage(formData);
+      
+      if (response.data && response.data.imageUrl) {
+        const currentContent = editingNote[noteId]?.content ?? notes.find(n => n.id === noteId)?.content ?? '';
+        const newContent = currentContent + `\n!$${file.name}$$${response.data.imageUrl}$`;
+        
+        handleNoteChange(noteId, 'content', newContent);
+        await handleUpdateNote(noteId, 'content');
+        showFeedback('Imagen subida correctamente');
+      } else {
+        throw new Error('No se recibió la URL de la imagen');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showFeedback('Error al subir la imagen');
+    }
+  };
+  
+  
+  
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
     if (e.key === 'Enter') {
@@ -928,6 +979,23 @@ const Notes: React.FC = () => {
                     >
                       <i className="fas fa-list-ol"></i>
                     </button>
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        document.getElementById(`image-input-${note.id}`)?.click();
+                      }}
+                      title="Insertar imagen"
+                    >
+                      <i className="fas fa-image"></i>
+                    </button>
+                    <input
+                      id={`image-input-${note.id}`}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleImageUpload(e, note.id)}
+                    />
                   </div>
                   <button 
                     onClick={(e) => {
