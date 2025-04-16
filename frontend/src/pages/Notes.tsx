@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
-import { Note, NotePosition, Group, GroupResponse } from '../types';
+import { Note, NotePosition, Group, GroupResponse, UpdateNoteData} from '../types';
 import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
+import NoteImage from '../components/NoteImage';
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -289,8 +290,8 @@ const Notes: React.FC = () => {
 
   const processContent = (content: string) => {
     return content.split('\n').map((line, index) => {
-      // Detectar imágenes (formato Markdown)
-      const imageMatch = line.match(/!$$(.*?)$$$(.*?)$/);
+      // Detectar imágenes
+      const imageMatch = line.match(/!\$\$(.*?)\$\$\$(.*?)\$/);
       if (imageMatch) {
         return (
           <div key={index} className="note-image-container">
@@ -298,38 +299,57 @@ const Notes: React.FC = () => {
               src={imageMatch[2]} 
               alt={imageMatch[1] || 'Imagen de nota'} 
               className="note-image"
+              loading="lazy"
               onError={(e) => {
                 console.error('Error loading image:', e);
-                e.currentTarget.src = 'ruta/a/imagen/por/defecto.png'; // Opcional: imagen por defecto
+                e.currentTarget.src = '/placeholder-image.png';
               }}
             />
           </div>
         );
       }
   
-      // Detectar listas desordenadas
-      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+      // Detectar enlaces
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      if (line.match(urlRegex)) {
         return (
-          <div key={index} className="list-item">
-            <span className="bullet">•</span>
-            {line.trim().substring(1).trim()}
+          <div key={index} className="note-link">
+            {line.split(urlRegex).map((part, i) => 
+              part.match(urlRegex) ? 
+                <a key={i} href={part} target="_blank" rel="noopener noreferrer">{part}</a> : 
+                part
+            )}
           </div>
         );
       }
   
-      // Detectar listas ordenadas
+      // Detectar listas con viñetas
+      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+        return (
+          <div key={index} className="list-item bullet">
+            <span className="bullet-point">•</span>
+            <span className="list-content">{line.trim().substring(1).trim()}</span>
+          </div>
+        );
+      }
+  
+      // Detectar listas numeradas
       const orderedMatch = line.match(/^\d+\./);
       if (orderedMatch) {
         return (
-          <div key={index} className="list-item ordered">
+          <div key={index} className="list-item numbered">
             <span className="number">{orderedMatch[0]}</span>
-            {line.substring(orderedMatch[0].length).trim()}
+            <span className="list-content">{line.substring(orderedMatch[0].length).trim()}</span>
           </div>
         );
       }
   
-      // Línea normal
-      return <div key={index}>{line}</div>;
+      // Texto normal
+      return line.trim() ? (
+        <div key={index} className="text-content">
+          {line}
+        </div>
+      ) : <br key={index} />;
     });
   };
   
@@ -345,21 +365,70 @@ const Notes: React.FC = () => {
       showFeedback('Subiendo imagen...');
       const response = await noteService.uploadNoteImage(formData);
       
-      if (response.data && response.data.imageUrl) {
-        const currentContent = editingNote[noteId]?.content ?? notes.find(n => n.id === noteId)?.content ?? '';
-        const newContent = currentContent + `\n!$${file.name}$$${response.data.imageUrl}$`;
-        
-        handleNoteChange(noteId, 'content', newContent);
-        await handleUpdateNote(noteId, 'content');
-        showFeedback('Imagen subida correctamente');
-      } else {
-        throw new Error('No se recibió la URL de la imagen');
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        const note = notes.find(n => n.id === noteId);
+        if (note) {
+          const updatedImages = [...(note.images || []), response.data.data.imageUrl];
+          const updateData: UpdateNoteData = {
+            images: updatedImages
+          };
+  
+          await noteService.updateNote(noteId, updateData);
+          
+          const updatedNote = {
+            ...note,
+            images: updatedImages
+          };
+  
+          setNotes(prevNotes => 
+            prevNotes.map(n => 
+              n.id === noteId ? updatedNote : n
+            )
+          );
+          
+          showFeedback('Imagen subida correctamente');
+        }
       }
     } catch (error) {
       console.error('Error uploading image:', error);
       showFeedback('Error al subir la imagen');
     }
   };
+  
+  
+  
+  
+  
+  const handleDeleteImage = async (noteId: string, imageIndex: number) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+  
+    const updatedImages = note.images.filter((_, index) => index !== imageIndex);
+    const updateData: UpdateNoteData = {
+      images: updatedImages
+    };
+  
+    try {
+      await noteService.updateNote(noteId, updateData);
+      
+      const updatedNote = {
+        ...note,
+        images: updatedImages
+      };
+  
+      setNotes(prevNotes =>
+        prevNotes.map(n =>
+          n.id === noteId ? updatedNote : n
+        )
+      );
+      showFeedback('Imagen eliminada correctamente');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      showFeedback('Error al eliminar la imagen');
+    }
+  };
+  
+  
   
   
   
@@ -934,6 +1003,7 @@ const Notes: React.FC = () => {
                   className="focus-indicator"
                   onClick={(e) => handleFocusIndicatorClick(e, note.id)}
                 />
+
                 <div className="note-content">
                   <input
                     type="text"
@@ -942,6 +1012,21 @@ const Notes: React.FC = () => {
                     onBlur={() => handleUpdateNote(note.id, 'title')}
                     onClick={e => e.stopPropagation()}
                   />
+                  
+                  {/* Sección de imágenes */}
+                  {note.images && note.images.length > 0 && (
+                    <div className="note-images">
+                      {note.images.map((imageUrl, index) => (
+                        <NoteImage
+                          key={index}
+                          imageUrl={imageUrl}
+                          index={index}
+                          onDelete={() => handleDeleteImage(note.id, index)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
                   <textarea
                     value={editingNote[note.id]?.content ?? note.content}
                     onChange={(e) => {
@@ -957,6 +1042,8 @@ const Notes: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
+
+
                 <div className="note-actions-bottom">
                   <div className="list-buttons">
                     <button 

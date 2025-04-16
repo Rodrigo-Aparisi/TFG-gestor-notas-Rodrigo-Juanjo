@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 
 // Crear directorios necesarios si no existen
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+const uploadsDir = path.join(__dirname, 'uploads');
 const profileImagesDir = path.join(uploadsDir, 'profile-images');
 const noteImagesDir = path.join(uploadsDir, 'note-images');
 
@@ -32,6 +32,9 @@ if (!fs.existsSync(profileImagesDir)) {
 if (!fs.existsSync(noteImagesDir)) {
   fs.mkdirSync(noteImagesDir, { recursive: true });
 }
+
+app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configurar multer para las imágenes de las notas
 const noteImageStorage = multer.diskStorage({
@@ -59,18 +62,11 @@ export const uploadNoteImage = multer({
   }
 }).single('image');
 
-app.use('/uploads', (req, res, next) => {
-  console.log('Solicitud de archivo estático:', req.url);
-  console.log('Ruta completa:', path.join(__dirname, 'uploads', req.url));
-  next();
-});
 
 // Middleware básico
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true
 }));
 
 app.use(express.json());
@@ -85,8 +81,14 @@ app.use('/uploads', (err: any, req: express.Request, res: express.Response, next
   next(err);
 });
 
-// Configurar servicio de archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error serving image:', err);
+  if (err.code === 'ENOENT') {
+    res.status(404).json({ error: 'Imagen no encontrada' });
+  } else {
+    res.status(500).json({ error: 'Error al cargar la imagen' });
+  }
+});
 
 // Configurar conexión a base de datos
 const pool = new Pool({

@@ -42,6 +42,7 @@ CREATE TABLE notes (
     is_pinned BOOLEAN DEFAULT FALSE,
     is_marked BOOLEAN DEFAULT FALSE,
     color VARCHAR(7) DEFAULT NULL,
+    images TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
@@ -81,16 +82,6 @@ CREATE TABLE note_tags (
     PRIMARY KEY (note_id, tag_id)
 );
 
--- Crear índices para notas
-CREATE INDEX idx_notes_user_id ON notes(user_id);
-CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
-CREATE INDEX idx_notes_is_marked ON notes(is_marked);
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_notes_created_at ON notes(created_at);
-CREATE INDEX idx_notes_updated_at ON notes(updated_at);
-CREATE INDEX idx_tags_user_id ON tags(user_id);
-CREATE INDEX idx_note_tags_tag_id ON note_tags(tag_id);
-
 -- Crear tabla de estados de recordatorios
 CREATE TABLE reminder_status (
     id SMALLINT PRIMARY KEY,
@@ -127,11 +118,20 @@ CREATE TABLE reminder_recurrence (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear índices para recordatorios
+-- Crear todos los índices necesarios
+CREATE INDEX idx_notes_user_id ON notes(user_id);
+CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
+CREATE INDEX idx_notes_is_marked ON notes(is_marked);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_notes_created_at ON notes(created_at);
+CREATE INDEX idx_notes_updated_at ON notes(updated_at);
+CREATE INDEX idx_tags_user_id ON tags(user_id);
+CREATE INDEX idx_note_tags_tag_id ON note_tags(tag_id);
 CREATE INDEX idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX idx_reminders_date_time ON reminders(date_time);
 CREATE INDEX idx_reminders_status ON reminders(status_id);
 CREATE INDEX idx_reminder_recurrence_reminder_id ON reminder_recurrence(reminder_id);
+CREATE INDEX idx_notes_images ON notes USING gin(images);
 
 -- Crear función para actualizar el timestamp de updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -203,6 +203,7 @@ SELECT
     n.is_pinned,
     n.is_marked,
     n.color,
+    n.images,
     n.created_at,
     n.updated_at,
     ARRAY_AGG(JSONB_BUILD_OBJECT(
@@ -214,3 +215,19 @@ FROM notes n
 LEFT JOIN note_tags nt ON n.id = nt.note_id
 LEFT JOIN tags t ON nt.tag_id = t.id
 GROUP BY n.id;
+
+-- Script para actualizar una base de datos existente
+DO $$ 
+BEGIN
+    -- Añadir columna images si no existe
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'notes' AND column_name = 'images'
+    ) THEN
+        ALTER TABLE notes ADD COLUMN images TEXT[] DEFAULT ARRAY[]::TEXT[];
+    END IF;
+END $$;
+
+-- Inicializar la columna images con array vacío donde sea NULL
+UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;

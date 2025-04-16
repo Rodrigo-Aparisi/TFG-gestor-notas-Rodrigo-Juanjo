@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData, Note } from '../types';
+import { User, UpdateReminderData, CreateReminderData, UpdateNoteData } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -72,14 +72,9 @@ export const noteService = {
     }
   },
 
-  updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
+  updateNote: async (id: string, noteData: UpdateNoteData) => {
     try {
-      const sanitizedData = {
-        title: noteData.title || '',
-        content: noteData.content || ''
-      };
-  
-      const response = await api.put(`/notes/${id}`, sanitizedData);
+      const response = await api.put(`/notes/${id}`, noteData);
       if (!response.data) {
         throw new Error('No se recibieron datos del servidor');
       }
