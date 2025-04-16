@@ -2,6 +2,8 @@ import express from 'express';
 import { NoteController } from '../controllers/noteController';
 import { authenticateToken } from '../middleware/auth';
 import { upload } from '../middleware/upload';
+import { handleMulterError } from '../config/multerConfigNotes';
+
 
 const router = express.Router();
 const noteController = new NoteController();
@@ -17,5 +19,13 @@ router.delete('/:id', noteController.deleteNote);
 router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);
 router.post('/unmark-all', noteController.unmarkAllNotes);
+
+router.post(
+    '/upload-image',
+    authenticateToken,
+    upload.single('image'),
+    handleMulterError,
+    noteController.uploadNoteImage
+);
 
 export default router;

@@ -7,7 +7,7 @@ import multer from 'multer';
 // Configurar multer para el almacenamiento de imágenes
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'note-images');
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'note-images');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -89,7 +89,7 @@ export class NoteController {
   async updateNote(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { title, content } = req.body;
+      const { title, content, images } = req.body;
       const userId = req.user.id;
   
       const noteExists = await pool.query(
@@ -101,20 +101,40 @@ export class NoteController {
         res.status(404).json({ error: 'Nota no encontrada' });
         return;
       }
-
-      // Procesar el contenido para manejar listas e imágenes
-      let processedContent = content;
-      if (content) {
-        processedContent = content
-          .replace(/^- (.+)$/gm, '• $1')
-          .replace(/^\* (.+)$/gm, '• $1')
-          .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
+  
+      const updateFields = [];
+      const values = [];
+      let paramCount = 1;
+  
+      if (title !== undefined) {
+        updateFields.push(`title = $${paramCount}`);
+        values.push(title);
+        paramCount++;
       }
   
-      const result = await pool.query(
-        'UPDATE notes SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
-        [title || noteExists.rows[0].title, processedContent || noteExists.rows[0].content, id, userId]
-      );
+      if (content !== undefined) {
+        updateFields.push(`content = $${paramCount}`);
+        values.push(content);
+        paramCount++;
+      }
+  
+      if (images !== undefined) {
+        updateFields.push(`images = $${paramCount}`);
+        values.push(images);
+        paramCount++;
+      }
+  
+      updateFields.push(`updated_at = NOW()`);
+      values.push(id, userId);
+  
+      const query = `
+        UPDATE notes 
+        SET ${updateFields.join(', ')} 
+        WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
+        RETURNING *
+      `;
+  
+      const result = await pool.query(query, values);
   
       res.status(200).json({
         message: 'Nota actualizada exitosamente',
@@ -128,6 +148,8 @@ export class NoteController {
       });
     }
   }
+  
+  
 
   // Eliminar una nota
   async deleteNote(req: Request, res: Response): Promise<void> {
@@ -152,7 +174,7 @@ export class NoteController {
       let match;
       
       while ((match = imageRegex.exec(content)) !== null) {
-        const imagePath = path.join(__dirname, '..', '..', match[1]);
+        const imagePath = path.join(__dirname, '..', match[1]);
         if (fs.existsSync(imagePath)) {
           fs.unlinkSync(imagePath);
         }
@@ -178,12 +200,13 @@ export class NoteController {
         return;
       }
   
-      const baseUrl = process.env.API_URL || 'http://localhost:3001';
-      const imageUrl = `/uploads/note-images/${req.file.filename}`;
+      const imageUrl = `/uploads/note-images/${req.file.filename}`;  // Modificar esta línea
   
       res.json({
         message: "Imagen subida correctamente",
-        imageUrl: `${baseUrl}${imageUrl}`
+        data: {
+          imageUrl: imageUrl
+        }
       });
     } catch (error) {
       console.error('Error al subir imagen:', error);
@@ -194,7 +217,7 @@ export class NoteController {
       }
       res.status(500).json({ error: "Error al procesar la imagen" });
     }
-  } 
+  }
   
 
   async togglePin(req: Request, res: Response): Promise<void> {
