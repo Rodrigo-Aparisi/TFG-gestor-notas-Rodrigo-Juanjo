@@ -110,6 +110,7 @@ const Header: React.FC = () => {
                 aria-label="Ir a notas"
               >
                 <BsStickyFill size={20} />
+                <span className="icon-label">Notas</span>
               </button>
               <button
                 className="icon-button"
@@ -117,6 +118,7 @@ const Header: React.FC = () => {
                 aria-label="Ir a calendario"
               >
                 <FaCalendar />
+                <span className="icon-label">Calendario</span>
               </button>
             </div>
           )}
