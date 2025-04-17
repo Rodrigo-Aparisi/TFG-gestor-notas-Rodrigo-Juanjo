@@ -532,11 +532,26 @@ button:focus {
   margin-bottom: 8px;
 }
 
+.note-image-container img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.note-image-container::before {
+  content: "";
+  display: block;
+  padding-top: 56.25%;
+}
+
 .note-image {
   width: 100%;
   height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.2s ease;
 }
 
@@ -563,12 +578,17 @@ button:focus {
 
 /* Ajustes para notas enfocadas */
 .note-card.focused .note-images {
-  padding: 0 16px;
-  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  width: 100%;
 }
 
 .note-card.focused .note-image-container {
-  margin-bottom: 16px;
+  margin: 0;
+  height: 100%;
+  aspect-ratio: 1;
 }
 
 .note-image img {
@@ -583,8 +603,10 @@ button:focus {
 }
 
 .note-card.focused .note-image {
-  max-width: 80%;
-  margin: 20px auto;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #f0f0f0;
 }
 
 .note-image.loaded {
