@@ -1,5 +1,5 @@
 import React from 'react';
-import { useImageLoader } from '../hooks/useImageLoader';
+import { useImageLoader } from '../../hooks/useImageLoader';
 
 interface NoteImageProps {
     imageUrl: string;

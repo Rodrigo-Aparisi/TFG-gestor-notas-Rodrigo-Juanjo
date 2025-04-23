@@ -5,7 +5,8 @@ import { authService } from '../services/auth';
 import { Note, NotePosition, Group, GroupResponse, UpdateNoteData} from '../types';
 import '../styles/notes.css';
 import Masonry from 'react-masonry-css';
-import NoteImage from '../components/NoteImage';
+import NoteImage from '../components/Notes/NoteImage';
+import NoteSort from '../components/Notes/NoteSort';
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -203,17 +204,6 @@ const Notes: React.FC = () => {
     }
   };
 
-  const sortNotes = (notesToSort: Note[]) => {
-    return [...notesToSort].sort((a, b) => {
-      // Primero ordenar por pin
-      if (a.is_pinned && !b.is_pinned) return -1;
-      if (!a.is_pinned && b.is_pinned) return 1;
-      
-      // Luego por la fecha de creación (o el criterio que prefieras)
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  };
-
   const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
     setEditingNote(prev => {
       const originalNote = notes.find(note => note.id === id);
@@ -394,10 +384,6 @@ const Notes: React.FC = () => {
       showFeedback('Error al subir la imagen');
     }
   };
-  
-  
-  
-  
   
   const handleDeleteImage = async (noteId: string, imageIndex: number) => {
     const note = notes.find(n => n.id === noteId);
@@ -836,7 +822,17 @@ const Notes: React.FC = () => {
   );
   
   
-  
+  const handleFilteredNotes = (filtered: Note[]) => {
+    // Aplicar el ordenamiento por pins primero (como lo hace sortNotes)
+    const orderedFiltered = [...filtered].sort((a, b) => {
+      // Primero ordenar por pin
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+      return 0; // Mantener el orden que viene del componente NoteSort
+    });
+    
+    setFilteredNotes(orderedFiltered);
+  };
   
 
   return (
@@ -858,16 +854,6 @@ const Notes: React.FC = () => {
             {groups.find(g => g.id === activeGroup)?.name || 'Todas las notas'}
           </div>
         )}
-        
-        <div 
-          className={`overlay ${focusedNoteId ? 'active' : ''}`}
-          onClick={handleBlur}
-        />
-
-        <div 
-          className={`overlay ${focusedNoteId ? 'active' : ''}`}
-          onClick={handleBlur}
-        />
   
         {/* Menú de acciones en masa */}
         <div className={`bulk-actions-menu ${markedNotes.length > 0 ? 'visible' : ''}`}>
@@ -894,73 +880,85 @@ const Notes: React.FC = () => {
           </div>
         </div>
   
-        {/* Crear nota */}
-        <div className="create-note">
-          <input
-            type="text"
-            placeholder="Añade una nota..."
-            value={newNote.title}
-            onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-            onClick={() => {
-              if (!isExpanded) {
-                setIsExpanded(true);
-              }
-            }}
-          />
-          {isExpanded && (
-          <>
-            <textarea
-              placeholder="Contenido de la nota..."
-              value={newNote.content}
-              onChange={e => {
-                setNewNote(prev => ({ ...prev, content: e.target.value }));
-                autoResizeTextarea(e.target as HTMLTextAreaElement);
+        {/* Crear nota y herramientas de ordenación */}
+        <div className="note-tools-container">
+          <div className="create-note">
+            <input
+              type="text"
+              placeholder="Añade una nota..."
+              value={newNote.title}
+              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+              onClick={() => {
+                if (!isExpanded) {
+                  setIsExpanded(true);
+                }
               }}
-              onKeyDown={e => handleKeyDown(e, '', true)}
-              onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
             />
-            <div className="button-container">
-              <div className="left-actions">
-                <button 
-                  className="list-button"
-                  onClick={() => insertList('', 'bullet', true)}
-                  title="Insertar lista con viñetas"
-                >
-                  <i className="fas fa-list-ul"></i>
-                </button>
-                <button 
-                  className="list-button"
-                  onClick={() => insertList('', 'number', true)}
-                  title="Insertar lista numerada"
-                >
-                  <i className="fas fa-list-ol"></i>
-                </button>
+            {isExpanded && (
+            <>
+              <textarea
+                placeholder="Contenido de la nota..."
+                value={newNote.content}
+                onChange={e => {
+                  setNewNote(prev => ({ ...prev, content: e.target.value }));
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
+                }}
+                onKeyDown={e => handleKeyDown(e, '', true)}
+                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+              />
+              <div className="button-container">
+                <div className="left-actions">
+                  <button 
+                    className="list-button"
+                    onClick={() => insertList('', 'bullet', true)}
+                    title="Insertar lista con viñetas"
+                  >
+                    <i className="fas fa-list-ul"></i>
+                  </button>
+                  <button 
+                    className="list-button"
+                    onClick={() => insertList('', 'number', true)}
+                    title="Insertar lista numerada"
+                  >
+                    <i className="fas fa-list-ol"></i>
+                  </button>
+                </div>
+                <div className="right-actions">
+                  <button 
+                    className="cancel-button"
+                    onClick={() => {
+                      setIsExpanded(false);
+                      setNewNote({ title: '', content: '' });
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    className="create-button"
+                    onClick={() => {
+                      handleCreateNote();
+                      setIsExpanded(false);
+                    }}
+                    disabled={isLoading}
+                  >
+                    Crear Nota
+                  </button>
+                </div>
               </div>
-              <div className="right-actions">
-                <button 
-                  className="cancel-button"
-                  onClick={() => {
-                    setIsExpanded(false);
-                    setNewNote({ title: '', content: '' });
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  className="create-button"
-                  onClick={() => {
-                    handleCreateNote();
-                    setIsExpanded(false);
-                  }}
-                  disabled={isLoading}
-                >
-                  Crear Nota
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+            </>
+            )}
+          </div>
+          
+          <NoteSort 
+            notes={activeGroup === 'main' ? notes : notes.filter(note => {
+              const currentGroup = groups.find(g => g.id === activeGroup);
+              return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                currentGroup.noteIds.includes(note.id.toString());
+            })}
+            onNotesFiltered={handleFilteredNotes}
+          />
         </div>
+
   
         {/* Grid de notas */}
         <Masonry
@@ -969,7 +967,7 @@ const Notes: React.FC = () => {
           columnClassName="masonry-grid_column"
         >
           
-          {sortNotes(filteredNotes).map(note => {
+          {filteredNotes.map(note => {
             // Obtener el color del grupo activo
             const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
             

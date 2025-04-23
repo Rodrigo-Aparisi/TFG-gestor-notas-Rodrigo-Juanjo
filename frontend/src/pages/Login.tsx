@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/auth";
-import { accountService } from "../services/accountService";
 import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from "react-icons/ai";
 import "../styles/login.css";
 
@@ -42,16 +41,6 @@ const Login: React.FC = () => {
   });
 
   const [error, setError] = useState<string>("");
-
-  const applyTheme = (selectedTheme: string) => {
-    if (selectedTheme === "light") {
-      document.body.classList.add("light-theme");
-      document.body.classList.remove("dark-theme");
-    } else {
-      document.body.classList.add("dark-theme");
-      document.body.classList.remove("light-theme");
-    }
-  };
 
   useEffect(() => {
     const wrapper = document.querySelector(".wrapper") as HTMLElement;
