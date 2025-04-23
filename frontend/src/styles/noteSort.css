@@ -1,0 +1,147 @@
+/* noteSort.css */
+.note-sort-container {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  .sort-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  
+  .sort-button, .search-button {
+    background: #f1c40f;
+    color: #000;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+  }
+  
+  .search-button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  
+  .sort-button:hover, .search-button:hover {
+    opacity: 0.9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sort-dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .sort-dropdown-content {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    margin-bottom: 8px;
+    background-color: white;
+    min-width: 180px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 20;
+    border-radius: 4px;
+    overflow: hidden;
+    display: none;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  /* Cambiar esta regla para usar la clase .show en lugar de :hover */
+  .sort-dropdown-content.show {
+    display: block;
+  }
+  
+  .sort-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    color: #333;
+    font-size: 14px;
+  }
+  
+  .sort-item:last-child {
+    border-bottom: none;
+  }
+  
+  .sort-item:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .sort-item.active {
+    background-color: #fff8e1;
+    color: #f1c40f;
+    font-weight: 500;
+  }
+  
+  .search-container {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 10px 35px 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .clear-search {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+  }
+  
+  .clear-search:hover {
+    color: #666;
+  }
+  
+  @media (max-width: 768px) {
+    .note-sort-container {
+      position: relative;
+      bottom: auto;
+      right: auto;
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .sort-buttons {
+      width: 100%;
+      justify-content: flex-end;
+    }
+    
+    .search-container {
+      max-width: none;
+    }
+  }
+  
