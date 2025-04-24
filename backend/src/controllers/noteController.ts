@@ -304,4 +304,70 @@ export class NoteController {
     }
   }
 
+async shareNote(req: Request, res: Response): Promise<void> {
+  try {
+    const { noteId, username } = req.body;
+    const ownerId = req.user.id;
+    
+    // Validar datos de entrada
+    if (!noteId || !username) {
+      res.status(400).json({ error: 'Se requieren noteId y username' });
+      return;
+    }
+    
+    // Verificar que la nota existe y pertenece al usuario actual
+    const note = await pool.query(
+      'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+      [noteId, ownerId]
+    );
+    
+    if (note.rows.length === 0) {
+      res.status(404).json({ error: 'Nota no encontrada o no tienes permiso' });
+      return;
+    }
+    
+    // Buscar al usuario con quien compartir
+    const targetUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1',
+      [username]
+    );
+    
+    if (targetUser.rows.length === 0) {
+      res.status(404).json({ error: 'Usuario no encontrado' });
+      return;
+    }
+    
+    const sharedWithId = targetUser.rows[0].id;
+    
+    // Evitar compartir con uno mismo
+    if (sharedWithId === ownerId) {
+      res.status(400).json({ error: 'No puedes compartir una nota contigo mismo' });
+      return;
+    }
+    
+    // Verificar si ya está compartida con este usuario
+    const existingShare = await pool.query(
+      'SELECT * FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2',
+      [noteId, sharedWithId]
+    );
+    
+    if (existingShare.rows.length > 0) {
+      res.status(400).json({ error: 'La nota ya está compartida con este usuario' });
+      return;
+    }
+    
+    // Insertar en la tabla shared_notes
+    await pool.query(
+      'INSERT INTO shared_notes (note_id, owner_id, shared_with_id) VALUES ($1, $2, $3)',
+      [noteId, ownerId, sharedWithId]
+    );
+    
+    res.status(200).json({ success: true, message: 'Nota compartida exitosamente' });
+    
+  } catch (error) {
+    console.error('Error al compartir nota:', error);
+    res.status(500).json({ error: 'Error al compartir la nota' });
+  }
+}
+
 }

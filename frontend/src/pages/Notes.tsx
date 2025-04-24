@@ -6,6 +6,7 @@ import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note, NotePosition, Group, GroupResponse } from '../types';
 import '../styles/notes.css';
+import ShareNote from '../components/Notes/ShareNote';
 import Masonry from 'react-masonry-css';
 
 const Notes: React.FC = () => {
@@ -13,6 +14,7 @@ const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
+  const [sharingNoteId, setSharingNoteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
@@ -448,6 +450,9 @@ const Notes: React.FC = () => {
       }
     }
     
+    // Resetear el sharingNoteId cuando se minimiza la nota
+    setSharingNoteId(null);
+    
     setFocusedNoteId(null);
     document.body.style.overflow = '';
   };
@@ -729,6 +734,21 @@ const Notes: React.FC = () => {
                   >
                     <i className="fas fa-thumbtack"></i>
                   </button>
+                  <button 
+                    className="action-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!sharingNoteId || sharingNoteId !== note.id) {
+                        setSharingNoteId(note.id);
+                      } else {
+                        setSharingNoteId(null);
+                      }
+                    }}
+                    title="Compartir nota"
+                  >
+                    <i className="fas fa-share-alt"></i>
+                  </button>
+                  
                 </div>
                 <div 
                   className="focus-indicator"
@@ -765,6 +785,11 @@ const Notes: React.FC = () => {
                 >
                   Eliminar
                 </button>
+                {sharingNoteId === note.id && (
+                <div className="share-note-section">
+                  <ShareNote noteId={note.id} />
+                </div>
+              )}
               </div>
             );
           })}
