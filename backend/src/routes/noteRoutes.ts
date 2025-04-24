@@ -20,6 +20,10 @@ router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);
 router.post('/unmark-all', noteController.unmarkAllNotes);
 
+// Rutas para preferencias de ordenación
+router.get('/sort-preferences', noteController.getUserSortPreferences);
+router.post('/sort-preferences', noteController.saveUserSortPreferences);
+
 router.post(
     '/upload-image',
     authenticateToken,

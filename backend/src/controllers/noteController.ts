@@ -71,19 +71,43 @@ export class NoteController {
   async getNotes(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user.id;
-
+  
+      // Primero obtenemos las preferencias de ordenación
+      const settingsResult = await pool.query(
+        'SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      let orderBy = 'updated_at DESC';
+      
+      // Si hay preferencias, las aplicamos
+      if (settingsResult.rows.length > 0) {
+        const { default_note_sort, default_note_sort_direction } = settingsResult.rows[0];
+        const direction = default_note_sort_direction === 'asc' ? 'ASC' : 'DESC';
+        
+        if (default_note_sort === 'title') {
+          orderBy = `title ${direction}, is_pinned DESC`;
+        } else if (default_note_sort === 'date') {
+          orderBy = `updated_at ${direction}, is_pinned DESC`;
+        } else if (default_note_sort === 'pinned') {
+          orderBy = `is_pinned DESC, updated_at ${direction}`;
+        }
+      }
+  
+      // Obtenemos las notas con el orden especificado
       const result = await pool.query(
         `SELECT * FROM notes 
          WHERE user_id = $1 
-         ORDER BY is_pinned DESC, updated_at DESC`,
+         ORDER BY ${orderBy}`,
         [userId]
       );
-
+  
       res.json({ notes: result.rows });
     } catch (error) {
       res.status(500).json({ error: 'Error al obtener las notas' });
     }
   }
+  
 
   // Actualizar una nota
   async updateNote(req: Request, res: Response): Promise<void> {
@@ -417,6 +441,100 @@ export class NoteController {
       res.json({ message: 'Grupo eliminado exitosamente' });
     } catch (error) {
       res.status(500).json({ error: 'Error al eliminar el grupo' });
+    }
+  }
+
+  async getUserSortPreferences(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+      
+      const result = await pool.query(
+        'SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (result.rows.length === 0) {
+        // Si no hay configuración, crear una predeterminada
+        await pool.query(
+          'INSERT INTO settings (user_id, default_note_sort, default_note_sort_direction) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO NOTHING',
+          [userId, 'date', 'desc']
+        );
+        
+        res.status(200).json({
+          success: true,
+          preferences: {
+            sortType: 'date',
+            sortDirection: 'desc'
+          }
+        });
+        return;
+      }
+      
+      // Asegurar que los valores son válidos
+      const sortType = ['date', 'title', 'pinned'].includes(result.rows[0].default_note_sort) 
+        ? result.rows[0].default_note_sort 
+        : 'date';
+        
+      const sortDirection = ['asc', 'desc'].includes(result.rows[0].default_note_sort_direction)
+        ? result.rows[0].default_note_sort_direction
+        : 'desc';
+      
+      res.status(200).json({
+        success: true,
+        preferences: {
+          sortType,
+          sortDirection
+        }
+      });
+    } catch (error) {
+      console.error('Error al obtener preferencias de ordenación:', error);
+      // En caso de error, devolver valores predeterminados
+      res.status(200).json({
+        success: true,
+        preferences: {
+          sortType: 'date',
+          sortDirection: 'desc'
+        }
+      });
+    }
+  }
+  
+  
+  async saveUserSortPreferences(req: Request, res: Response): Promise<void> {
+    try {
+      const { sortType, sortDirection } = req.body;
+      const userId = req.user.id;
+      
+      // Verificar si ya existe una configuración para el usuario
+      const checkResult = await pool.query(
+        'SELECT id FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (checkResult.rows.length === 0) {
+        // Si no existe, crear una nueva configuración
+        await pool.query(
+          'INSERT INTO settings (user_id, default_note_sort, default_note_sort_direction) VALUES ($1, $2, $3)',
+          [userId, sortType, sortDirection]
+        );
+      } else {
+        // Si existe, actualizar la configuración existente
+        await pool.query(
+          'UPDATE settings SET default_note_sort = $1, default_note_sort_direction = $2 WHERE user_id = $3',
+          [sortType, sortDirection, userId]
+        );
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Preferencias de ordenación guardadas correctamente'
+      });
+    } catch (error) {
+      console.error('Error al guardar preferencias de ordenación:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al guardar preferencias de ordenación'
+      });
     }
   }
 

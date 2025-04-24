@@ -158,6 +158,40 @@ export const noteService = {
       console.error('Error deleting group:', error);
       throw error;
     }
+  },
+
+  getUserSortPreferences: async () => {
+    try {
+      const response = await api.get('/notes/sort-preferences');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener preferencias de ordenación:', error);
+      
+      // Crear un objeto de respuesta de respaldo con valores por defecto
+      const savedType = localStorage.getItem('notesSortType') || 'date';
+      const savedDirection = localStorage.getItem('notesSortDirection') || 'desc';
+      
+      return {
+        success: true,
+        preferences: {
+          sortType: savedType,
+          sortDirection: savedDirection
+        }
+      };
+    }
+  },
+  
+  saveUserSortPreferences: async (sortType: string, sortDirection: string) => {
+    try {
+      const response = await api.post('/notes/sort-preferences', {
+        sortType,
+        sortDirection
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al guardar preferencias de ordenación:', error);
+      throw error;
+    }
   }
 };
 
