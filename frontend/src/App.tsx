@@ -11,7 +11,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Notes from './pages/Notes';
 import Settings from './pages/settings';
-import Calendar from './pages/Calendar';
+import Calendar from './pages/Reminders';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
