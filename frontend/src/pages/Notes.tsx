@@ -10,7 +10,7 @@ import NoteSort from '../components/Notes/NoteSort';
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState({ title: '', content: '' });
+  const [newNote, setNewNote] = useState({ title: '', content: '', images: [] as string[] });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -178,25 +178,26 @@ const Notes: React.FC = () => {
       showFeedback('El título es requerido');
       return;
     }
-
+  
     setIsLoading(true);
     try {
+      // Asegúrate de que images se envíe correctamente
       const result = await noteService.createNote({
         title: newNote.title.trim(),
-        content: newNote.content.trim()
+        content: newNote.content.trim(),
+        images: newNote.images // Enviar el array de imágenes
       });
       
       if (result && result.note) {
         setNotes(prevNotes => [result.note, ...prevNotes]);
-        setNewNote({ title: '', content: '' });
+        setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
         
         const titleInput = document.querySelector('.create-note input[type="text"]') as HTMLInputElement;
         if (titleInput) {
           titleInput.value = '';
         }
-
+  
         forceReorder();
-
         showFeedback('Nota creada exitosamente');
       }
     } catch (error: any) {
@@ -206,6 +207,8 @@ const Notes: React.FC = () => {
       setIsLoading(false);
     }
   };
+  
+  
 
   const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
     setEditingNote(prev => {
@@ -361,27 +364,36 @@ const Notes: React.FC = () => {
       const response = await noteService.uploadNoteImage(formData);
       
       if (response.data && response.data.data && response.data.data.imageUrl) {
-        const note = notes.find(n => n.id === noteId);
-        if (note) {
-          const updatedImages = [...(note.images || []), response.data.data.imageUrl];
-          const updateData: UpdateNoteData = {
-            images: updatedImages
-          };
-  
-          await noteService.updateNote(noteId, updateData);
-          
-          const updatedNote = {
-            ...note,
-            images: updatedImages
-          };
-  
-          setNotes(prevNotes => 
-            prevNotes.map(n => 
-              n.id === noteId ? updatedNote : n
-            )
-          );
-          
-          showFeedback('Imagen subida correctamente');
+        if (noteId === 'new') {
+          // Para nota nueva, añadimos la imagen al array de imágenes
+          setNewNote(prev => ({
+            ...prev,
+            images: [...(prev.images || []), response.data.data.imageUrl]
+          }));
+          showFeedback('Imagen añadida a la nota nueva');
+        } else {
+          const note = notes.find(n => n.id === noteId);
+          if (note) {
+            const updatedImages = [...(note.images || []), response.data.data.imageUrl];
+            const updateData: UpdateNoteData = {
+              images: updatedImages
+            };
+      
+            await noteService.updateNote(noteId, updateData);
+            
+            const updatedNote = {
+              ...note,
+              images: updatedImages
+            };
+      
+            setNotes(prevNotes => 
+              prevNotes.map(n => 
+                n.id === noteId ? updatedNote : n
+              )
+            );
+            
+            showFeedback('Imagen subida correctamente');
+          }
         }
       }
     } catch (error) {
@@ -389,6 +401,7 @@ const Notes: React.FC = () => {
       showFeedback('Error al subir la imagen');
     }
   };
+  
   
   const handleDeleteImage = async (noteId: string, imageIndex: number) => {
     const note = notes.find(n => n.id === noteId);
@@ -910,7 +923,7 @@ const Notes: React.FC = () => {
                 }
               }}
             />
-            {isExpanded && (
+          {isExpanded && (
             <>
               <textarea
                 placeholder="Contenido de la nota..."
@@ -922,29 +935,66 @@ const Notes: React.FC = () => {
                 onKeyDown={e => handleKeyDown(e, '', true)}
                 onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
               />
-              <div className="button-container">
-                <div className="left-actions">
-                  <button 
-                    className="list-button"
-                    onClick={() => insertList('', 'bullet', true)}
-                    title="Insertar lista con viñetas"
-                  >
-                    <i className="fas fa-list-ul"></i>
-                  </button>
-                  <button 
-                    className="list-button"
-                    onClick={() => insertList('', 'number', true)}
-                    title="Insertar lista numerada"
-                  >
-                    <i className="fas fa-list-ol"></i>
-                  </button>
+              
+              {/* Sección de imágenes para la nota nueva */}
+              {newNote.images && newNote.images.length > 0 && (
+                <div className="note-images">
+                  {newNote.images.map((imageUrl, index) => (
+                    <NoteImage
+                      key={index}
+                      imageUrl={imageUrl}
+                      index={index}
+                      onDelete={() => {
+                        setNewNote(prev => ({
+                          ...prev,
+                          images: prev.images.filter((_, i) => i !== index)
+                        }));
+                      }}
+                    />
+                  ))}
                 </div>
+              )}
+              
+              <div className="button-container">
+              <div className="left-actions">
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'bullet', true)}
+                  title="Insertar lista con viñetas"
+                >
+                  <i className="fas fa-list-ul"></i>
+                </button>
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'number', true)}
+                  title="Insertar lista numerada"
+                >
+                  <i className="fas fa-list-ol"></i>
+                </button>
+                <button 
+                  className="list-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById('image-input-new').click();
+                  }}
+                  title="Insertar imagen"
+                >
+                  <i className="fas fa-image"></i>
+                </button>
+                <input
+                  id="image-input-new"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleImageUpload(e, 'new')}
+                />
+              </div>
                 <div className="right-actions">
                   <button 
                     className="cancel-button"
                     onClick={() => {
                       setIsExpanded(false);
-                      setNewNote({ title: '', content: '' });
+                      setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
                     }}
                   >
                     Cancelar

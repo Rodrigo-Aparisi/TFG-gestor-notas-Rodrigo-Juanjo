@@ -62,7 +62,7 @@ export const noteService = {
     }
   },
 
-  createNote: async (noteData: { title: string; content: string }) => {
+  createNote: async (noteData: { title: string; content: string; images?: string[] }) => {
     try {
       const response = await api.post('/notes', noteData);
       return response.data;
