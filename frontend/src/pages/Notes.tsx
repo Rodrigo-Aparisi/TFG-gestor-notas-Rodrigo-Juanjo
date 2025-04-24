@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import axios from 'axios'; // Añade esta importación
 import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
@@ -9,12 +10,16 @@ import '../styles/notes.css';
 import ShareNote from '../components/Notes/ShareNote';
 import Masonry from 'react-masonry-css';
 
+
 const Notes: React.FC = () => {
   const defaultNoteSort = useSelector((state: RootState) => state.settings.defaultNoteSort);
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [sharingNoteId, setSharingNoteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('my-notes');
+  const [hasSharedNotes, setHasSharedNotes] = useState<boolean>(false);
+  const [sharedNotes, setSharedNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
@@ -35,7 +40,74 @@ const Notes: React.FC = () => {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroup, setNewGroup] = useState({ name: '', color: '#f1c40f' });
+
+  // Añade esta función después de tus declaraciones de estado
+const loadNotes = async () => {
+  try {
+    const response = await noteService.getNotes();
+    const fetchedNotes = response.notes || [];
+    
+    // Especifica el tipo en filter
+    const markedNotes = fetchedNotes.filter((note: Note) => note.is_marked);
+    
+    if (markedNotes.length > 0) {
+      await Promise.all(
+        markedNotes.map((note: Note) => noteService.toggleMark(note.id))
+      );
+      
+      // Especifica el tipo en map
+      setNotes(fetchedNotes.map((note: Note) => ({
+        ...note,
+        is_marked: false
+      })));
+    } else {
+      setNotes(fetchedNotes);
+    }
+  } catch (err) {
+    const error = err as Error;
+    console.error('Error loading notes:', error.message);
+    if ((err as any)?.response?.status === 401) {
+      authService.logout();
+      navigate('/login', { replace: true });
+    }
+  }
+};
+
+
+  const loadSharedNotes = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get('/api/notes/shared-notes', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setSharedNotes(response.data.sharedNotes);
+    } catch (err) {
+      console.error('Error al cargar notas compartidas:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
   
+
+  const checkSharedNotes = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/notes/shared-notes', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setHasSharedNotes(response.data.sharedNotes && response.data.sharedNotes.length > 0);
+    } catch (err) {
+      console.error('Error al verificar notas compartidas:', err);
+    }
+  }, []);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    if (tabId === 'my-notes') {
+      loadNotes();
+    } else if (tabId === 'shared-notes') {
+      loadSharedNotes();
+    }
+  };
 
   const breakpointColumns = {
     default: 4, // Número de columnas en pantallas grandes
@@ -79,6 +151,11 @@ const Notes: React.FC = () => {
 
     fetchNotesAndUnmark();
   }, [navigate]);
+
+  useEffect(() => {
+    loadNotes();
+    checkSharedNotes();
+  }, []);
 
   useEffect(() => {
     const textareas = document.querySelectorAll('.note-card textarea');
@@ -603,6 +680,23 @@ const Notes: React.FC = () => {
   
       {/* Contenido principal */}
       <div className="notes-main">
+      <div className="tabs-container">
+        <div className="tabs">
+          <div 
+            className={`tab ${activeTab === 'my-notes' ? 'active' : ''}`} 
+            onClick={() => handleTabChange('my-notes')}
+          >
+            Mis Notas
+          </div>
+          <div 
+            className={`tab ${activeTab === 'shared-notes' ? 'active' : ''}`} 
+            onClick={() => handleTabChange('shared-notes')}
+          >
+            Notas Compartidas
+            {hasSharedNotes && <span className="notification-dot"></span>}
+          </div>
+        </div>
+      </div>
         {feedback && <div className="feedback-message">{feedback}</div>}
         
         {/* Añadir encabezado del grupo activo */}
@@ -650,53 +744,55 @@ const Notes: React.FC = () => {
         </div>
   
         {/* Crear nota */}
-        <div className="create-note">
-          <input
-            type="text"
-            placeholder="Añade una nota..."
-            value={newNote.title}
-            onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-            onClick={() => {
-              if (!isExpanded) {
-                setIsExpanded(true);
-              }
-            }}
-          />
-          {isExpanded && (
-            <>
-              <textarea
-                placeholder="Contenido de la nota..."
-                value={newNote.content}
-                onChange={e => {
-                  setNewNote(prev => ({ ...prev, content: e.target.value }));
-                  autoResizeTextarea(e.target as HTMLTextAreaElement);
-                }}
-                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-              />
-              <div className="button-container">
-                <button 
-                  className="cancel-button"
-                  onClick={() => {
-                    setIsExpanded(false);
-                    setNewNote({ title: '', content: '' });
+        {activeTab === 'my-notes' && (
+          <div className="create-note">
+            <input
+              type="text"
+              placeholder="Añade una nota..."
+              value={newNote.title}
+              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+              onClick={() => {
+                if (!isExpanded) {
+                  setIsExpanded(true);
+                }
+              }}
+            />
+            {isExpanded && (
+              <>
+                <textarea
+                  placeholder="Contenido de la nota..."
+                  value={newNote.content}
+                  onChange={e => {
+                    setNewNote(prev => ({ ...prev, content: e.target.value }));
+                    autoResizeTextarea(e.target as HTMLTextAreaElement);
                   }}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  className="create-button"
-                  onClick={() => {
-                    handleCreateNote();
-                    setIsExpanded(false);
-                  }}
-                  disabled={isLoading}
-                >
-                  Crear Nota
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+                  onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                />
+                <div className="button-container">
+                  <button 
+                    className="cancel-button"
+                    onClick={() => {
+                      setIsExpanded(false);
+                      setNewNote({ title: '', content: '' });
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    className="create-button"
+                    onClick={() => {
+                      handleCreateNote();
+                      setIsExpanded(false);
+                    }}
+                    disabled={isLoading}
+                  >
+                    Crear Nota
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
   
         {/* Grid de notas */}
         <Masonry
@@ -704,96 +800,142 @@ const Notes: React.FC = () => {
           className="masonry-grid"
           columnClassName="masonry-grid_column"
         >
-          
-          {sortNotes(filteredNotes).map(note => {
-            // Obtener el color del grupo activo
-            const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
-            
-            return (
-              <div 
-                key={note.id}
-                className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
-                onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
-                style={{
-                  borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
-                  borderWidth: activeGroup !== 'main' ? '2px' : '1px'
-                }}
-              >
-                <div className="note-actions">
+          {activeTab === 'my-notes' ? (
+            // Tus notas existentes
+            sortNotes(filteredNotes).map(note => {
+              // Obtener el color del grupo activo
+              const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+              
+              return (
+                <div 
+                  key={note.id}
+                  className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+                  onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
+                  style={{
+                    borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
+                    borderWidth: activeGroup !== 'main' ? '2px' : '1px'
+                  }}
+                >
+                  <div className="note-actions">
+                    <button 
+                      className={`action-button ${note.is_marked ? 'marked' : ''}`}
+                      onClick={(e) => handleToggleMark(note.id, e)}
+                      title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                    </button>
+                    <button 
+                      className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
+                      onClick={(e) => handleTogglePin(note.id, e)}
+                      title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+                    >
+                      <i className="fas fa-thumbtack"></i>
+                    </button>
+                    <button 
+                      className="action-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!sharingNoteId || sharingNoteId !== note.id) {
+                          setSharingNoteId(note.id);
+                        } else {
+                          setSharingNoteId(null);
+                        }
+                      }}
+                      title="Compartir nota"
+                    >
+                      <i className="fas fa-share-alt"></i>
+                    </button>
+                  </div>
+                  <div 
+                    className="focus-indicator"
+                    onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+                  />
+                  <div className="note-content">
+                    <input
+                      type="text"
+                      value={editingNote[note.id]?.title ?? note.title}
+                      onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+                      onBlur={() => handleUpdateNote(note.id, 'title')}
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <textarea
+                      value={editingNote[note.id]?.content ?? note.content}
+                      onChange={(e) => {
+                        handleNoteChange(note.id, 'content', e.target.value);
+                        autoResizeTextarea(e.target as HTMLTextAreaElement);
+                      }}
+                      onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                      onBlur={(e) => {
+                        handleUpdateNote(note.id, 'content');
+                        autoResizeTextarea(e.target as HTMLTextAreaElement);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                   <button 
-                    className={`action-button ${note.is_marked ? 'marked' : ''}`}
-                    onClick={(e) => handleToggleMark(note.id, e)}
-                    title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
-                  >
-                    <i className="fas fa-check-circle"></i>
-                  </button>
-                  <button 
-                    className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
-                    onClick={(e) => handleTogglePin(note.id, e)}
-                    title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
-                  >
-                    <i className="fas fa-thumbtack"></i>
-                  </button>
-                  <button 
-                    className="action-button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!sharingNoteId || sharingNoteId !== note.id) {
-                        setSharingNoteId(note.id);
-                      } else {
-                        setSharingNoteId(null);
-                      }
+                      handleDeleteNote(note.id);
                     }}
-                    title="Compartir nota"
+                    className="delete-button"
                   >
-                    <i className="fas fa-share-alt"></i>
+                    Eliminar
                   </button>
-                  
+                  {sharingNoteId === note.id && (
+                    <div className="share-note-section">
+                      <ShareNote noteId={note.id} />
+                    </div>
+                  )}
                 </div>
+              );
+            })
+          ) : (
+            // Notas compartidas
+            sharedNotes.length > 0 ? (
+              sharedNotes.map(note => (
                 <div 
-                  className="focus-indicator"
-                  onClick={(e) => handleFocusIndicatorClick(e, note.id)}
-                />
-                <div className="note-content">
-                  <input
-                    type="text"
-                    value={editingNote[note.id]?.title ?? note.title}
-                    onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-                    onBlur={() => handleUpdateNote(note.id, 'title')}
-                    onClick={e => e.stopPropagation()}
-                  />
-                  <textarea
-                    value={editingNote[note.id]?.content ?? note.content}
-                    onChange={(e) => {
-                      handleNoteChange(note.id, 'content', e.target.value);
-                      autoResizeTextarea(e.target as HTMLTextAreaElement);
-                    }}
-                    onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                    onBlur={(e) => {
-                      handleUpdateNote(note.id, 'content');
-                      autoResizeTextarea(e.target as HTMLTextAreaElement);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteNote(note.id);
+                  key={note.id}
+                  className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+                  onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
+                  style={{
+                    backgroundColor: note.color || undefined,
+                    borderColor: '#ccc',
+                    borderWidth: '1px'
                   }}
-                  className="delete-button"
                 >
-                  Eliminar
-                </button>
-                {sharingNoteId === note.id && (
-                <div className="share-note-section">
-                  <ShareNote noteId={note.id} />
+                  <div 
+                    className="focus-indicator"
+                    onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+                  />
+                  <div className="note-content">
+                    <input
+                      type="text"
+                      value={note.title || ''}
+                      readOnly
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <div className="shared-by">
+                      Compartida por: {note.shared_by || 'Desconocido'}
+                    </div>
+                    <textarea
+                      value={note.content || ''}
+                      readOnly
+                      onClick={(e) => e.stopPropagation()}
+                      ref={(textarea) => {
+                        if (textarea) {
+                          autoResizeTextarea(textarea);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-              )}
-              </div>
-            );
-          })}
+              ))
+            ) : (
+              <div className="no-notes">No tienes notas compartidas</div>
+            )
+          )}
         </Masonry>
+
 
   
         {/* Modal de creación de grupo */}
