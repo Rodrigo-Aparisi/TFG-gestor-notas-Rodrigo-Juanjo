@@ -209,6 +209,78 @@ html, body {
   opacity: 1;
 }
 
+/* Estilos para las pestañas */
+.tabs-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+}
+
+.tab {
+  padding: 12px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #666;
+}
+
+.tab:hover {
+  color: #000;
+}
+
+.tab.active {
+  color: #000;
+  border-bottom: 3px solid #f1c40f;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff4757;
+  border-radius: 50%;
+}
+
+/* Estilo para notas compartidas */
+.shared-by {
+  font-size: 12px;
+  color: #666;
+  margin: 5px 0 15px;
+  font-style: italic;
+  padding-left: 8px;
+}
+
+/* Estilos para mensajes de estado */
+.no-notes {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  width: 100%;
+}
+
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #f44336;
+  width: 100%;
+}
+
 /* Focus Indicator */
 .focus-indicator {
   position: absolute;
