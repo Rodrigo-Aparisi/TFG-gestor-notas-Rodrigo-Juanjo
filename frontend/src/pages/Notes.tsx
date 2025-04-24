@@ -32,6 +32,7 @@ const Notes: React.FC = () => {
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroup, setNewGroup] = useState({ name: '', color: '#f1c40f' });
+  const [sortKey, setSortKey] = useState<number>(0);
   
 
   const breakpointColumns = {
@@ -194,6 +195,8 @@ const Notes: React.FC = () => {
           titleInput.value = '';
         }
 
+        forceReorder();
+
         showFeedback('Nota creada exitosamente');
       }
     } catch (error: any) {
@@ -261,6 +264,8 @@ const Notes: React.FC = () => {
             note.id === id ? response.note : note
           )
         );
+
+        forceReorder();
         showFeedback('Nota actualizada');
       }
     } catch (error) {
@@ -718,6 +723,9 @@ const Notes: React.FC = () => {
             return prev.filter(noteId => noteId !== id);
           }
         });
+        
+        forceReorder();
+
       }
     } catch (error) {
       console.error('Error al marcar/desmarcar nota:', error);
@@ -735,6 +743,9 @@ const Notes: React.FC = () => {
             note.id === id ? response.note : note
           )
         );
+        
+        forceReorder();
+        
         showFeedback(response.note.is_pinned ? 'Nota fijada' : 'Nota desfijada');
       }
     } catch (error) {
@@ -823,7 +834,7 @@ const Notes: React.FC = () => {
   
   
   const handleFilteredNotes = (filtered: Note[]) => {
-    // Aplicar el ordenamiento por pins primero (como lo hace sortNotes)
+    // Siempre aplicamos el ordenamiento por pins primero
     const orderedFiltered = [...filtered].sort((a, b) => {
       // Primero ordenar por pin
       if (a.is_pinned && !b.is_pinned) return -1;
@@ -832,6 +843,11 @@ const Notes: React.FC = () => {
     });
     
     setFilteredNotes(orderedFiltered);
+  };
+
+  // Función para forzar reordenación
+  const forceReorder = () => {
+    setSortKey(prev => prev + 1); // Incrementar el sortKey forzará una reordenación
   };
   
 
@@ -950,6 +966,7 @@ const Notes: React.FC = () => {
           </div>
           
           <NoteSort 
+            key={`note-sort-${sortKey}`}
             notes={activeGroup === 'main' ? notes : notes.filter(note => {
               const currentGroup = groups.find(g => g.id === activeGroup);
               return currentGroup && Array.isArray(currentGroup.noteIds) && 

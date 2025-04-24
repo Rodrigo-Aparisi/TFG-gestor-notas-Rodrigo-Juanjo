@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Note } from '../../types';
+import { Note, SortType, SortDirection } from '../../types';
+import { noteService } from '../../services/api';
 import '../../styles/noteSort.css';
 
 interface NoteSortProps {
@@ -7,33 +8,70 @@ interface NoteSortProps {
   onNotesFiltered: (filteredNotes: Note[]) => void;
 }
 
-type SortType = 'title' | 'date' | 'pinned';
-type SortDirection = 'asc' | 'desc';
-
 const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
-  // Cargar preferencias del localStorage o usar valores por defecto
-  const [sortType, setSortType] = useState<SortType>(() => {
-    const savedType = localStorage.getItem('notesSortType') as SortType;
-    return savedType || 'date';
-  });
-  
-  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-    const savedDirection = localStorage.getItem('notesSortDirection') as SortDirection;
-    return savedDirection || 'desc';
-  });
-  
+  // Estados iniciales (se actualizarán desde el servidor)
+  const [sortType, setSortType] = useState<SortType>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchText, setSearchText] = useState<string>('');
-  const [showSearch, setShowSearch] = useState<boolean>(() => {
-    return localStorage.getItem('notesShowSearch') === 'true';
-  });
-  
-  // Estado para controlar la visibilidad del menú desplegable
+  const [showSearch, setShowSearch] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Referencia al menú desplegable para detectar clics fuera
+  // Referencia al menú desplegable
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Efecto para cerrar el menú al hacer clic fuera
+  // Cargar preferencias del servidor al iniciar
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        setIsLoading(true);
+        const response = await noteService.getUserSortPreferences();
+        
+        if (response.success && response.preferences) {
+          // Actualizar estado con las preferencias del servidor
+          setSortType(response.preferences.sortType as SortType);
+          setSortDirection(response.preferences.sortDirection as SortDirection);
+          
+          // También guardamos en localStorage como respaldo
+          localStorage.setItem('notesSortType', response.preferences.sortType);
+          localStorage.setItem('notesSortDirection', response.preferences.sortDirection);
+        }
+      } catch (error) {
+        console.error('Error al cargar preferencias de usuario:', error);
+        
+        // Si hay error, intentar cargar desde localStorage como respaldo
+        const savedType = localStorage.getItem('notesSortType') as SortType;
+        const savedDirection = localStorage.getItem('notesSortDirection') as SortDirection;
+        const savedShowSearch = localStorage.getItem('notesShowSearch') === 'true';
+        
+        setSortType(savedType || 'date');
+        setSortDirection(savedDirection || 'desc');
+        setShowSearch(savedShowSearch);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Cargar preferencias de búsqueda desde localStorage
+    const savedShowSearch = localStorage.getItem('notesShowSearch') === 'true';
+    setShowSearch(savedShowSearch);
+    
+    loadUserPreferences();
+  }, []);
+
+  // Ordenar notas cuando cambien las preferencias o las notas
+  useEffect(() => {
+    if (!isLoading && notes.length > 0) {
+      sortAndFilterNotes(sortType, sortDirection, searchText);
+    }
+  }, [notes, sortType, sortDirection, searchText, isLoading]);
+
+  // Guardar preferencias de búsqueda en localStorage
+  useEffect(() => {
+    localStorage.setItem('notesShowSearch', showSearch.toString());
+  }, [showSearch]);
+
+  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -41,30 +79,16 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
       }
     };
 
-    // Añadir el event listener cuando el menú está abierto
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
-    // Limpiar el event listener
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMenuOpen]);
 
-  // Guardar preferencias cuando cambien
-  useEffect(() => {
-    localStorage.setItem('notesSortType', sortType);
-    localStorage.setItem('notesSortDirection', sortDirection);
-    localStorage.setItem('notesShowSearch', showSearch.toString());
-  }, [sortType, sortDirection, showSearch]);
-
-  // Efecto para ordenar las notas cuando cambian
-  useEffect(() => {
-    sortAndFilterNotes(sortType, sortDirection, searchText);
-  }, [notes]);
-
-  const handleSort = (type: SortType) => {
+  const handleSort = async (type: SortType) => {
     let newDirection: SortDirection;
     
     if (type === sortType) {
@@ -78,10 +102,21 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
       setSortDirection(newDirection);
     }
     
-    // Usamos la nueva dirección para ordenar
+    // Ordenar notas con las nuevas preferencias
     sortAndFilterNotes(type, newDirection, searchText);
     
-    // Cerramos el menú después de seleccionar
+    // Guardar preferencias en el servidor
+    try {
+      await noteService.saveUserSortPreferences(type, newDirection);
+      
+      // También guardar en localStorage como respaldo
+      localStorage.setItem('notesSortType', type);
+      localStorage.setItem('notesSortDirection', newDirection);
+    } catch (error) {
+      console.error('Error al guardar preferencias de ordenación:', error);
+    }
+    
+    // Cerrar menú
     setIsMenuOpen(false);
   };
 
@@ -212,7 +247,11 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
         
         <button 
           className="search-button"
-          onClick={() => setShowSearch(!showSearch)}
+          onClick={() => {
+            const newShowSearch = !showSearch;
+            setShowSearch(newShowSearch);
+            localStorage.setItem('notesShowSearch', newShowSearch.toString());
+          }}
           title={showSearch ? "Ocultar búsqueda" : "Buscar en notas"}
         >
           <i className="fas fa-search"></i>

@@ -26,9 +26,10 @@ CREATE TABLE settings (
     notifications_enabled BOOLEAN DEFAULT TRUE,
     language VARCHAR(10) DEFAULT 'es',
     default_note_sort VARCHAR(20) DEFAULT 'date',
+    default_note_sort_direction VARCHAR(10) DEFAULT 'desc',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+    );
 
 -- Crear un índice para mejorar el rendimiento en búsquedas por user_id
 CREATE INDEX idx_settings_user_id ON settings(user_id);
