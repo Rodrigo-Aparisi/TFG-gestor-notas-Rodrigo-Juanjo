@@ -38,34 +38,38 @@ interface RequestWithFile extends Request {
 
 export class NoteController {
   // Crear una nueva nota
-  async createNote(req: Request, res: Response): Promise<void> {
-    try {
-      const { title, content } = req.body;
-      const userId = req.user.id;
+// Crear una nueva nota
+async createNote(req: Request, res: Response): Promise<void> {
+  try {
+    const { title, content, images } = req.body;
+    const userId = req.user.id;
 
-      if (!title || title.trim() === '') {
-        res.status(400).json({ error: 'El título es requerido' });
-        return;
-      }
-
-      // Procesar el contenido para manejar listas
-      const processedContent = content.replace(/^- (.+)$/gm, '• $1')
-                                    .replace(/^\* (.+)$/gm, '• $1')
-                                    .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
-
-      const result = await pool.query(
-        'INSERT INTO notes (title, content, user_id) VALUES ($1, $2, $3) RETURNING *',
-        [title, processedContent, userId]
-      );
-
-      res.status(201).json({
-        message: 'Nota creada exitosamente',
-        note: result.rows[0]
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Error al crear la nota' });
+    if (!title || title.trim() === '') {
+      res.status(400).json({ error: 'El título es requerido' });
+      return;
     }
+
+    // Procesar el contenido para manejar listas
+    const processedContent = content.replace(/^- (.+)$/gm, '• $1')
+                                  .replace(/^\* (.+)$/gm, '• $1')
+                                  .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
+
+    // Modificar la consulta para incluir las imágenes
+    const result = await pool.query(
+      'INSERT INTO notes (title, content, user_id, images) VALUES ($1, $2, $3, $4) RETURNING *',
+      [title, processedContent, userId, images || []]
+    );
+
+    res.status(201).json({
+      message: 'Nota creada exitosamente',
+      note: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error creating note:', error);
+    res.status(500).json({ error: 'Error al crear la nota' });
   }
+}
+
 
   // Obtener todas las notas del usuario
   async getNotes(req: Request, res: Response): Promise<void> {
