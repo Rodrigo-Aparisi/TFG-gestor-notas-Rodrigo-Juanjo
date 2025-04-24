@@ -72,6 +72,11 @@ export const noteService = {
     }
   },
 
+  shareNote: async (noteId: string, username: string) => {
+    const response = await api.post('/notes/share', { noteId, username });
+    return response.data;
+  },
+
   updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
     try {
       const sanitizedData = {

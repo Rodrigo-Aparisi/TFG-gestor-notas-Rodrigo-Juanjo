@@ -214,3 +214,25 @@ FROM notes n
 LEFT JOIN note_tags nt ON n.id = nt.note_id
 LEFT JOIN tags t ON nt.tag_id = t.id
 GROUP BY n.id;
+
+-- Crear tabla para notas compartidas
+CREATE TABLE shared_notes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shared_with_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
+);
+
+-- Crear índices para mejorar el rendimiento
+CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
+CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
+CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
+
+-- Crear trigger para actualizar updated_at
+CREATE TRIGGER update_shared_notes_updated_at
+    BEFORE UPDATE ON shared_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
