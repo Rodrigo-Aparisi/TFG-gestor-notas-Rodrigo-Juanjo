@@ -1,10 +1,10 @@
 /* Estilos para el botón flotante y contenedor */
 .chatbot-floating-button {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
+  bottom: 30px;
+  right: 30px;
+  width: 55px !important;
+  height: 55px;
   border-radius: 50%;
   background-color: var(--dorado, #ffc600);
   color: var(--background-dark, #282c34);
@@ -13,22 +13,25 @@
   justify-content: center;
   cursor: pointer;
   border: none;
-  box-shadow: 0 4px 15px rgba(255, 198, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 198, 0, 0.5);
   z-index: 1000;
   transition: transform 0.3s, background-color 0.3s;
+  font-size: 1.2rem;
 }
 
 .chatbot-floating-button:hover {
-  transform: scale(1.1) rotate(10deg);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(255, 198, 0, 0.6);
 }
 
 .chatbot-floating-container {
   position: fixed;
-  bottom: 90px;
-  right: 20px;
-  width: 350px;
+  bottom: 100px;
+  right: 30px;
+  width: 380px !important;
   height: 500px;
-  border-radius: 10px;
+  max-height: 80vh;
+  border-radius: 15px;
   background-color: var(--background-darker, #1a1a1a);
   box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
   z-index: 999;
@@ -36,6 +39,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--dorado, #ffc600);
+  animation: slideIn 0.3s ease-out;
 }
 
 .chatbot-floating-header {
@@ -71,6 +75,7 @@
 
 .close-button:hover {
   transform: scale(1.2);
+  background-color: rgba(255, 198, 0, 0.1);
 }
 
 .icon-button.chatbot-icon {
@@ -90,10 +95,32 @@
   color: var(--background-dark, #282c34);
 }
 
+/* Responsive para pantallas pequeñas */
 @media (max-width: 480px) {
   .chatbot-floating-container {
     width: calc(100% - 40px);
     height: calc(80% - 90px);
-    bottom: 80px;
+    right: 20px;
+    left: 20px;
+    bottom: 90px;
+  }
+  
+  .chatbot-floating-button {
+    width: 55px;
+    height: 55px;
+    right: 20px;
+    bottom: 20px;
+  }
+}
+
+/* Animación para la apertura del chat */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
