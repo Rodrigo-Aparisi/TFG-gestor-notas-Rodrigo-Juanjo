@@ -542,4 +542,21 @@ async createNote(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // Método para uso interno desde chatbotController
+  async createNoteInternal(noteData: any) {
+    try {
+      const result = await pool.query(
+        `INSERT INTO notes (title, content, user_id, color, images) 
+        VALUES ($1, $2, $3, $4, $5) 
+        RETURNING *`,
+        [noteData.title, noteData.content, noteData.user_id, noteData.color, noteData.images]
+      );
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating note:', error);
+      throw error;
+    }
+  }
+
 }

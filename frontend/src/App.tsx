@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Provider, useSelector } from 'react-redux';
 import { store } from './store/index';
 import { RootState } from './store';
@@ -11,7 +11,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Notes from './pages/Notes';
 import Settings from './pages/settings';
-import Calendar from './pages/Reminders';
+import Reminders from './pages/Reminders';
+import ChatbotPage from './pages/ChatbotPage';
+import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton'; // Añade esta importación
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -50,6 +52,17 @@ const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Componente para controlar la visibilidad del botón flotante
+const FloatingButtonController: React.FC = () => {
+  const location = useLocation();
+  
+  // No mostrar el botón flotante en la página de login o en la página del chatbot
+  if (location.pathname === '/login' || location.pathname === '/chatbot') {
+    return null;
+  }
+  
+  return <ChatbotFloatingButton />;
+};
 
 function App() {
   return (
@@ -71,9 +84,9 @@ function App() {
                     <Notes />
                   </PrivateRoute>
                 } />
-                <Route path="/calendar" element={
+                <Route path="/Reminders" element={
                   <PrivateRoute>
-                    <Calendar />
+                    <Reminders />
                   </PrivateRoute>
                 } />
                 <Route path="/settings" element={
@@ -81,11 +94,19 @@ function App() {
                     <Settings />
                   </PrivateRoute>
                 } />
+                <Route path="/chatbot" element={
+                  <PrivateRoute>
+                    <ChatbotPage />
+                  </PrivateRoute>
+                } />
 
                 {/* Ruta por defecto */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
+            
+            {/* Añade el componente FloatingButtonController aquí */}
+            <FloatingButtonController />
           </div>
         </ThemeLoader>
       </Router>

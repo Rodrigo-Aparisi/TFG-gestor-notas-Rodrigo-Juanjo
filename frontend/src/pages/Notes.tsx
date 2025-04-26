@@ -40,7 +40,7 @@ const Notes: React.FC = () => {
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
-};
+  };
 
   type ListType = 'bullet' | 'number';
 

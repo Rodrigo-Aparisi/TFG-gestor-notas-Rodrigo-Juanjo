@@ -1,0 +1,99 @@
+/* Estilos para el botón flotante y contenedor */
+.chatbot-floating-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--dorado, #ffc600);
+  color: var(--background-dark, #282c34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 15px rgba(255, 198, 0, 0.4);
+  z-index: 1000;
+  transition: transform 0.3s, background-color 0.3s;
+}
+
+.chatbot-floating-button:hover {
+  transform: scale(1.1) rotate(10deg);
+}
+
+.chatbot-floating-container {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  border-radius: 10px;
+  background-color: var(--background-darker, #1a1a1a);
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dorado, #ffc600);
+}
+
+.chatbot-floating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: var(--background-darker, #1a1a1a);
+  color: var(--dorado, #ffc600);
+  border-bottom: 3px solid var(--dorado, #ffc600);
+}
+
+.chatbot-floating-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.chatbot-floating-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--dorado, #ffc600);
+  cursor: pointer;
+  font-size: 1.2em;
+  transition: transform 0.2s;
+}
+
+.close-button:hover {
+  transform: scale(1.2);
+}
+
+.icon-button.chatbot-icon {
+  background-color: rgba(255, 198, 0, 0.2);
+  color: var(--dorado, #ffc600);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.icon-button.chatbot-icon:hover {
+  transform: scale(1.1);
+  background-color: var(--dorado, #ffc600);
+  color: var(--background-dark, #282c34);
+}
+
+@media (max-width: 480px) {
+  .chatbot-floating-container {
+    width: calc(100% - 40px);
+    height: calc(80% - 90px);
+    bottom: 80px;
+  }
+}

@@ -10,6 +10,7 @@ import notesRoutes from './routes/noteRoutes';
 import groupRoutes from './routes/groupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
+import chatbotRoutes from './routes/chatbotRoutes';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -120,6 +121,7 @@ app.use('/api/notes', notesRoutes);   // Rutas de notas
 app.use('/api/groups', groupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Añadir un middleware de logging para depuración
 app.use((req, res, next) => {
