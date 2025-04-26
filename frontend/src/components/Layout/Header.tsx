@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { FaCalendar } from "react-icons/fa";
+import { FaCalendar, FaRobot } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 
@@ -104,21 +104,29 @@ const Header: React.FC = () => {
           </Link>
           {isAuthenticated && (
             <div className="nav-icons">
-              <button
-                className="icon-button"
-                onClick={() => navigate("/notes")}
-                aria-label="Ir a notas"
-              >
-                <BsStickyFill size={20} />
-              </button>
-              <button
-                className="icon-button"
-                onClick={() => navigate("/calendar")}
-                aria-label="Ir a calendario"
-              >
-                <FaCalendar />
-              </button>
-            </div>
+                  <button
+                    className="icon-button"
+                    onClick={() => navigate("/notes")}
+                    aria-label="Ir a notas"
+                  >
+                    <BsStickyFill size={20} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    onClick={() => navigate("/reminders")}
+                    aria-label="Ir a calendario"
+                  >
+                    <FaCalendar />
+                  </button>
+                  {/* Añadir botón para el chatbot */}
+                  <button
+                    className="icon-button"
+                    onClick={() => navigate("/chatbot")}
+                    aria-label="Asistente IA"
+                  >
+                    <FaRobot size={20} />
+                  </button>
+                </div>
           )}
         </div>
         <div className="auth-container">
