@@ -410,23 +410,18 @@ section p {
 
 .upload-image-button {
   width: 100%;
-  padding: 0.8rem 1.2rem;
+  padding: 0.75rem 1.5rem;
   background-color: var(--dorado);
   color: var(--background-dark);
-  border: none;
   border-radius: 4px;
+  font-weight: 500;
+  border: none;
   cursor: pointer;
-  font-weight: bold;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .upload-image-button:hover {
-  background-color: var(--button-hover-background);
-  transform: translateY(-2px);
+  background-color: rgba(255, 198, 0, 0.8);
 }
 
 .upload-image-button:disabled {
@@ -434,7 +429,6 @@ section p {
   border: 1px solid var(--dorado);
   color: var(--dorado);
   cursor: not-allowed;
-  transform: none;
 }
 
 /* Button Groups */

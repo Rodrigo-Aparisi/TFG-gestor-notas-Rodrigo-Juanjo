@@ -9,8 +9,19 @@ export interface User {
 }
 
 export interface Note {
-  id: string;     
+  id: string;
   title: string;
+  content: string;
+  user_id: string;
+  is_pinned: boolean;
+  is_marked: boolean;
+  color: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SharedNote extends Note {
+  shared_by: string;
   content: string | null;
   user_id: string;
   created_at: Date;
