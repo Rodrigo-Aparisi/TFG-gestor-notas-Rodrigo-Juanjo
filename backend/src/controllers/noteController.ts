@@ -1,58 +1,125 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
+
+// Configurar multer para el almacenamiento de imágenes
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'note-images');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB límite
+  },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Solo se permiten imágenes'));
+    }
+    cb(null, true);
+  }
+}).single('image');
+
+interface RequestWithFile extends Request {
+  file?: Express.Multer.File;
+}
 
 export class NoteController {
   // Crear una nueva nota
-  async createNote(req: Request, res: Response): Promise<void> {
-    try {
-      const { title, content } = req.body;
-      const userId = req.user.id; // Obtenido del token JWT
+// Crear una nueva nota
+async createNote(req: Request, res: Response): Promise<void> {
+  try {
+    const { title, content, images } = req.body;
+    const userId = req.user.id;
 
-      if (!title || title.trim() === '') {
-        res.status(400).json({ error: 'El título es requerido' });
-        return;
-      }
-
-      const result = await pool.query(
-        'INSERT INTO notes (title, content, user_id) VALUES ($1, $2, $3) RETURNING *',
-        [title, content, userId]
-      );
-
-      res.status(201).json({
-        message: 'Nota creada exitosamente',
-        note: result.rows[0]
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Error al crear la nota' });
+    if (!title || title.trim() === '') {
+      res.status(400).json({ error: 'El título es requerido' });
+      return;
     }
+
+    // Procesar el contenido para manejar listas
+    const processedContent = content.replace(/^- (.+)$/gm, '• $1')
+                                  .replace(/^\* (.+)$/gm, '• $1')
+                                  .replace(/^(\d+)\. (.+)$/gm, '$1. $2');
+
+    // Modificar la consulta para incluir las imágenes
+    const result = await pool.query(
+      'INSERT INTO notes (title, content, user_id, images) VALUES ($1, $2, $3, $4) RETURNING *',
+      [title, processedContent, userId, images || []]
+    );
+
+    res.status(201).json({
+      message: 'Nota creada exitosamente',
+      note: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error creating note:', error);
+    res.status(500).json({ error: 'Error al crear la nota' });
   }
+}
+
 
   // Obtener todas las notas del usuario
   async getNotes(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user.id;
-
+  
+      // Primero obtenemos las preferencias de ordenación
+      const settingsResult = await pool.query(
+        'SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      let orderBy = 'updated_at DESC';
+      
+      // Si hay preferencias, las aplicamos
+      if (settingsResult.rows.length > 0) {
+        const { default_note_sort, default_note_sort_direction } = settingsResult.rows[0];
+        const direction = default_note_sort_direction === 'asc' ? 'ASC' : 'DESC';
+        
+        if (default_note_sort === 'title') {
+          orderBy = `title ${direction}, is_pinned DESC`;
+        } else if (default_note_sort === 'date') {
+          orderBy = `updated_at ${direction}, is_pinned DESC`;
+        } else if (default_note_sort === 'pinned') {
+          orderBy = `is_pinned DESC, updated_at ${direction}`;
+        }
+      }
+  
+      // Obtenemos las notas con el orden especificado
       const result = await pool.query(
         `SELECT * FROM notes 
          WHERE user_id = $1 
-         ORDER BY is_pinned DESC, updated_at DESC`,
+         ORDER BY ${orderBy}`,
         [userId]
       );
-
+  
       res.json({ notes: result.rows });
     } catch (error) {
       res.status(500).json({ error: 'Error al obtener las notas' });
     }
   }
+  
 
   // Actualizar una nota
   async updateNote(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { title, content } = req.body;
+      const { title, content, images } = req.body;
       const userId = req.user.id;
   
-      // Primero verifico si la nota existe y pertenece al usuario
       const noteExists = await pool.query(
         'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
         [id, userId]
@@ -63,11 +130,39 @@ export class NoteController {
         return;
       }
   
-      // Realizo la actualización
-      const result = await pool.query(
-        'UPDATE notes SET title = $1, content = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *',
-        [title || noteExists.rows[0].title, content || noteExists.rows[0].content, id, userId]
-      );
+      const updateFields = [];
+      const values = [];
+      let paramCount = 1;
+  
+      if (title !== undefined) {
+        updateFields.push(`title = $${paramCount}`);
+        values.push(title);
+        paramCount++;
+      }
+  
+      if (content !== undefined) {
+        updateFields.push(`content = $${paramCount}`);
+        values.push(content);
+        paramCount++;
+      }
+  
+      if (images !== undefined) {
+        updateFields.push(`images = $${paramCount}`);
+        values.push(images);
+        paramCount++;
+      }
+  
+      updateFields.push(`updated_at = NOW()`);
+      values.push(id, userId);
+  
+      const query = `
+        UPDATE notes 
+        SET ${updateFields.join(', ')} 
+        WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
+        RETURNING *
+      `;
+  
+      const result = await pool.query(query, values);
   
       res.status(200).json({
         message: 'Nota actualizada exitosamente',
@@ -81,6 +176,8 @@ export class NoteController {
       });
     }
   }
+  
+  
 
   // Eliminar una nota
   async deleteNote(req: Request, res: Response): Promise<void> {
@@ -88,21 +185,68 @@ export class NoteController {
       const { id } = req.params;
       const userId = req.user.id;
 
-      const result = await pool.query(
-        'DELETE FROM notes WHERE id = $1 AND user_id = $2 RETURNING *',
+      // Obtener el contenido de la nota para buscar imágenes
+      const noteResult = await pool.query(
+        'SELECT content FROM notes WHERE id = $1 AND user_id = $2',
         [id, userId]
       );
 
-      if (result.rows.length === 0) {
+      if (noteResult.rows.length === 0) {
         res.status(404).json({ error: 'Nota no encontrada' });
         return;
       }
+
+      // Eliminar imágenes asociadas si existen
+      const content = noteResult.rows[0].content;
+      const imageRegex = /!$$.*?$$$(\/uploads\/note-images\/.*?)$/g;
+      let match;
+      
+      while ((match = imageRegex.exec(content)) !== null) {
+        const imagePath = path.join(__dirname, '..', match[1]);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+
+      // Eliminar la nota
+      await pool.query(
+        'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
 
       res.json({ message: 'Nota eliminada exitosamente' });
     } catch (error) {
       res.status(500).json({ error: 'Error al eliminar la nota' });
     }
   }
+
+  // Añadir nuevo método para subir imágenes
+  async uploadNoteImage(req: RequestWithFile, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No se ha proporcionado ninguna imagen" });
+        return;
+      }
+  
+      const imageUrl = `/uploads/note-images/${req.file.filename}`;  // Modificar esta línea
+  
+      res.json({
+        message: "Imagen subida correctamente",
+        data: {
+          imageUrl: imageUrl
+        }
+      });
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error eliminando archivo temporal:', err);
+        });
+      }
+      res.status(500).json({ error: "Error al procesar la imagen" });
+    }
+  }
+  
 
   async togglePin(req: Request, res: Response): Promise<void> {
     try {
@@ -301,6 +445,117 @@ export class NoteController {
       res.json({ message: 'Grupo eliminado exitosamente' });
     } catch (error) {
       res.status(500).json({ error: 'Error al eliminar el grupo' });
+    }
+  }
+
+  async getUserSortPreferences(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+      
+      const result = await pool.query(
+        'SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (result.rows.length === 0) {
+        // Si no hay configuración, crear una predeterminada
+        await pool.query(
+          'INSERT INTO settings (user_id, default_note_sort, default_note_sort_direction) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO NOTHING',
+          [userId, 'date', 'desc']
+        );
+        
+        res.status(200).json({
+          success: true,
+          preferences: {
+            sortType: 'date',
+            sortDirection: 'desc'
+          }
+        });
+        return;
+      }
+      
+      // Asegurar que los valores son válidos
+      const sortType = ['date', 'title', 'pinned'].includes(result.rows[0].default_note_sort) 
+        ? result.rows[0].default_note_sort 
+        : 'date';
+        
+      const sortDirection = ['asc', 'desc'].includes(result.rows[0].default_note_sort_direction)
+        ? result.rows[0].default_note_sort_direction
+        : 'desc';
+      
+      res.status(200).json({
+        success: true,
+        preferences: {
+          sortType,
+          sortDirection
+        }
+      });
+    } catch (error) {
+      console.error('Error al obtener preferencias de ordenación:', error);
+      // En caso de error, devolver valores predeterminados
+      res.status(200).json({
+        success: true,
+        preferences: {
+          sortType: 'date',
+          sortDirection: 'desc'
+        }
+      });
+    }
+  }
+  
+  
+  async saveUserSortPreferences(req: Request, res: Response): Promise<void> {
+    try {
+      const { sortType, sortDirection } = req.body;
+      const userId = req.user.id;
+      
+      // Verificar si ya existe una configuración para el usuario
+      const checkResult = await pool.query(
+        'SELECT id FROM settings WHERE user_id = $1',
+        [userId]
+      );
+      
+      if (checkResult.rows.length === 0) {
+        // Si no existe, crear una nueva configuración
+        await pool.query(
+          'INSERT INTO settings (user_id, default_note_sort, default_note_sort_direction) VALUES ($1, $2, $3)',
+          [userId, sortType, sortDirection]
+        );
+      } else {
+        // Si existe, actualizar la configuración existente
+        await pool.query(
+          'UPDATE settings SET default_note_sort = $1, default_note_sort_direction = $2 WHERE user_id = $3',
+          [sortType, sortDirection, userId]
+        );
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Preferencias de ordenación guardadas correctamente'
+      });
+    } catch (error) {
+      console.error('Error al guardar preferencias de ordenación:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al guardar preferencias de ordenación'
+      });
+    }
+  }
+
+  // Método para uso interno desde chatbotController
+  async createNoteInternal(noteData: any) {
+    try {
+      const result = await pool.query(
+        `INSERT INTO notes (title, content, user_id, color, images) 
+        VALUES ($1, $2, $3, $4, $5) 
+        RETURNING *`,
+        [noteData.title, noteData.content, noteData.user_id, noteData.color, noteData.images]
+      );
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating note:', error);
+      throw error;
     }
   }
 

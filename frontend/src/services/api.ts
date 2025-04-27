@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User, Reminder, ReminderRecurrence, UpdateReminderData, CreateReminderData, Note } from '../types';
+import { User, UpdateReminderData, CreateReminderData, UpdateNoteData } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -62,7 +62,7 @@ export const noteService = {
     }
   },
 
-  createNote: async (noteData: { title: string; content: string }) => {
+  createNote: async (noteData: { title: string; content: string; images?: string[] }) => {
     try {
       const response = await api.post('/notes', noteData);
       return response.data;
@@ -72,14 +72,9 @@ export const noteService = {
     }
   },
 
-  updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
+  updateNote: async (id: string, noteData: UpdateNoteData) => {
     try {
-      const sanitizedData = {
-        title: noteData.title || '',
-        content: noteData.content || ''
-      };
-  
-      const response = await api.put(`/notes/${id}`, sanitizedData);
+      const response = await api.put(`/notes/${id}`, noteData);
       if (!response.data) {
         throw new Error('No se recibieron datos del servidor');
       }
@@ -94,6 +89,20 @@ export const noteService = {
         throw new Error(error.response?.data?.error || 'Error al actualizar la nota');
       }
       throw new Error('Error inesperado al actualizar la nota');
+    }
+  },
+
+  uploadNoteImage: async (formData: FormData) => {
+    try {
+      const response = await api.post('/notes/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
     }
   },
 
@@ -147,6 +156,40 @@ export const noteService = {
       return response.data;
     } catch (error) {
       console.error('Error deleting group:', error);
+      throw error;
+    }
+  },
+
+  getUserSortPreferences: async () => {
+    try {
+      const response = await api.get('/notes/sort-preferences');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener preferencias de ordenación:', error);
+      
+      // Crear un objeto de respuesta de respaldo con valores por defecto
+      const savedType = localStorage.getItem('notesSortType') || 'date';
+      const savedDirection = localStorage.getItem('notesSortDirection') || 'desc';
+      
+      return {
+        success: true,
+        preferences: {
+          sortType: savedType,
+          sortDirection: savedDirection
+        }
+      };
+    }
+  },
+  
+  saveUserSortPreferences: async (sortType: string, sortDirection: string) => {
+    try {
+      const response = await api.post('/notes/sort-preferences', {
+        sortType,
+        sortDirection
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al guardar preferencias de ordenación:', error);
       throw error;
     }
   }

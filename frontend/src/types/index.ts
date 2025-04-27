@@ -15,14 +15,36 @@ export interface Note {
   user_id: string;
   created_at: Date;
   updated_at: Date;
-  user_id: string;
   is_pinned: boolean;
   is_marked: boolean;
+  images: string[];
 }
+
 
 export interface NotePosition {
   rect: DOMRect;
   columnPosition: 'left' | 'right';
+}
+
+export interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  images?: string[];
+  [key: string]: any;
+}
+
+export type SortType = 'title' | 'date' | 'pinned';
+export type SortDirection = 'asc' | 'desc';
+
+export interface UserSortPreferences {
+  sortType: SortType;
+  sortDirection: SortDirection;
+}
+
+export interface SortPreferencesResponse {
+  success: boolean;
+  preferences?: UserSortPreferences;
+  error?: string;
 }
 
 export interface Reminder {
