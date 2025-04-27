@@ -74,31 +74,27 @@ const loadNotes = async () => {
 };
 
 
-  const loadSharedNotes = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get('/api/notes/shared-notes', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setSharedNotes(response.data.sharedNotes);
-    } catch (err) {
-      console.error('Error al cargar notas compartidas:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    const loadSharedNotes = useCallback(async () => {
+      try {
+        setIsLoading(true);
+        const data = await noteService.getSharedNotes();
+        setSharedNotes(data.sharedNotes);
+      } catch (err) {
+        console.error('Error al cargar notas compartidas:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, []);
   
 
-  const checkSharedNotes = useCallback(async () => {
-    try {
-      const response = await axios.get('/api/notes/shared-notes', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      setHasSharedNotes(response.data.sharedNotes && response.data.sharedNotes.length > 0);
-    } catch (err) {
-      console.error('Error al verificar notas compartidas:', err);
-    }
-  }, []);
+    const checkSharedNotes = useCallback(async () => {
+      try {
+        const data = await noteService.getSharedNotes();
+        setHasSharedNotes(data.sharedNotes && data.sharedNotes.length > 0);
+      } catch (err) {
+        console.error('Error al verificar notas compartidas:', err);
+      }
+    }, []);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
