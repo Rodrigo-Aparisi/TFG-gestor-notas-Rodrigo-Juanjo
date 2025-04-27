@@ -1186,7 +1186,52 @@ html, body {
   opacity: 1;
 }
 
+.share-note-container {
+  margin-top: 10px;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
 
+.share-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.share-input-group input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.share-button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.share-button:disabled {
+  background-color: #cccccc;
+}
+
+.share-feedback {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.share-feedback.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.share-feedback.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
 
 /* === GRID Y TARJETAS === */
 /* Contenedor principal de Masonry */
@@ -1234,6 +1279,78 @@ html, body {
 
 .note-card:hover .note-actions {
   opacity: 1;
+}
+
+/* Estilos para las pestañas */
+.tabs-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+}
+
+.tab {
+  padding: 12px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #666;
+}
+
+.tab:hover {
+  color: #000;
+}
+
+.tab.active {
+  color: #000;
+  border-bottom: 3px solid #f1c40f;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff4757;
+  border-radius: 50%;
+}
+
+/* Estilo para notas compartidas */
+.shared-by {
+  font-size: 12px;
+  color: #666;
+  margin: 5px 0 15px;
+  font-style: italic;
+  padding-left: 8px;
+}
+
+/* Estilos para mensajes de estado */
+.no-notes {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  width: 100%;
+}
+
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #f44336;
+  width: 100%;
 }
 
 /* Focus Indicator */

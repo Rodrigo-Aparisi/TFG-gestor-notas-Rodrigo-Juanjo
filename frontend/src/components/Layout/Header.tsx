@@ -104,29 +104,30 @@ const Header: React.FC = () => {
           </Link>
           {isAuthenticated && (
             <div className="nav-icons">
-                  <button
-                    className="icon-button"
-                    onClick={() => navigate("/notes")}
-                    aria-label="Ir a notas"
-                  >
-                    <BsStickyFill size={20} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    onClick={() => navigate("/reminders")}
-                    aria-label="Ir a calendario"
-                  >
-                    <FaCalendar />
-                  </button>
-                  {/* Añadir botón para el chatbot */}
-                  <button
-                    className="icon-button"
-                    onClick={() => navigate("/chatbot")}
-                    aria-label="Asistente IA"
-                  >
-                    <FaRobot size={20} />
-                  </button>
-                </div>
+              <button
+                className="icon-button"
+                onClick={() => navigate("/notes")}
+                aria-label="Ir a notas"
+              >
+                <BsStickyFill size={20} />
+                <span className="icon-label">Notas</span>
+              </button>
+              <button
+                className="icon-button"
+                onClick={() => navigate("/calendar")}
+                aria-label="Ir a calendario"
+              >
+                <FaCalendar />
+                <span className="icon-label">Calendario</span>
+              </button>
+                <button
+                  className="icon-button"
+                  onClick={() => navigate("/chatbot")}
+                  aria-label="Asistente IA"
+                >
+                  <FaRobot size={20} />
+                </button>
+              </div>
           )}
         </div>
         <div className="auth-container">

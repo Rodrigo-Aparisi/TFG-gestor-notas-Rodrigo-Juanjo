@@ -108,7 +108,7 @@ async createNote(req: Request, res: Response): Promise<void> {
   
       res.json({ notes: result.rows });
     } catch (error) {
-      res.status(500).json({ error: 'Error al obtener las notas' });
+      res.status(500).json({ error: "Error al obtener las notas" });
     }
   }
   
@@ -119,14 +119,15 @@ async createNote(req: Request, res: Response): Promise<void> {
       const { id } = req.params;
       const { title, content, images } = req.body;
       const userId = req.user.id;
-  
+
+      // Primero verifico si la nota existe y pertenece al usuario
       const noteExists = await pool.query(
-        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
         [id, userId]
       );
-  
+
       if (noteExists.rows.length === 0) {
-        res.status(404).json({ error: 'Nota no encontrada' });
+        res.status(404).json({ error: "Nota no encontrada" });
         return;
       }
   
@@ -165,14 +166,14 @@ async createNote(req: Request, res: Response): Promise<void> {
       const result = await pool.query(query, values);
   
       res.status(200).json({
-        message: 'Nota actualizada exitosamente',
-        note: result.rows[0]
+        message: "Nota actualizada exitosamente",
+        note: result.rows[0],
       });
     } catch (error) {
-      console.error('Error al actualizar nota:', error);
-      res.status(500).json({ 
-        error: 'Error al actualizar la nota',
-        details: error instanceof Error ? error.message : 'Error desconocido'
+      console.error("Error al actualizar nota:", error);
+      res.status(500).json({
+        error: "Error al actualizar la nota",
+        details: error instanceof Error ? error.message : "Error desconocido",
       });
     }
   }
@@ -216,7 +217,7 @@ async createNote(req: Request, res: Response): Promise<void> {
 
       res.json({ message: 'Nota eliminada exitosamente' });
     } catch (error) {
-      res.status(500).json({ error: 'Error al eliminar la nota' });
+      res.status(500).json({ error: "Error al eliminar la nota" });
     }
   }
 
@@ -255,24 +256,24 @@ async createNote(req: Request, res: Response): Promise<void> {
 
       // Primero verificamos si la nota existe y pertenece al usuario
       const note = await pool.query(
-        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
         [id, userId]
       );
 
       if (note.rows.length === 0) {
-        res.status(404).json({ error: 'Nota no encontrada' });
+        res.status(404).json({ error: "Nota no encontrada" });
         return;
       }
 
       // Actualizamos el estado de is_pinned
       const result = await pool.query(
-        'UPDATE notes SET is_pinned = NOT is_pinned WHERE id = $1 AND user_id = $2 RETURNING *',
+        "UPDATE notes SET is_pinned = NOT is_pinned WHERE id = $1 AND user_id = $2 RETURNING *",
         [id, userId]
       );
 
       res.json({ note: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar la nota' });
+      res.status(500).json({ error: "Error al actualizar la nota" });
     }
   }
 
@@ -284,24 +285,24 @@ async createNote(req: Request, res: Response): Promise<void> {
 
       // Primero verificamos si la nota existe y pertenece al usuario
       const note = await pool.query(
-        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
+        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
         [id, userId]
       );
 
       if (note.rows.length === 0) {
-        res.status(404).json({ error: 'Nota no encontrada' });
+        res.status(404).json({ error: "Nota no encontrada" });
         return;
       }
 
       // Actualizamos el estado de is_marked
       const result = await pool.query(
-        'UPDATE notes SET is_marked = NOT is_marked WHERE id = $1 AND user_id = $2 RETURNING *',
+        "UPDATE notes SET is_marked = NOT is_marked WHERE id = $1 AND user_id = $2 RETURNING *",
         [id, userId]
       );
 
       res.json({ note: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ error: 'Error al actualizar la nota' });
+      res.status(500).json({ error: "Error al actualizar la nota" });
     }
   }
 
@@ -309,15 +310,15 @@ async createNote(req: Request, res: Response): Promise<void> {
   async unmarkAllNotes(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user.id;
-  
+
       await pool.query(
-        'UPDATE notes SET is_marked = false WHERE user_id = $1',
+        "UPDATE notes SET is_marked = false WHERE user_id = $1",
         [userId]
       );
-  
-      res.json({ message: 'Todas las notas han sido desmarcadas' });
+
+      res.json({ message: "Todas las notas han sido desmarcadas" });
     } catch (error) {
-      res.status(500).json({ error: 'Error al desmarcar las notas' });
+      res.status(500).json({ error: "Error al desmarcar las notas" });
     }
   }
 
@@ -325,21 +326,21 @@ async createNote(req: Request, res: Response): Promise<void> {
   async deleteMultipleNotes(req: Request, res: Response): Promise<void> {
     const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-      
+      await client.query("BEGIN");
+
       // Verificación y eliminación
       const { noteIds } = req.body;
       const userId = req.user.id;
-      
+
       await client.query(
-        'DELETE FROM notes WHERE id = ANY($1) AND user_id = $2',
+        "DELETE FROM notes WHERE id = ANY($1) AND user_id = $2",
         [noteIds, userId]
       );
-      
-      await client.query('COMMIT');
-      res.json({ message: 'Notas eliminadas exitosamente' });
+
+      await client.query("COMMIT");
+      res.json({ message: "Notas eliminadas exitosamente" });
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
@@ -352,13 +353,13 @@ async createNote(req: Request, res: Response): Promise<void> {
       const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT * FROM notes WHERE user_id = $1 AND is_marked = true ORDER BY updated_at DESC',
+        "SELECT * FROM notes WHERE user_id = $1 AND is_marked = true ORDER BY updated_at DESC",
         [userId]
       );
 
       res.json({ notes: result.rows });
     } catch (error) {
-      res.status(500).json({ error: 'Error al obtener las notas marcadas' });
+      res.status(500).json({ error: "Error al obtener las notas marcadas" });
     }
   }
 
@@ -368,11 +369,11 @@ async createNote(req: Request, res: Response): Promise<void> {
       const { name, color, noteIds } = req.body;
       const userId = req.user.id;
 
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       // Crear el grupo
       const groupResult = await client.query(
-        'INSERT INTO note_groups (name, color, user_id) VALUES ($1, $2, $3) RETURNING *',
+        "INSERT INTO note_groups (name, color, user_id) VALUES ($1, $2, $3) RETURNING *",
         [name, color, userId]
       );
 
@@ -380,26 +381,28 @@ async createNote(req: Request, res: Response): Promise<void> {
 
       // Añadir notas al grupo
       if (noteIds && noteIds.length > 0) {
-        const values = noteIds.map((noteId: string) => `(${groupId}, '${noteId}')`).join(',');
+        const values = noteIds
+          .map((noteId: string) => `(${groupId}, '${noteId}')`)
+          .join(",");
         await client.query(`
           INSERT INTO note_group_items (group_id, note_id) 
           VALUES ${values}
         `);
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
       res.status(201).json({
-        message: 'Grupo creado exitosamente',
-        group: groupResult.rows[0]
+        message: "Grupo creado exitosamente",
+        group: groupResult.rows[0],
       });
     } catch (error) {
-      await client.query('ROLLBACK');
-      res.status(500).json({ error: 'Error al crear el grupo' });
+      await client.query("ROLLBACK");
+      res.status(500).json({ error: "Error al crear el grupo" });
     } finally {
       client.release();
     }
   }
-  
+
   async getGroups(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user.id;
@@ -412,41 +415,135 @@ async createNote(req: Request, res: Response): Promise<void> {
          ORDER BY g.created_at DESC`,
         [userId]
       );
-      
-      const groups = result.rows.map(group => ({
+
+      const groups = result.rows.map((group) => ({
         ...group,
         id: group.id.toString(),
-        note_ids: group.note_ids || []
+        note_ids: group.note_ids || [],
       }));
-      
+
       res.json({ groups });
     } catch (error) {
-      console.error('Error in getGroups:', error);
-      res.status(500).json({ error: 'Error al obtener los grupos' });
+      console.error("Error in getGroups:", error);
+      res.status(500).json({ error: "Error al obtener los grupos" });
     }
   }
 
-  
   async deleteGroup(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const userId = req.user.id;
-  
+
       const result = await pool.query(
-        'DELETE FROM note_groups WHERE id = $1 AND user_id = $2 RETURNING *',
+        "DELETE FROM note_groups WHERE id = $1 AND user_id = $2 RETURNING *",
         [id, userId]
       );
-  
+
       if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Grupo no encontrado' });
+        res.status(404).json({ error: "Grupo no encontrado" });
         return;
       }
-  
-      res.json({ message: 'Grupo eliminado exitosamente' });
+
+      res.json({ message: "Grupo eliminado exitosamente" });
     } catch (error) {
-      res.status(500).json({ error: 'Error al eliminar el grupo' });
+      res.status(500).json({ error: "Error al eliminar el grupo" });
     }
   }
+
+  async shareNote(req: Request, res: Response): Promise<void> {
+    try {
+      const { noteId, username } = req.body;
+      const ownerId = req.user.id;
+
+      // Validar datos de entrada
+      if (!noteId || !username) {
+        res.status(400).json({ error: "Se requieren noteId y username" });
+        return;
+      }
+
+      // Verificar que la nota existe y pertenece al usuario actual
+      const note = await pool.query(
+        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
+        [noteId, ownerId]
+      );
+
+      if (note.rows.length === 0) {
+        res
+          .status(404)
+          .json({ error: "Nota no encontrada o no tienes permiso" });
+        return;
+      }
+
+      // Buscar al usuario con quien compartir
+      const targetUser = await pool.query(
+        "SELECT id FROM users WHERE username = $1",
+        [username]
+      );
+
+      if (targetUser.rows.length === 0) {
+        res.status(404).json({ error: "Usuario no encontrado" });
+        return;
+      }
+
+      const sharedWithId = targetUser.rows[0].id;
+
+      // Evitar compartir con uno mismo
+      if (sharedWithId === ownerId) {
+        res
+          .status(400)
+          .json({ error: "No puedes compartir una nota contigo mismo" });
+        return;
+      }
+
+      // Verificar si ya está compartida con este usuario
+      const existingShare = await pool.query(
+        "SELECT * FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2",
+        [noteId, sharedWithId]
+      );
+
+      if (existingShare.rows.length > 0) {
+        res
+          .status(400)
+          .json({ error: "La nota ya está compartida con este usuario" });
+        return;
+      }
+
+      // Insertar en la tabla shared_notes
+      await pool.query(
+        "INSERT INTO shared_notes (note_id, owner_id, shared_with_id) VALUES ($1, $2, $3)",
+        [noteId, ownerId, sharedWithId]
+      );
+
+      res
+        .status(200)
+        .json({ success: true, message: "Nota compartida exitosamente" });
+    } catch (error) {
+      console.error("Error al compartir nota:", error);
+      res.status(500).json({ error: "Error al compartir la nota" });
+    }
+  }
+
+  async getSharedNotes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+      
+      const result = await pool.query(`
+        SELECT n.*, u.username as shared_by
+        FROM notes n
+        JOIN shared_notes sn ON n.id = sn.note_id
+        JOIN users u ON sn.owner_id = u.id
+        WHERE sn.shared_with_id = $1
+        ORDER BY n.updated_at DESC
+      `, [userId]);
+      
+      res.json({ sharedNotes: result.rows });
+    } catch (error) {
+      console.error('Error al obtener notas compartidas:', error);
+      res.status(500).json({ error: 'Error al obtener las notas compartidas' });
+    }
+  }
+  
+}
 
   async getUserSortPreferences(req: Request, res: Response): Promise<void> {
     try {
