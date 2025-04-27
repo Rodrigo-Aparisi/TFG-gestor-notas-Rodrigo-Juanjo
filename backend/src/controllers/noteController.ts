@@ -543,7 +543,6 @@ async createNote(req: Request, res: Response): Promise<void> {
     }
   }
   
-}
 
   async getUserSortPreferences(req: Request, res: Response): Promise<void> {
     try {
