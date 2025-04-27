@@ -77,6 +77,16 @@ export const noteService = {
     return response.data;
   },
 
+  getSharedNotes: async () => {
+    try {
+      const response = await api.get('/notes/shared-notes');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching shared notes:', error);
+      throw error;
+    }
+  },
+
   updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
     try {
       const sanitizedData = {
