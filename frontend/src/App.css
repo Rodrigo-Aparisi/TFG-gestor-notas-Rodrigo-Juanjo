@@ -184,6 +184,13 @@ button:hover {
   background-color: rgba(255, 198, 0, 0.1);
   border-radius: 4px;
 }
+.icon-label{
+  color: var(--dorado);
+  font-size: 1rem;
+  margin-top: 0.2rem;
+  margin-left: 0.5rem;
+  text-align: center;
+}
 
 /* Contenedor de autenticación y menú de usuario */
 .auth-container {

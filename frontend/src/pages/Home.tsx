@@ -47,6 +47,43 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <section className="testimonials-section">
+        <h2>Lo que dicen nuestros usuarios</h2>
+        <div className="testimonials-grid">
+          <div className="testimonial-card">
+            <p className="testimonial-text">"Una herramienta perfecta para organizar mis ideas, proyectos, tareas y con la posibilidad de trabajar con compañeros."</p>
+            <p className="testimonial-author">Juan José Muñoz</p>
+            <p className="testimonial-company">Coautor de esta página y usuario.</p>
+          </div>
+          <div className="testimonial-card">
+            <p className="testimonial-text">"AQUI RODRIGO TIENE QUE PONER SU OPINIÓN"</p>
+            <p className="testimonial-author">Rodrigo Aparisi</p>
+            <p className="testimonial-company">Coautor de esta página y usuario.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="contact-section">
+        <h2>¿Necesitas más información?</h2>
+        <div className="contact-container">
+          <form className="contact-form" onSubmit={(e) => e.preventDefault()}>
+            <div className="form-group">
+              <label htmlFor="name">Nombre</label>
+              <input type="text" id="name" required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input type="email" id="email" required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="message">Mensaje</label>
+              <textarea id="message" rows={4} required></textarea>
+            </div>
+            <button type="submit" className="submit-button">Enviar Mensaje</button>
+          </form>
+        </div>
+      </section>
+
       <section className="get-started-section">
         <h2>¿Listo para empezar?</h2>
         <p>Únete a miles de usuarios que ya organizan sus ideas con nosotros</p>
