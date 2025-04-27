@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import axios from 'axios'; // Añade esta importación
+import axios from 'axios';
 import { RootState } from '../store';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
-import { Note, NotePosition, Group, GroupResponse } from '../types';
+import { Note, NotePosition, Group, GroupResponse, UpdateNoteData} from '../types';
 import '../styles/notes.css';
 import ShareNote from '../components/Notes/ShareNote';
 import Masonry from 'react-masonry-css';
+import NoteImage from '../components/Notes/NoteImage';
+import NoteSort from '../components/Notes/NoteSort';
 
 
 const Notes: React.FC = () => {
-  const defaultNoteSort = useSelector((state: RootState) => state.settings.defaultNoteSort);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState({ title: '', content: '' });
+  const [newNote, setNewNote] = useState({ title: '', content: '', images: [] as string[] });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [sharingNoteId, setSharingNoteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('my-notes');
@@ -85,6 +86,7 @@ const loadNotes = async () => {
         setIsLoading(false);
       }
     }, []);
+  const [sortKey, setSortKey] = useState<number>(0);
   
 
     const checkSharedNotes = useCallback(async () => {
@@ -106,11 +108,13 @@ const loadNotes = async () => {
   };
 
   const breakpointColumns = {
-    default: 4, // Número de columnas en pantallas grandes
+    default: 5, // Número de columnas en pantallas grandes
     1100: 3,    // 3 columnas en pantallas medianas
     768: 2,     // 2 columnas en tablets
     480: 1      // 1 columna en móviles
-};
+  };
+
+  type ListType = 'bullet' | 'number';
 
 
   useEffect(() => {
@@ -251,23 +255,26 @@ const loadNotes = async () => {
       showFeedback('El título es requerido');
       return;
     }
-
+  
     setIsLoading(true);
     try {
+      // Asegúrate de que images se envíe correctamente
       const result = await noteService.createNote({
         title: newNote.title.trim(),
-        content: newNote.content.trim()
+        content: newNote.content.trim(),
+        images: newNote.images // Enviar el array de imágenes
       });
       
       if (result && result.note) {
         setNotes(prevNotes => [result.note, ...prevNotes]);
-        setNewNote({ title: '', content: '' });
+        setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
         
         const titleInput = document.querySelector('.create-note input[type="text"]') as HTMLInputElement;
         if (titleInput) {
           titleInput.value = '';
         }
-
+  
+        forceReorder();
         showFeedback('Nota creada exitosamente');
       }
     } catch (error: any) {
@@ -277,17 +284,8 @@ const loadNotes = async () => {
       setIsLoading(false);
     }
   };
-
-  const sortNotes = (notesToSort: Note[]) => {
-    return [...notesToSort].sort((a, b) => {
-      // Primero ordenar por pin
-      if (a.is_pinned && !b.is_pinned) return -1;
-      if (!a.is_pinned && b.is_pinned) return 1;
-      
-      // Luego por la fecha de creación (o el criterio que prefieras)
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  };
+  
+  
 
   const handleNoteChange = (id: string, field: 'title' | 'content', value: string) => {
     setEditingNote(prev => {
@@ -346,6 +344,8 @@ const loadNotes = async () => {
             note.id === id ? response.note : note
           )
         );
+
+        forceReorder();
         showFeedback('Nota actualizada');
       }
     } catch (error) {
@@ -362,6 +362,270 @@ const loadNotes = async () => {
       setIsLoading(false);
     }
   };
+
+  const processContent = (content: string) => {
+    return content.split('\n').map((line, index) => {
+      // Detectar imágenes
+      const imageMatch = line.match(/!\$\$(.*?)\$\$\$(.*?)\$/);
+      if (imageMatch) {
+        return (
+          <div key={index} className="note-image-container">
+            <img 
+              src={imageMatch[2]} 
+              alt={imageMatch[1] || 'Imagen de nota'} 
+              className="note-image"
+              loading="lazy"
+              onError={(e) => {
+                console.error('Error loading image:', e);
+                e.currentTarget.src = '/placeholder-image.png';
+              }}
+            />
+          </div>
+        );
+      }
+  
+      // Detectar enlaces
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      if (line.match(urlRegex)) {
+        return (
+          <div key={index} className="note-link">
+            {line.split(urlRegex).map((part, i) => 
+              part.match(urlRegex) ? 
+                <a key={i} href={part} target="_blank" rel="noopener noreferrer">{part}</a> : 
+                part
+            )}
+          </div>
+        );
+      }
+  
+      // Detectar listas con viñetas
+      if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+        return (
+          <div key={index} className="list-item bullet">
+            <span className="bullet-point">•</span>
+            <span className="list-content">{line.trim().substring(1).trim()}</span>
+          </div>
+        );
+      }
+  
+      // Detectar listas numeradas
+      const orderedMatch = line.match(/^\d+\./);
+      if (orderedMatch) {
+        return (
+          <div key={index} className="list-item numbered">
+            <span className="number">{orderedMatch[0]}</span>
+            <span className="list-content">{line.substring(orderedMatch[0].length).trim()}</span>
+          </div>
+        );
+      }
+  
+      // Texto normal
+      return line.trim() ? (
+        <div key={index} className="text-content">
+          {line}
+        </div>
+      ) : <br key={index} />;
+    });
+  };
+  
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    if (!e.target.files || !e.target.files[0]) return;
+  
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+  
+    try {
+      showFeedback('Subiendo imagen...');
+      const response = await noteService.uploadNoteImage(formData);
+      
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        if (noteId === 'new') {
+          // Para nota nueva, añadimos la imagen al array de imágenes
+          setNewNote(prev => ({
+            ...prev,
+            images: [...(prev.images || []), response.data.data.imageUrl]
+          }));
+          showFeedback('Imagen añadida a la nota nueva');
+        } else {
+          const note = notes.find(n => n.id === noteId);
+          if (note) {
+            const updatedImages = [...(note.images || []), response.data.data.imageUrl];
+            const updateData: UpdateNoteData = {
+              images: updatedImages
+            };
+      
+            await noteService.updateNote(noteId, updateData);
+            
+            const updatedNote = {
+              ...note,
+              images: updatedImages
+            };
+      
+            setNotes(prevNotes => 
+              prevNotes.map(n => 
+                n.id === noteId ? updatedNote : n
+              )
+            );
+            
+            showFeedback('Imagen subida correctamente');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showFeedback('Error al subir la imagen');
+    }
+  };
+  
+  
+  const handleDeleteImage = async (noteId: string, imageIndex: number) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+  
+    const updatedImages = note.images.filter((_, index) => index !== imageIndex);
+    const updateData: UpdateNoteData = {
+      images: updatedImages
+    };
+  
+    try {
+      await noteService.updateNote(noteId, updateData);
+      
+      const updatedNote = {
+        ...note,
+        images: updatedImages
+      };
+  
+      setNotes(prevNotes =>
+        prevNotes.map(n =>
+          n.id === noteId ? updatedNote : n
+        )
+      );
+      showFeedback('Imagen eliminada correctamente');
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      showFeedback('Error al eliminar la imagen');
+    }
+  };
+  
+  
+  
+  
+  
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      const lines = content.split('\n');
+      let currentLine = '';
+      let charCount = 0;
+      let indentLevel = 0;
+      
+      // Encontrar la línea actual y su nivel de indentación
+      for (const line of lines) {
+        if (charCount + line.length + 1 >= selectionStart) {
+          currentLine = line;
+          indentLevel = (line.match(/^\s*/) || [''])[0].length;
+          break;
+        }
+        charCount += line.length + 1;
+      }
+  
+      // Detectar si estamos en una lista
+      const bulletMatch = currentLine.match(/^(\s*)([•\-*]|\d+\.)\s*/);
+      if (bulletMatch) {
+        e.preventDefault();
+        
+        const [, indent, bullet] = bulletMatch;
+        
+        // Si la línea está vacía (excepto por el marcador), terminar la lista
+        if (currentLine.trim() === bullet.trim()) {
+          const newContent = content.slice(0, selectionStart - bulletMatch[0].length) + 
+                           '\n' + content.slice(selectionStart);
+          
+          if (isNewNote) {
+            setNewNote(prev => ({ ...prev, content: newContent }));
+          } else {
+            handleNoteChange(noteId, 'content', newContent);
+          }
+          return;
+        }
+  
+        // Continuar la lista con la misma indentación
+        const newBullet = bullet.match(/\d+\./) 
+          ? `${parseInt(bullet) + 1}.` 
+          : '•';
+        
+        const newContent = content.slice(0, selectionStart) + 
+                          '\n' + indent + newBullet + ' ' + 
+                          content.slice(selectionStart);
+        
+        if (isNewNote) {
+          setNewNote(prev => ({ ...prev, content: newContent }));
+        } else {
+          handleNoteChange(noteId, 'content', newContent);
+        }
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      
+      // Insertar tabulación
+      const newContent = content.slice(0, selectionStart) + 
+                        '    ' + // 4 espacios para la tabulación
+                        content.slice(selectionStart);
+      
+      if (isNewNote) {
+        setNewNote(prev => ({ ...prev, content: newContent }));
+      } else {
+        handleNoteChange(noteId, 'content', newContent);
+      }
+      
+      // Mover el cursor después de la tabulación
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = selectionStart + 4;
+      });
+    }
+  };
+  
+  
+
+  const insertList = (noteId: string, type: ListType, isNewNote = false) => {
+    let currentContent;
+    if (isNewNote) {
+      currentContent = newNote.content;
+    } else {
+      // Usar el contenido del estado de edición si existe, si no usar el contenido original de la nota
+      const note = notes.find(n => n.id === noteId);
+      currentContent = editingNote[noteId]?.content ?? note?.content ?? '';
+    }
+  
+    const selectionStart = document.activeElement instanceof HTMLTextAreaElement ? 
+      document.activeElement.selectionStart : currentContent.length;
+    
+    let insertText = '\n';
+    if (type === 'bullet') {
+      insertText += '• ';
+    } else {
+      insertText += '1. ';
+    }
+  
+    const newContent = currentContent.slice(0, selectionStart) + 
+                      insertText + 
+                      currentContent.slice(selectionStart);
+  
+    if (isNewNote) {
+      setNewNote(prev => ({ ...prev, content: newContent }));
+    } else {
+      handleNoteChange(noteId, 'content', newContent);
+    }
+  };
+  
 
   const handleDeleteNote = async (id: string) => {
     try {
@@ -394,14 +658,6 @@ const loadNotes = async () => {
       }
     }
   };
-
-  
-  const getNoteGroup = (noteId: string) => {
-    return groups.find(group => 
-      !group.isDefault && group.noteIds.includes(noteId)
-    );
-  };
-  
 
   const handleCreateGroup = async () => {
     try {
@@ -560,6 +816,9 @@ const loadNotes = async () => {
             return prev.filter(noteId => noteId !== id);
           }
         });
+        
+        forceReorder();
+
       }
     } catch (error) {
       console.error('Error al marcar/desmarcar nota:', error);
@@ -577,6 +836,9 @@ const loadNotes = async () => {
             note.id === id ? response.note : note
           )
         );
+        
+        forceReorder();
+        
         showFeedback(response.note.is_pinned ? 'Nota fijada' : 'Nota desfijada');
       }
     } catch (error) {
@@ -664,7 +926,22 @@ const loadNotes = async () => {
   );
   
   
-  
+  const handleFilteredNotes = (filtered: Note[]) => {
+    // Siempre aplicamos el ordenamiento por pins primero
+    const orderedFiltered = [...filtered].sort((a, b) => {
+      // Primero ordenar por pin
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+      return 0; // Mantener el orden que viene del componente NoteSort
+    });
+    
+    setFilteredNotes(orderedFiltered);
+  };
+
+  // Función para forzar reordenación
+  const forceReorder = () => {
+    setSortKey(prev => prev + 1); // Incrementar el sortKey forzará una reordenación
+  };
   
 
   return (
@@ -703,16 +980,6 @@ const loadNotes = async () => {
             {groups.find(g => g.id === activeGroup)?.name || 'Todas las notas'}
           </div>
         )}
-        
-        <div 
-          className={`overlay ${focusedNoteId ? 'active' : ''}`}
-          onClick={handleBlur}
-        />
-
-        <div 
-          className={`overlay ${focusedNoteId ? 'active' : ''}`}
-          onClick={handleBlur}
-        />
   
         {/* Menú de acciones en masa */}
         <div className={`bulk-actions-menu ${markedNotes.length > 0 ? 'visible' : ''}`}>
@@ -741,6 +1008,8 @@ const loadNotes = async () => {
   
         {/* Crear nota */}
         {activeTab === 'my-notes' && (
+        {/* Crear nota y herramientas de ordenación */}
+        <div className="note-tools-container">
           <div className="create-note">
             <input
               type="text"
@@ -753,23 +1022,79 @@ const loadNotes = async () => {
                 }
               }}
             />
-            {isExpanded && (
-              <>
-                <textarea
-                  placeholder="Contenido de la nota..."
-                  value={newNote.content}
-                  onChange={e => {
-                    setNewNote(prev => ({ ...prev, content: e.target.value }));
-                    autoResizeTextarea(e.target as HTMLTextAreaElement);
+
+          {isExpanded && (
+            <>
+              <textarea
+                placeholder="Contenido de la nota..."
+                value={newNote.content}
+                onChange={e => {
+                  setNewNote(prev => ({ ...prev, content: e.target.value }));
+                  autoResizeTextarea(e.target as HTMLTextAreaElement);
+                }}
+                onKeyDown={e => handleKeyDown(e, '', true)}
+                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+              />
+              
+              {/* Sección de imágenes para la nota nueva */}
+              {newNote.images && newNote.images.length > 0 && (
+                <div className="note-images">
+                  {newNote.images.map((imageUrl, index) => (
+                    <NoteImage
+                      key={index}
+                      imageUrl={imageUrl}
+                      index={index}
+                      onDelete={() => {
+                        setNewNote(prev => ({
+                          ...prev,
+                          images: prev.images.filter((_, i) => i !== index)
+                        }));
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              <div className="button-container">
+              <div className="left-actions">
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'bullet', true)}
+                  title="Insertar lista con viñetas"
+                >
+                  <i className="fas fa-list-ul"></i>
+                </button>
+                <button 
+                  className="list-button"
+                  onClick={() => insertList('', 'number', true)}
+                  title="Insertar lista numerada"
+                >
+                  <i className="fas fa-list-ol"></i>
+                </button>
+                <button 
+                  className="list-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    document.getElementById('image-input-new').click();
                   }}
-                  onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                  title="Insertar imagen"
+                >
+                  <i className="fas fa-image"></i>
+                </button>
+                <input
+                  id="image-input-new"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleImageUpload(e, 'new')}
                 />
-                <div className="button-container">
+              </div>
+                <div className="right-actions">
                   <button 
                     className="cancel-button"
                     onClick={() => {
                       setIsExpanded(false);
-                      setNewNote({ title: '', content: '' });
+                      setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
                     }}
                   >
                     Cancelar
@@ -785,10 +1110,21 @@ const loadNotes = async () => {
                     Crear Nota
                   </button>
                 </div>
-              </>
+              </div>
+            </>
             )}
           </div>
-        )}
+          
+          <NoteSort 
+            key={`note-sort-${sortKey}`}
+            notes={activeGroup === 'main' ? notes : notes.filter(note => {
+              const currentGroup = groups.find(g => g.id === activeGroup);
+              return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                currentGroup.noteIds.includes(note.id.toString());
+            })}
+            onNotesFiltered={handleFilteredNotes}
+          />
+        </div>
   
         {/* Grid de notas */}
         <Masonry
@@ -868,6 +1204,29 @@ const loadNotes = async () => {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
+          
+          {filteredNotes.map(note => {
+            // Obtener el color del grupo activo
+            const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+            
+            return (
+              <div 
+                key={note.id}
+                className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+                onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
+                style={{
+                  borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
+                  borderWidth: activeGroup !== 'main' ? '2px' : '1px'
+                }}
+              >
+                <div className="note-actions">
+                  <button 
+                    className={`action-button ${note.is_marked ? 'marked' : ''}`}
+                    onClick={(e) => handleToggleMark(note.id, e)}
+                    title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+                  >
+                    <i className="fas fa-check-circle"></i>
+                  </button>
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
@@ -930,6 +1289,103 @@ const loadNotes = async () => {
               <div className="no-notes">No tienes notas compartidas</div>
             )
           )}
+                  className="focus-indicator"
+                  onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+                />
+
+                <div className="note-content">
+                  <input
+                    type="text"
+                    value={editingNote[note.id]?.title ?? note.title}
+                    onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
+                    onBlur={() => handleUpdateNote(note.id, 'title')}
+                    onClick={e => e.stopPropagation()}
+                  />
+                  
+                  {/* Sección de imágenes */}
+                  {note.images && note.images.length > 0 && (
+                    <div className="note-images">
+                      {note.images.map((imageUrl, index) => (
+                        <NoteImage
+                          key={index}
+                          imageUrl={imageUrl}
+                          index={index}
+                          onDelete={() => handleDeleteImage(note.id, index)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <textarea
+                    value={editingNote[note.id]?.content ?? note.content}
+                    onChange={(e) => {
+                      handleNoteChange(note.id, 'content', e.target.value);
+                      autoResizeTextarea(e.target as HTMLTextAreaElement);
+                    }}
+                    onKeyDown={(e) => handleKeyDown(e, note.id)}
+                    onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                    onBlur={(e) => {
+                      handleUpdateNote(note.id, 'content');
+                      autoResizeTextarea(e.target as HTMLTextAreaElement);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+
+
+                <div className="note-actions-bottom">
+                  <div className="list-buttons">
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertList(note.id, 'bullet');
+                      }}
+                      title="Insertar lista con viñetas"
+                    >
+                      <i className="fas fa-list-ul"></i>
+                    </button>
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertList(note.id, 'number');
+                      }}
+                      title="Insertar lista numerada"
+                    >
+                      <i className="fas fa-list-ol"></i>
+                    </button>
+                    <button 
+                      className="list-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        document.getElementById(`image-input-${note.id}`)?.click();
+                      }}
+                      title="Insertar imagen"
+                    >
+                      <i className="fas fa-image"></i>
+                    </button>
+                    <input
+                      id={`image-input-${note.id}`}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleImageUpload(e, note.id)}
+                    />
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNote(note.id);
+                    }}
+                    className="delete-button"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </Masonry>
 
 
