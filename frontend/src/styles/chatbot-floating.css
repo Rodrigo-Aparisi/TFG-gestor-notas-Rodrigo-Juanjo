@@ -1,8 +1,8 @@
 /* Estilos para el botón flotante y contenedor */
 .chatbot-floating-button {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 20px;
+  right: 20px;
   width: 55px !important;
   height: 55px;
   border-radius: 50%;
@@ -26,8 +26,8 @@
 
 .chatbot-floating-container {
   position: fixed;
-  bottom: 100px;
-  right: 30px;
+  bottom: 85px;
+  right: 25px;
   width: 380px !important;
   height: 500px;
   max-height: 80vh;
