@@ -1,9 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Dependencies
+**/node_modules
+node_modules/
 
 # testing
 /coverage
@@ -22,7 +21,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Imagen de usuario
-/uploads/*
-!/uploads/.gitkeep
-!/uploads/profile-images/.gitkeep
+# Imagenes
+**/uploads/*
+!**/uploads/.gitkeep
+!**/uploads/note-images/.gitkeep
+

@@ -10,6 +10,7 @@ import notesRoutes from './routes/noteRoutes';
 import groupRoutes from './routes/groupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
+import chatbotRoutes from './routes/chatbotRoutes';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -21,6 +22,7 @@ const app = express();
 // Crear directorios necesarios si no existen
 const uploadsDir = path.join(__dirname, 'uploads');
 const profileImagesDir = path.join(uploadsDir, 'profile-images');
+const noteImagesDir = path.join(uploadsDir, 'note-images');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -28,22 +30,67 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(profileImagesDir)) {
   fs.mkdirSync(profileImagesDir, { recursive: true });
 }
+if (!fs.existsSync(noteImagesDir)) {
+  fs.mkdirSync(noteImagesDir, { recursive: true });
+}
 
-app.use('/uploads', (req, res, next) => {
-  console.log('Solicitud de archivo estático:', req.url);
-  console.log('Ruta completa:', path.join(__dirname, 'uploads', req.url));
-  next();
+app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Configurar multer para las imágenes de las notas
+const noteImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, noteImagesDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
 });
+
+export const uploadNoteImage = multer({
+  storage: noteImageStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB límite
+  },
+  fileFilter: (req, file, cb) => {
+    // Lista de tipos MIME permitidos
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      return cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPEG, PNG, GIF y WEBP'));
+    }
+    cb(null, true);
+  }
+}).single('image');
+
 
 // Middleware básico
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
+
 app.use(express.json());
 
-// Configurar servicio de archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && err.code === 'EACCES') {
+    console.error('Error de permisos en el sistema de archivos:', err);
+    return res.status(500).json({
+      error: 'Error de permisos al acceder a los archivos'
+    });
+  }
+  next(err);
+});
+
+app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error serving image:', err);
+  if (err.code === 'ENOENT') {
+    res.status(404).json({ error: 'Imagen no encontrada' });
+  } else {
+    res.status(500).json({ error: 'Error al cargar la imagen' });
+  }
+});
+
 // Configurar conexión a base de datos
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -61,6 +108,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
         error: 'Archivo demasiado grande. Máximo 5MB'
       });
     }
+    return res.status(400).json({
+      error: 'Error al subir el archivo: ' + err.message
+    });
   }
   next(err);
 });
@@ -71,6 +121,7 @@ app.use('/api/notes', notesRoutes);   // Rutas de notas
 app.use('/api/groups', groupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Añadir un middleware de logging para depuración
 app.use((req, res, next) => {
