@@ -22,11 +22,40 @@ export interface Note {
 
 export interface SharedNote extends Note {
   shared_by: string;
+  content: string | null;
+  user_id: string;
+  created_at: Date;
+  updated_at: Date;
+  is_pinned: boolean;
+  is_marked: boolean;
+  images: string[];
 }
+
 
 export interface NotePosition {
   rect: DOMRect;
   columnPosition: 'left' | 'right';
+}
+
+export interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  images?: string[];
+  [key: string]: any;
+}
+
+export type SortType = 'title' | 'date' | 'pinned';
+export type SortDirection = 'asc' | 'desc';
+
+export interface UserSortPreferences {
+  sortType: SortType;
+  sortDirection: SortDirection;
+}
+
+export interface SortPreferencesResponse {
+  success: boolean;
+  preferences?: UserSortPreferences;
+  error?: string;
 }
 
 export interface Reminder {

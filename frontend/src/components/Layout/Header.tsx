@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { FaCalendar } from "react-icons/fa";
+import { FaCalendar, FaRobot } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 
@@ -120,7 +120,14 @@ const Header: React.FC = () => {
                 <FaCalendar />
                 <span className="icon-label">Calendario</span>
               </button>
-            </div>
+                <button
+                  className="icon-button"
+                  onClick={() => navigate("/chatbot")}
+                  aria-label="Asistente IA"
+                >
+                  <FaRobot size={20} />
+                </button>
+              </div>
           )}
         </div>
         <div className="auth-container">

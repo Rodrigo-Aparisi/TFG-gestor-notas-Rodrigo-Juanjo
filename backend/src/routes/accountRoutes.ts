@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { accountController } from '../controllers/accountController';
 import { authenticateToken } from '../middleware/auth';
-import { upload } from '../config/multerConfig';
+import { upload } from '../config/multerConfigPFP';
 import { Request, Response, NextFunction } from 'express';
 
 interface RequestWithUser extends Request {
