@@ -64,6 +64,16 @@ CREATE TABLE note_group_items (
     PRIMARY KEY (group_id, note_id)
 );
 
+-- Crear tabla de etiquetas
+CREATE TABLE tags (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    color VARCHAR(7) DEFAULT '#000000',
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_color_format_tags CHECK (color ~* '^#[0-9A-F]{6}$')
+);
 
 -- Crear tabla de relación entre notas y etiquetas
 CREATE TABLE note_tags (
@@ -223,18 +233,6 @@ END $$;
 -- Inicializar la columna images con array vacío donde sea NULL
 UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
 
--- Crear tabla para notas compartidas
-CREATE TABLE shared_notes (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
-    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    shared_with_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
-);
-
-
 -- Inicializar la columna images con array vacío donde sea NULL
 UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
 
@@ -259,14 +257,3 @@ CREATE TRIGGER update_shared_notes_updated_at
     BEFORE UPDATE ON shared_notes
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
--- Crear tabla de etiquetas
-CREATE TABLE tags (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    color VARCHAR(7) DEFAULT '#000000',
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format_tags CHECK (color ~* '^#[0-9A-F]{6}$')
-);

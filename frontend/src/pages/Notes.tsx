@@ -953,23 +953,24 @@ const loadNotes = async () => {
   
       {/* Contenido principal */}
       <div className="notes-main">
-      <div className="tabs-container">
-        <div className="tabs">
-          <div 
-            className={`tab ${activeTab === 'my-notes' ? 'active' : ''}`} 
-            onClick={() => handleTabChange('my-notes')}
-          >
-            Mis Notas
-          </div>
-          <div 
-            className={`tab ${activeTab === 'shared-notes' ? 'active' : ''}`} 
-            onClick={() => handleTabChange('shared-notes')}
-          >
-            Notas Compartidas
-            {hasSharedNotes && <span className="notification-dot"></span>}
+        <div className="tabs-container">
+          <div className="tabs">
+            <div 
+              className={`tab ${activeTab === 'my-notes' ? 'active' : ''}`} 
+              onClick={() => handleTabChange('my-notes')}
+            >
+              Mis Notas
+            </div>
+            <div 
+              className={`tab ${activeTab === 'shared-notes' ? 'active' : ''}`} 
+              onClick={() => handleTabChange('shared-notes')}
+            >
+              Notas Compartidas
+              {hasSharedNotes && <span className="notification-dot"></span>}
+            </div>
           </div>
         </div>
-      </div>
+        
         {feedback && <div className="feedback-message">{feedback}</div>}
         
         {/* Añadir encabezado del grupo activo */}
@@ -1008,123 +1009,123 @@ const loadNotes = async () => {
   
         {/* Crear nota */}
         {activeTab === 'my-notes' && (
-        {/* Crear nota y herramientas de ordenación */}
-        <div className="note-tools-container">
-          <div className="create-note">
-            <input
-              type="text"
-              placeholder="Añade una nota..."
-              value={newNote.title}
-              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-              onClick={() => {
-                if (!isExpanded) {
-                  setIsExpanded(true);
-                }
-              }}
-            />
-
-          {isExpanded && (
-            <>
-              <textarea
-                placeholder="Contenido de la nota..."
-                value={newNote.content}
-                onChange={e => {
-                  setNewNote(prev => ({ ...prev, content: e.target.value }));
-                  autoResizeTextarea(e.target as HTMLTextAreaElement);
+          <div className="note-tools-container">
+            <div className="create-note">
+              <input
+                type="text"
+                placeholder="Añade una nota..."
+                value={newNote.title}
+                onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+                onClick={() => {
+                  if (!isExpanded) {
+                    setIsExpanded(true);
+                  }
                 }}
-                onKeyDown={e => handleKeyDown(e, '', true)}
-                onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
               />
-              
-              {/* Sección de imágenes para la nota nueva */}
-              {newNote.images && newNote.images.length > 0 && (
-                <div className="note-images">
-                  {newNote.images.map((imageUrl, index) => (
-                    <NoteImage
-                      key={index}
-                      imageUrl={imageUrl}
-                      index={index}
-                      onDelete={() => {
-                        setNewNote(prev => ({
-                          ...prev,
-                          images: prev.images.filter((_, i) => i !== index)
-                        }));
-                      }}
-                    />
-                  ))}
-                </div>
+  
+              {isExpanded && (
+                <>
+                  <textarea
+                    placeholder="Contenido de la nota..."
+                    value={newNote.content}
+                    onChange={e => {
+                      setNewNote(prev => ({ ...prev, content: e.target.value }));
+                      autoResizeTextarea(e.target as HTMLTextAreaElement);
+                    }}
+                    onKeyDown={e => handleKeyDown(e, '', true)}
+                    onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+                  />
+                  
+                  {/* Sección de imágenes para la nota nueva */}
+                  {newNote.images && newNote.images.length > 0 && (
+                    <div className="note-images">
+                      {newNote.images.map((imageUrl, index) => (
+                        <NoteImage
+                          key={index}
+                          imageUrl={imageUrl}
+                          index={index}
+                          onDelete={() => {
+                            setNewNote(prev => ({
+                              ...prev,
+                              images: prev.images.filter((_, i) => i !== index)
+                            }));
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="button-container">
+                    <div className="left-actions">
+                      <button 
+                        className="list-button"
+                        onClick={() => insertList('', 'bullet', true)}
+                        title="Insertar lista con viñetas"
+                      >
+                        <i className="fas fa-list-ul"></i>
+                      </button>
+                      <button 
+                        className="list-button"
+                        onClick={() => insertList('', 'number', true)}
+                        title="Insertar lista numerada"
+                      >
+                        <i className="fas fa-list-ol"></i>
+                      </button>
+                      <button 
+                        className="list-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          document.getElementById('image-input-new').click();
+                        }}
+                        title="Insertar imagen"
+                      >
+                        <i className="fas fa-image"></i>
+                      </button>
+                      <input
+                        id="image-input-new"
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleImageUpload(e, 'new')}
+                      />
+                    </div>
+                    <div className="right-actions">
+                      <button 
+                        className="cancel-button"
+                        onClick={() => {
+                          setIsExpanded(false);
+                          setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        className="create-button"
+                        onClick={() => {
+                          handleCreateNote();
+                          setIsExpanded(false);
+                        }}
+                        disabled={isLoading}
+                      >
+                        Crear Nota
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
-              
-              <div className="button-container">
-              <div className="left-actions">
-                <button 
-                  className="list-button"
-                  onClick={() => insertList('', 'bullet', true)}
-                  title="Insertar lista con viñetas"
-                >
-                  <i className="fas fa-list-ul"></i>
-                </button>
-                <button 
-                  className="list-button"
-                  onClick={() => insertList('', 'number', true)}
-                  title="Insertar lista numerada"
-                >
-                  <i className="fas fa-list-ol"></i>
-                </button>
-                <button 
-                  className="list-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    document.getElementById('image-input-new').click();
-                  }}
-                  title="Insertar imagen"
-                >
-                  <i className="fas fa-image"></i>
-                </button>
-                <input
-                  id="image-input-new"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={(e) => handleImageUpload(e, 'new')}
-                />
-              </div>
-                <div className="right-actions">
-                  <button 
-                    className="cancel-button"
-                    onClick={() => {
-                      setIsExpanded(false);
-                      setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    className="create-button"
-                    onClick={() => {
-                      handleCreateNote();
-                      setIsExpanded(false);
-                    }}
-                    disabled={isLoading}
-                  >
-                    Crear Nota
-                  </button>
-                </div>
-              </div>
-            </>
-            )}
+            </div>
+            
+            <NoteSort 
+              key={`note-sort-${sortKey}`}
+              notes={activeGroup === 'main' ? notes : notes.filter(note => {
+                const currentGroup = groups.find(g => g.id === activeGroup);
+                return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                  currentGroup.noteIds.includes(note.id.toString());
+              })}
+              onNotesFiltered={handleFilteredNotes}
+            />
           </div>
-          
-          <NoteSort 
-            key={`note-sort-${sortKey}`}
-            notes={activeGroup === 'main' ? notes : notes.filter(note => {
-              const currentGroup = groups.find(g => g.id === activeGroup);
-              return currentGroup && Array.isArray(currentGroup.noteIds) && 
-                currentGroup.noteIds.includes(note.id.toString());
-            })}
-            onNotesFiltered={handleFilteredNotes}
-          />
-        </div>
+        )}
   
         {/* Grid de notas */}
         <Masonry
@@ -1134,7 +1135,7 @@ const loadNotes = async () => {
         >
           {activeTab === 'my-notes' ? (
             // Tus notas existentes
-            sortNotes(filteredNotes).map(note => {
+            filteredNotes.map(note => {
               // Obtener el color del grupo activo
               const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
               
@@ -1182,6 +1183,7 @@ const loadNotes = async () => {
                     className="focus-indicator"
                     onClick={(e) => handleFocusIndicatorClick(e, note.id)}
                   />
+  
                   <div className="note-content">
                     <input
                       type="text"
@@ -1190,12 +1192,28 @@ const loadNotes = async () => {
                       onBlur={() => handleUpdateNote(note.id, 'title')}
                       onClick={e => e.stopPropagation()}
                     />
+                    
+                    {/* Sección de imágenes */}
+                    {note.images && note.images.length > 0 && (
+                      <div className="note-images">
+                        {note.images.map((imageUrl, index) => (
+                          <NoteImage
+                            key={index}
+                            imageUrl={imageUrl}
+                            index={index}
+                            onDelete={() => handleDeleteImage(note.id, index)}
+                          />
+                        ))}
+                      </div>
+                    )}
+  
                     <textarea
                       value={editingNote[note.id]?.content ?? note.content}
                       onChange={(e) => {
                         handleNoteChange(note.id, 'content', e.target.value);
                         autoResizeTextarea(e.target as HTMLTextAreaElement);
                       }}
+                      onKeyDown={(e) => handleKeyDown(e, note.id)}
                       onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
                       onBlur={(e) => {
                         handleUpdateNote(note.id, 'content');
@@ -1204,38 +1222,58 @@ const loadNotes = async () => {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
-          
-          {filteredNotes.map(note => {
-            // Obtener el color del grupo activo
-            const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
-            
-            return (
-              <div 
-                key={note.id}
-                className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
-                onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
-                style={{
-                  borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
-                  borderWidth: activeGroup !== 'main' ? '2px' : '1px'
-                }}
-              >
-                <div className="note-actions">
-                  <button 
-                    className={`action-button ${note.is_marked ? 'marked' : ''}`}
-                    onClick={(e) => handleToggleMark(note.id, e)}
-                    title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
-                  >
-                    <i className="fas fa-check-circle"></i>
-                  </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteNote(note.id);
-                    }}
-                    className="delete-button"
-                  >
-                    Eliminar
-                  </button>
+  
+                  <div className="note-actions-bottom">
+                    <div className="list-buttons">
+                      <button 
+                        className="list-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          insertList(note.id, 'bullet');
+                        }}
+                        title="Insertar lista con viñetas"
+                      >
+                        <i className="fas fa-list-ul"></i>
+                      </button>
+                      <button 
+                        className="list-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          insertList(note.id, 'number');
+                        }}
+                        title="Insertar lista numerada"
+                      >
+                        <i className="fas fa-list-ol"></i>
+                      </button>
+                      <button 
+                        className="list-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          document.getElementById(`image-input-${note.id}`)?.click();
+                        }}
+                        title="Insertar imagen"
+                      >
+                        <i className="fas fa-image"></i>
+                      </button>
+                      <input
+                        id={`image-input-${note.id}`}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleImageUpload(e, note.id)}
+                      />
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNote(note.id);
+                      }}
+                      className="delete-button"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                  
                   {sharingNoteId === note.id && (
                     <div className="share-note-section">
                       <ShareNote noteId={note.id} />
@@ -1289,106 +1327,7 @@ const loadNotes = async () => {
               <div className="no-notes">No tienes notas compartidas</div>
             )
           )}
-                  className="focus-indicator"
-                  onClick={(e) => handleFocusIndicatorClick(e, note.id)}
-                />
-
-                <div className="note-content">
-                  <input
-                    type="text"
-                    value={editingNote[note.id]?.title ?? note.title}
-                    onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-                    onBlur={() => handleUpdateNote(note.id, 'title')}
-                    onClick={e => e.stopPropagation()}
-                  />
-                  
-                  {/* Sección de imágenes */}
-                  {note.images && note.images.length > 0 && (
-                    <div className="note-images">
-                      {note.images.map((imageUrl, index) => (
-                        <NoteImage
-                          key={index}
-                          imageUrl={imageUrl}
-                          index={index}
-                          onDelete={() => handleDeleteImage(note.id, index)}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  <textarea
-                    value={editingNote[note.id]?.content ?? note.content}
-                    onChange={(e) => {
-                      handleNoteChange(note.id, 'content', e.target.value);
-                      autoResizeTextarea(e.target as HTMLTextAreaElement);
-                    }}
-                    onKeyDown={(e) => handleKeyDown(e, note.id)}
-                    onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
-                    onBlur={(e) => {
-                      handleUpdateNote(note.id, 'content');
-                      autoResizeTextarea(e.target as HTMLTextAreaElement);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-
-                <div className="note-actions-bottom">
-                  <div className="list-buttons">
-                    <button 
-                      className="list-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        insertList(note.id, 'bullet');
-                      }}
-                      title="Insertar lista con viñetas"
-                    >
-                      <i className="fas fa-list-ul"></i>
-                    </button>
-                    <button 
-                      className="list-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        insertList(note.id, 'number');
-                      }}
-                      title="Insertar lista numerada"
-                    >
-                      <i className="fas fa-list-ol"></i>
-                    </button>
-                    <button 
-                      className="list-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        document.getElementById(`image-input-${note.id}`)?.click();
-                      }}
-                      title="Insertar imagen"
-                    >
-                      <i className="fas fa-image"></i>
-                    </button>
-                    <input
-                      id={`image-input-${note.id}`}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => handleImageUpload(e, note.id)}
-                    />
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteNote(note.id);
-                    }}
-                    className="delete-button"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
         </Masonry>
-
-
   
         {/* Modal de creación de grupo */}
         {showGroupModal && (
@@ -1422,6 +1361,7 @@ const loadNotes = async () => {
       </div>
     </div>
   );
+  
   
   
 };

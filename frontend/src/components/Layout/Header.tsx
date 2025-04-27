@@ -114,11 +114,11 @@ const Header: React.FC = () => {
               </button>
               <button
                 className="icon-button"
-                onClick={() => navigate("/calendar")}
-                aria-label="Ir a calendario"
+                onClick={() => navigate("/Reminders")}
+                aria-label="Ir a recordatorios"
               >
                 <FaCalendar />
-                <span className="icon-label">Calendario</span>
+                <span className="icon-label">Recordatorios</span>
               </button>
                 <button
                   className="icon-button"
@@ -126,6 +126,7 @@ const Header: React.FC = () => {
                   aria-label="Asistente IA"
                 >
                   <FaRobot size={20} />
+                  <span className="icon-label">Asistente IA</span>
                 </button>
               </div>
           )}
