@@ -18,6 +18,7 @@ export interface Note {
   color: string | null;
   created_at: string;
   updated_at: string;
+  images: string[];
 }
 
 export interface SharedNote extends Note {

@@ -13,7 +13,7 @@ import Notes from './pages/Notes';
 import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
 import ChatbotPage from './pages/ChatbotPage';
-import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton'; // Añade esta importación
+import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
