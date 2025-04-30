@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Note, Group } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
@@ -21,7 +21,7 @@ interface NoteCardProps {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => void;
   insertList: (noteId: string, type: 'bullet' | 'number') => void;
   handleDeleteNote: (id: string) => Promise<void>;
-  autoResizeTextarea: (element: HTMLTextAreaElement) => void;
+  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
 }
@@ -48,7 +48,59 @@ const NoteCard: React.FC<NoteCardProps> = ({
   handleImageUpload,
   handleDeleteImage
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+  
+  // Implementación interna de autoResizeTextarea si no se proporciona como prop
+  const resizeTextarea = (element: HTMLTextAreaElement) => {
+    if (!element) return;
+    
+    // Guarda la posición actual del scroll
+    const scrollPos = element.scrollTop;
+    
+    // Resetea la altura para obtener la altura real del contenido
+    element.style.height = 'auto';
+    
+    const parentNote = element.closest('.note-card');
+    const isFocused = parentNote?.classList.contains('focused');
+    
+    if (isFocused) {
+      // Para notas enfocadas
+      const maxHeight = Math.min(window.innerHeight * 0.6, element.scrollHeight);
+      element.style.height = `\${maxHeight}px`;
+    } else {
+      // Para notas normales
+      const newHeight = Math.min(element.scrollHeight, 500);
+      element.style.height = `\${newHeight}px`;
+    }
+    
+    // Restaura la posición del scroll
+    element.scrollTop = scrollPos;
+  };
+
+  // Usar la función proporcionada como prop o la implementación interna
+  const resizeTextareaFn = autoResizeTextarea || resizeTextarea;
+
+  // Aplicar resize cuando el componente se monta o cuando cambia el contenido o el estado de foco
+  useEffect(() => {
+    if (textareaRef.current) {
+      resizeTextareaFn(textareaRef.current);
+    }
+  }, [note.content, focusedNoteId === note.id]);
+
+  // Añadir listener para el resize de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        resizeTextareaFn(textareaRef.current);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   
   return (
     <div 
@@ -63,14 +115,14 @@ const NoteCard: React.FC<NoteCardProps> = ({
     >
       <div className="note-actions">
         <button 
-          className={`action-button ${note.is_marked ? 'marked' : ''}`}
+          className={`action-button \${note.is_marked ? 'marked' : ''}`}
           onClick={(e) => handleToggleMark(note.id, e)}
           title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
         >
           <i className="fas fa-check-circle"></i>
         </button>
         <button 
-          className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
+          className={`action-button \${note.is_pinned ? 'pinned' : ''}`}
           onClick={(e) => handleTogglePin(note.id, e)}
           title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
         >
@@ -120,13 +172,14 @@ const NoteCard: React.FC<NoteCardProps> = ({
         )}
 
         <textarea
+          ref={textareaRef}
           value={editingNote[note.id]?.content ?? note.content}
           onChange={(e) => {
             handleNoteChange(note.id, 'content', e.target.value);
-            autoResizeTextarea(e.target as HTMLTextAreaElement);
+            resizeTextareaFn(e.target as HTMLTextAreaElement);
           }}
           onKeyDown={(e) => handleKeyDown(e, note.id)}
-          onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+          onInput={(e) => resizeTextareaFn(e.target as HTMLTextAreaElement)}
           onBlur={() => handleUpdateNote(note.id, 'content')}
           onClick={(e) => e.stopPropagation()}
         />
@@ -158,14 +211,14 @@ const NoteCard: React.FC<NoteCardProps> = ({
             className="list-button"
             onClick={(e) => {
               e.stopPropagation();
-              document.getElementById(`image-input-${note.id}`)?.click();
+              document.getElementById(`image-input-\${note.id}`)?.click();
             }}
             title="Insertar imagen"
           >
             <i className="fas fa-image"></i>
           </button>
           <input
-            id={`image-input-${note.id}`}
+            id={`image-input-\${note.id}`}
             type="file"
             accept="image/*"
             style={{ display: 'none' }}
