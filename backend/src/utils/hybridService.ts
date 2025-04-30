@@ -2,6 +2,7 @@ import axios from 'axios';
 import { createWorker } from 'tesseract.js';
 import path from 'path';
 import fs from 'fs';
+import { pool } from '../config/database';
 
 // URL de la API local de Ollama
 const OLLAMA_API_URL = 'http://localhost:11434/api';
@@ -24,13 +25,16 @@ export const hybridService = {
       
       // Crear el sistema prompt para instruir al modelo
       const systemPrompt = `Eres un asistente IA integrado en una aplicación de notas y recordatorios. 
-      Ayudas a los usuarios a gestionar sus notas y recordatorios, y puedes crear nuevos elementos 
+      Ayudas a los usuarios a gestionar sus notas y recordatorios, y puedes crear, editar y eliminar elementos 
       a partir de sus solicitudes.
 
       FUNCIONES DISPONIBLES:
       1. Crear notas
-      2. Crear recordatorios
-      3. Transcribir imágenes a texto
+      2. Editar notas existentes
+      3. Eliminar notas
+      4. Añadir imágenes a notas
+      5. Crear recordatorios
+      6. Transcribir imágenes a texto
 
       Cuando el usuario te pida crear una nota o recordatorio, responde en el siguiente formato:
 
@@ -39,9 +43,43 @@ export const hybridService = {
         "data": {
           "title": "Título de la nota",
           "content": "Contenido de la nota",
-          "color": "#hexcolor" (opcional)
+          "color": "#hexcolor", (opcional)
+          "images": [] (opcional, array de URLs de imágenes)
         }
       }
+
+      Para editar una nota existente:
+
+      ACTION: {
+        "action": "updateNote",
+        "data": {
+          "id": "id-de-la-nota",
+          "title": "Nuevo título", (opcional)
+          "content": "Nuevo contenido", (opcional)
+          "images": [] (opcional, array de URLs de imágenes)
+        }
+      }
+
+      Para eliminar una nota:
+
+      ACTION: {
+        "action": "deleteNote",
+        "data": {
+          "id": "id-de-la-nota"
+        }
+      }
+
+      Para añadir una imagen a una nota existente:
+
+      ACTION: {
+        "action": "addImageToNote",
+        "data": {
+          "id": "id-de-la-nota",
+          "imageUrl": "url-de-la-imagen"
+        }
+      }
+
+      Para crear un recordatorio:
 
       ACTION: {
         "action": "createReminder",
@@ -69,8 +107,32 @@ export const hybridService = {
         }
       });
       
+      // Intentar añadir contexto de notas si el mensaje lo requiere
+      let notesContext = "";
+      if (message.toLowerCase().includes('nota') || 
+          message.toLowerCase().includes('editar') || 
+          message.toLowerCase().includes('modificar') || 
+          message.toLowerCase().includes('eliminar') || 
+          message.toLowerCase().includes('borrar')) {
+        
+        try {
+          const userId = history[0]?.userId;
+          if (userId) {
+            const notesResult = await this.getRecentNotes(userId);
+            if (notesResult.length > 0) {
+              notesContext = "\n\nNotas recientes:\n";
+              notesResult.forEach(note => {
+                notesContext += `- ID: ${note.id}, Título: "${note.title}", Última actualización: \${new Date(note.updated_at).toLocaleString()}\n`;
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error al obtener contexto de notas:', error);
+        }
+      }
+      
       // Añadir el mensaje actual
-      const fullPrompt = `${prompt}${conversationHistory}Usuario: ${message}\nAsistente:`;
+      const fullPrompt = `${prompt}${conversationHistory}${notesContext}Usuario: ${message}\nAsistente:`;
       
       console.log('Enviando solicitud a Ollama...');
       
@@ -128,17 +190,31 @@ export const hybridService = {
           userPrompt.toLowerCase().includes('texto') ||
           userPrompt.toLowerCase().includes('extraer')) {
         
-        return `ACTION: {"action":"transcribeImage","data":{"text":"${extractedText.replace(/"/g, '\\"')}"}}`;
+        return `ACTION: {"action":"transcribeImage","data":{"text":"\${extractedText.replace(/"/g, '\\"')}"}}`;
       } 
       else if (userPrompt.toLowerCase().includes('nota') || 
                userPrompt.toLowerCase().includes('guardar')) {
         
         const title = extractedText.split('\n')[0].substring(0, 50) || 'Nota de imagen';
         
-        return `ACTION: {"action":"createNote","data":{"title":"${title.replace(/"/g, '\\"')}","content":"${extractedText.replace(/"/g, '\\"')}"}}`;
+        // Si se menciona alguna nota existente para añadir la imagen
+        if (userPrompt.toLowerCase().includes('añadir a') || 
+            userPrompt.toLowerCase().includes('agregar a') ||
+            userPrompt.toLowerCase().includes('adjuntar a')) {
+          
+          // Intentar extraer un ID de nota del prompt
+          const idMatch = userPrompt.match(/\b([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\b/);
+          
+          if (idMatch && idMatch[1]) {
+            return `ACTION: {"action":"addImageToNote","data":{"id":"${idMatch[1]}","imageUrl":"${imagePath.replace(/"/g, '\\"')}"}}`;
+          }
+        }
+        
+        // Por defecto, crear una nueva nota con la imagen
+        return `ACTION: {"action":"createNote","data":{"title":"${title.replace(/"/g, '\\"')}","content":"${extractedText.replace(/"/g, '\\"')}","images":["\${imagePath.replace(/"/g, '\\"')}"]}}`; 
       } 
       else {
-        return `He extraído el siguiente texto de la imagen:\n\n${extractedText}\n\n¿Qué te gustaría hacer con este texto? Puedo crear una nota o un recordatorio con él.`;
+        return `He extraído el siguiente texto de la imagen:\n\n\${extractedText}\n\n¿Qué te gustaría hacer con este texto? Puedo crear una nota o un recordatorio con él.`;
       }
     } catch (error) {
       console.error('Error en OCR:', error);
@@ -181,6 +257,144 @@ export const hybridService = {
     } catch (error) {
       console.error('Error detectando intención:', error);
       return { action: null };
+    }
+  },
+  
+  async getRecentNotes(userId: string) {
+    try {
+      const result = await pool.query(
+        `SELECT id, title, updated_at FROM notes 
+         WHERE user_id = \$1 
+         ORDER BY updated_at DESC 
+         LIMIT 5`,
+        [userId]
+      );
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error al obtener notas recientes:', error);
+      return [];
+    }
+  },
+  
+  async getNoteById(noteId: string, userId: string) {
+    try {
+      const result = await pool.query(
+        `SELECT * FROM notes 
+         WHERE id = $1 AND user_id = $2`,
+        [noteId, userId]
+      );
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error al obtener nota por ID:', error);
+      return null;
+    }
+  },
+  
+  async updateNote(noteId: string, userId: string, updateData: any) {
+    try {
+      // Construir la consulta dinámica
+      const updateFields = [];
+      const values = [];
+      let paramCount = 1;
+      
+      if (updateData.title !== undefined) {
+        updateFields.push(`title = $${paramCount}`);
+        values.push(updateData.title);
+        paramCount++;
+      }
+      
+      if (updateData.content !== undefined) {
+        updateFields.push(`content = $${paramCount}`);
+        values.push(updateData.content);
+        paramCount++;
+      }
+      
+      if (updateData.images !== undefined) {
+        updateFields.push(`images = $${paramCount}`);
+        values.push(updateData.images);
+        paramCount++;
+      }
+      
+      if (updateFields.length === 0) {
+        return null; // No hay nada que actualizar
+      }
+      
+      // Añadir campo updated_at
+      updateFields.push(`updated_at = NOW()`);
+      
+      // Añadir parámetros de where
+      values.push(noteId, userId);
+      
+      const query = `
+        UPDATE notes 
+        SET ${updateFields.join(', ')} 
+        WHERE id = $${paramCount} AND user_id = \$\${paramCount + 1}
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error al actualizar nota:', error);
+      throw error;
+    }
+  },
+  
+  async addImageToNote(noteId: string, userId: string, imageUrl: string) {
+    try {
+      // Primero obtener la nota actual para ver sus imágenes
+      const noteResult = await pool.query(
+        `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
+        [noteId, userId]
+      );
+      
+      if (noteResult.rows.length === 0) {
+        throw new Error('Nota no encontrada');
+      }
+      
+      const note = noteResult.rows[0];
+      const currentImages = note.images || [];
+      
+      // Añadir la nueva imagen al array
+      const updatedImages = [...currentImages, imageUrl];
+      
+      // Actualizar la nota con la nueva imagen
+      const updateResult = await pool.query(
+        `UPDATE notes SET images = $1, updated_at = NOW() WHERE id = $2 AND user_id = \$3 RETURNING *`,
+        [updatedImages, noteId, userId]
+      );
+      
+      return updateResult.rows[0];
+    } catch (error) {
+      console.error('Error al añadir imagen a nota:', error);
+      throw error;
+    }
+  },
+  
+  async deleteNote(noteId: string, userId: string) {
+    try {
+      // Verificar que la nota existe y pertenece al usuario
+      const noteExists = await pool.query(
+        `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
+        [noteId, userId]
+      );
+      
+      if (noteExists.rows.length === 0) {
+        throw new Error('Nota no encontrada');
+      }
+      
+      // Eliminar la nota
+      await pool.query(
+        `DELETE FROM notes WHERE id = $1 AND user_id = $2`,
+        [noteId, userId]
+      );
+      
+      return noteExists.rows[0]; // Devolver la nota eliminada
+    } catch (error) {
+      console.error('Error al eliminar nota:', error);
+      throw error;
     }
   }
 };
