@@ -59,7 +59,7 @@ html, body {
 .create-note input {
   width: 100%;
   border: none;
-  outline: none;/* === RESET Y CONFIGURACIÓN BÁSICA === */
+  outline: none;
   html, body {
     margin: 0;
     padding: 0;
@@ -1186,51 +1186,153 @@ html, body {
   opacity: 1;
 }
 
+/* Contenedor principal de compartir nota */
 .share-note-container {
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 15px;
+  padding: 15px;
   border-top: 1px solid #eee;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dividido en dos columnas */
+  gap: 10px; /* Reducimos el espacio entre columnas */
+  align-items: start;
+  max-width: 450px; /* Ajustamos el ancho máximo del contenedor */
+  margin: 0 auto; /* Centramos el contenedor */
 }
 
-.share-input-group {
+/* Input de nombre de usuario */
+.share-input-group input {
+  width: 100%; /* Ajustar al tamaño de la columna */
+  padding: 6px 8px; /* Reducimos el relleno */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.share-input-group input:focus {
+  border-color: #f1c40f;
+  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
+  outline: none;
+}
+
+/* Opciones de compartir */
+.share-options {
   display: flex;
+  flex-direction: column; /* Apilamos los checkboxes verticalmente */
   gap: 8px;
 }
 
-.share-input-group input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.share-option-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px; /* Reducimos el tamaño del texto */
+  color: #333;
+  transition: all 0.2s ease;
 }
 
+.share-option-label:hover {
+  color: #000;
+}
+
+/* Checkbox personalizado */
+.share-option-label input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 14px; /* Reducimos el tamaño del checkbox */
+  height: 14px;
+  border: 2px solid #ccc;
+  border-radius: 2px;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.share-option-label input[type="checkbox"]:checked {
+  background-color: #f1c40f;
+  border-color: #f1c40f;
+}
+
+.share-option-label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Botón de compartir */
 .share-button {
-  padding: 8px 16px;
-  background-color: #4CAF50;
-  color: white;
+  padding: 6px 12px; /* Reducimos el tamaño del botón */
+  background-color: #f1c40f;
+  color: #000;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 13px; /* Reducimos el tamaño del texto */
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 100%; /* Ocupa toda la columna */
+  box-sizing: border-box;
+}
+
+.share-button:hover {
+  background-color: #e5b90f;
+  transform: translateY(-1px);
 }
 
 .share-button:disabled {
-  background-color: #cccccc;
+  background-color: #f7dc6f;
+  cursor: not-allowed;
+  transform: none;
 }
 
+/* Feedback de compartir */
 .share-feedback {
-  margin-bottom: 8px;
-  padding: 8px;
+  grid-column: span 2; /* Feedback ocupa ambas columnas */
+  margin-top: 10px;
+  padding: 10px;
   border-radius: 4px;
+  font-size: 13px; /* Reducimos el tamaño del texto */
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .share-feedback.success {
   background-color: #d4edda;
   color: #155724;
+  border-left: 4px solid #28a745;
 }
 
 .share-feedback.error {
   background-color: #f8d7da;
   color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+/* Responsive ajustes */
+@media (max-width: 768px) {
+  .share-note-container {
+    grid-template-columns: 1fr; /* Cambiar a una sola columna en pantallas pequeñas */
+    max-width: 100%; /* Aseguramos que no se salga del contenedor */
+  }
+
+  .share-options {
+    margin-top: 10px;
+  }
+
+  .share-button {
+    align-self: flex-start;
+  }
 }
 
 /* === GRID Y TARJETAS === */

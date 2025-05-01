@@ -20,6 +20,11 @@ interface ProfileImageResponse {
   message: string;
 }
 
+interface ShareNoteOptions {
+  includeImages?: boolean;
+  canEdit?: boolean;
+}
+
 // Crear instancia de axios
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
@@ -72,9 +77,37 @@ export const noteService = {
     }
   },
 
-  shareNote: async (noteId: string, username: string) => {
-    const response = await api.post('/notes/share', { noteId, username });
+  shareNote: async (noteId: string, username: string, options: ShareNoteOptions | boolean = {}) => {
+    const shareOptions: ShareNoteOptions = typeof options === 'boolean' 
+      ? { includeImages: options, canEdit: false }
+      : { includeImages: true, canEdit: false, ...options };
+    
+    const response = await api.post('/notes/share', { 
+      noteId, 
+      username, 
+      includeImages: shareOptions.includeImages,
+      canEdit: shareOptions.canEdit
+    });
+    
     return response.data;
+  },
+
+  updateSharedNotePermissions: async (noteId: string, username: string, options: ShareNoteOptions) => {
+    const response = await api.put(`/notes/\${noteId}/share-permissions`, {
+      username,
+      ...options
+    });
+    return response.data;
+  },
+  
+  updateSharedNote: async (noteId: string, data: { title?: string; content?: string }) => {
+    try {
+      const response = await api.put(`/notes/shared/\${noteId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating shared note:', error);
+      throw error;
+    }
   },
 
   getSharedNotes: async () => {
