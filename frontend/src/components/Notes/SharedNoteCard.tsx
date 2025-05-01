@@ -1,4 +1,5 @@
 import React from 'react';
+import NoteImage from './NoteImage';
 
 interface SharedNoteCardProps {
   note: any;
@@ -17,7 +18,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
 }) => {
   return (
     <div 
-      className={`note-card ${focusedNoteId === note.id ? 'focused' : ''}`}
+      className={`note-card \${focusedNoteId === note.id ? 'focused' : ''}`}
       onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
       style={{
         backgroundColor: note.color || undefined,
@@ -39,6 +40,21 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         <div className="shared-by">
           Compartida por: {note.shared_by || 'Desconocido'}
         </div>
+        
+        {/* Sección de imágenes */}
+        {note.images && note.images.length > 0 && (
+          <div className="note-images">
+            {note.images.map((imageUrl, index) => (
+              <NoteImage
+                key={index}
+                imageUrl={imageUrl}
+                index={index}
+                onDelete={() => {}}
+              />
+            ))}
+          </div>
+        )}
+        
         <textarea
           value={note.content || ''}
           readOnly

@@ -9,6 +9,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
   const [username, setUsername] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: '' });
+  const [includeImages, setIncludeImages] = useState(true);
   
   const handleShare = async () => {
     if (!username) {
@@ -18,8 +19,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
     
     try {
       setIsSharing(true);
-      // Asumiendo que actualizarás el servicio para aceptar username en lugar de email
-      const response = await noteService.shareNote(noteId, username);
+      const response = await noteService.shareNote(noteId, username, includeImages);
       setFeedback({ message: 'Nota compartida exitosamente', type: 'success' });
       setUsername('');
     } catch (error) {
@@ -33,7 +33,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
   return (
     <div className="share-note-container">
       {feedback.message && (
-        <div className={`share-feedback ${feedback.type}`}>
+        <div className={`share-feedback \${feedback.type}`}>
           {feedback.message}
         </div>
       )}
@@ -45,6 +45,19 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Nombre de usuario"
         />
+        
+        {/* Opción para incluir imágenes */}
+        <div className="share-options">
+          <label>
+            <input
+              type="checkbox"
+              checked={includeImages}
+              onChange={(e) => setIncludeImages(e.target.checked)}
+            />
+            Incluir imágenes
+          </label>
+        </div>
+        
         <button 
           className="share-button"
           onClick={handleShare}
