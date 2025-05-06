@@ -100,7 +100,7 @@ export const noteService = {
     return response.data;
   },
   
-  updateSharedNote: async (noteId: string, data: { title?: string; content?: string }) => {
+  updateSharedNote: async (noteId: string, data: { title?: string; content?: string; images?: string[] }) => {
     try {
       const response = await api.put(`/notes/shared/\${noteId}`, data);
       return response.data;

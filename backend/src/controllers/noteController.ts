@@ -619,43 +619,100 @@ async createNote(req: Request, res: Response): Promise<void> {
     }
   }
   
-  async updateSharedNote(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const { title, content } = req.body;
-      const userId = req.user.id;
-      
-      // Verificar que el usuario tiene permiso para editar esta nota
-      const hasPermission = await pool.query(
-        "SELECT 1 FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2 AND can_edit = true",
-        [id, userId]
-      );
-      
-      if (hasPermission.rows.length === 0) {
-        res.status(403).json({ 
-          error: "No tienes permiso para editar esta nota" 
-        });
-        return;
-      }
-      
-      // Actualizar la nota
-      await pool.query(
-        `UPDATE notes SET 
-         title = COALESCE(\$1, title),
-         content = COALESCE(\$2, content),
-         updated_at = CURRENT_TIMESTAMP
-         WHERE id = \$3
-         RETURNING *`,
-        [title, content, id]
-      );
-      
-      res.json({ message: "Nota actualizada exitosamente" });
-      
-    } catch (error) {
-      console.error("Error al actualizar la nota compartida:", error);
-      res.status(500).json({ error: "Error al actualizar la nota" });
+async updateSharedNote(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { title, content, images } = req.body;
+    const userId = req.user.id;
+    
+    console.log('Updating shared note:', { id, userId, data: req.body });
+
+    // Verificar permisos
+    const hasPermission = await pool.query(
+      `SELECT 1 FROM shared_notes 
+       WHERE note_id = \$1 
+       AND shared_with_id = \$2 
+       AND can_edit = true`,
+      [id, userId]
+    );
+
+    console.log('Permission check result:', hasPermission.rows);
+
+    if (hasPermission.rows.length === 0) {
+      console.log('Permission denied for user', userId, 'on note', id);
+      res.status(403).json({ 
+        error: "No tienes permiso para editar esta nota" 
+      });
+      return;
     }
+
+    // Construir la consulta de actualización
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updateFields.push(`title = $${paramCount}`);
+      values.push(title);
+      paramCount++;
+    }
+
+    if (content !== undefined) {
+      updateFields.push(`content = $${paramCount}`);
+      values.push(content);
+      paramCount++;
+    }
+
+    if (images !== undefined) {
+      updateFields.push(`images = $${paramCount}`);
+      values.push(images);
+      paramCount++;
+    }
+
+    if (updateFields.length === 0) {
+      console.log('No fields to update');
+      res.status(400).json({ error: "No hay campos para actualizar" });
+      return;
+    }
+
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const query = `
+      UPDATE notes 
+      SET ${updateFields.join(', ')} 
+      WHERE id = $${paramCount} 
+      RETURNING *
+    `;
+
+    console.log('Query:', query);
+    console.log('Values:', values);
+
+    const result = await pool.query(query, values);
+
+    console.log('Update result:', result.rows);
+
+    if (result.rows.length === 0) {
+      console.log('Note not found:', id);
+      res.status(404).json({ error: "Nota no encontrada" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      note: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Error in updateSharedNote:', error);
+    res.status(500).json({ 
+      error: "Error al actualizar la nota",
+      details: error instanceof Error ? error.message : "Error desconocido"
+    });
   }
+}
+
+  
   
 
   async getUserSortPreferences(req: Request, res: Response): Promise<void> {

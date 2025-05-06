@@ -18,7 +18,6 @@ interface NotesGridProps {
   handleToggleMark: (id: string, event: React.MouseEvent) => Promise<void>;
   handleTogglePin: (id: string, event: React.MouseEvent) => Promise<void>;
   setSharingNoteId: React.Dispatch<React.SetStateAction<string | null>>;
-  setFocusedNoteId: React.Dispatch<React.SetStateAction<string | null>>;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => void;
   insertList: (noteId: string, type: 'bullet' | 'number') => void;
   handleDeleteNote: (id: string) => Promise<void>;
@@ -42,7 +41,6 @@ const NotesGrid: React.FC<NotesGridProps> = ({
   handleToggleMark,
   handleTogglePin,
   setSharingNoteId,
-  setFocusedNoteId,
   handleKeyDown,
   insertList,
   handleDeleteNote,
@@ -58,54 +56,41 @@ const NotesGrid: React.FC<NotesGridProps> = ({
   };
 
   return (
-    <>
-      {/* Overlay para cerrar la nota al hacer clic fuera */}
-      <div 
-        className={`overlay \${focusedNoteId ? 'active' : ''}`} 
-        onClick={(e) => {
-          // Asegurarse de que el clic fue directamente en el overlay y no en un elemento hijo
-          if (e.target === e.currentTarget) {
-            setFocusedNoteId(null);
-          }
-        }}
-      />
-      
-      <Masonry
-        breakpointCols={breakpointColumns}
-        className="masonry-grid"
-        columnClassName="masonry-grid_column"
-      >
-        {notes.length > 0 ? (
-          notes.map(note => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              editingNote={editingNote}
-              focusedNoteId={focusedNoteId}
-              sharingNoteId={sharingNoteId}
-              isMarked={markedNotes.includes(note.id)}
-              activeGroup={activeGroup}
-              groups={groups}
-              handleNoteChange={handleNoteChange}
-              handleUpdateNote={handleUpdateNote}
-              handleFocus={handleFocus}
-              handleFocusIndicatorClick={handleFocusIndicatorClick}
-              handleToggleMark={handleToggleMark}
-              handleTogglePin={handleTogglePin}
-              setSharingNoteId={setSharingNoteId}
-              handleKeyDown={handleKeyDown}
-              insertList={insertList}
-              handleDeleteNote={handleDeleteNote}
-              autoResizeTextarea={autoResizeTextarea}
-              handleImageUpload={handleImageUpload}
-              handleDeleteImage={handleDeleteImage}
-            />
-          ))
-        ) : (
-          <div className="no-notes">No hay notas para mostrar</div>
-        )}
-      </Masonry>
-    </>
+    <Masonry
+      breakpointCols={breakpointColumns}
+      className="masonry-grid"
+      columnClassName="masonry-grid_column"
+    >
+      {notes.length > 0 ? (
+        notes.map(note => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            editingNote={editingNote}
+            focusedNoteId={focusedNoteId}
+            sharingNoteId={sharingNoteId}
+            isMarked={markedNotes.includes(note.id)}
+            activeGroup={activeGroup}
+            groups={groups}
+            handleNoteChange={handleNoteChange}
+            handleUpdateNote={handleUpdateNote}
+            handleFocus={handleFocus}
+            handleFocusIndicatorClick={handleFocusIndicatorClick}
+            handleToggleMark={handleToggleMark}
+            handleTogglePin={handleTogglePin}
+            setSharingNoteId={setSharingNoteId}
+            handleKeyDown={handleKeyDown}
+            insertList={insertList}
+            handleDeleteNote={handleDeleteNote}
+            autoResizeTextarea={autoResizeTextarea}
+            handleImageUpload={handleImageUpload}
+            handleDeleteImage={handleDeleteImage}
+          />
+        ))
+      ) : (
+        <div className="no-notes">No hay notas para mostrar</div>
+      )}
+    </Masonry>
   );
 };
 
