@@ -86,10 +86,6 @@ html, body {
   background-clip: padding-box;
 }
 
-.note-card textarea::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
 .create-note textarea::placeholder {
   color: #999;
   opacity: 1;
