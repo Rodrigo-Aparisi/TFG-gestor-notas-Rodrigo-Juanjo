@@ -8,7 +8,7 @@ interface SharedNoteCardProps {
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
-  showFeedback?: (message: string) => void; // Opcional para mantener compatibilidad
+  showFeedback?: (message: string) => void;
 }
 
 const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
@@ -55,13 +55,11 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         showFeedback('Cambios guardados correctamente');
       } else {
         setFeedback({ message: 'Cambios guardados', type: 'success' });
-        // Ocultar después de 3 segundos
         setTimeout(() => setFeedback({ message: '', type: '' }), 3000);
       }
-    } catch (error: any) { // Usar any para poder acceder a error.response
+    } catch (error: any) {
       console.error('Error al actualizar la nota compartida:', error);
       
-      // Mostrar más detalles del error si están disponibles
       if (error && typeof error === 'object' && 'response' in error) {
         console.error('Error response:', error.response?.data);
         console.error('Error status:', error.response?.status);
@@ -109,21 +107,21 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   // Función para subir imágenes
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isEditable || !e.target.files || e.target.files.length === 0) return;
-    
+  
     try {
       setIsSaving(true);
       const file = e.target.files[0];
       const formData = new FormData();
       formData.append('image', file);
-      
+  
       const response = await noteService.uploadNoteImage(formData);
-      if (response.data && response.data.data && response.data.data.imageUrl) {
-        // Actualizar la nota con la nueva imagen
-        await noteService.updateSharedNote(note.id, {
-          images: [...(note.images || []), response.data.data.imageUrl]
-        });
-        
-        // Actualizar la UI
+      const imageUrl = response.data?.data?.imageUrl;
+  
+      if (imageUrl) {
+        const updatedImages = [...(note.images || []), imageUrl];
+  
+        await noteService.updateSharedNoteImages(note.id, updatedImages);
+  
         if (showFeedback) {
           showFeedback('Imagen subida correctamente');
         } else {
@@ -143,20 +141,19 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
       e.target.value = ''; // Resetear input
     }
   };
+  
 
   // Función para eliminar imágenes
   const handleDeleteImage = async (imageIndex: number) => {
     if (!isEditable) return;
-    
+  
     try {
       setIsSaving(true);
       const updatedImages = [...(note.images || [])];
       updatedImages.splice(imageIndex, 1);
-      
-      await noteService.updateSharedNote(note.id, {
-        images: updatedImages
-      });
-      
+  
+      await noteService.updateSharedNoteImages(note.id, updatedImages);
+  
       if (showFeedback) {
         showFeedback('Imagen eliminada');
       } else {
@@ -174,6 +171,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
       setIsSaving(false);
     }
   };
+  
 
   return (
     <div 

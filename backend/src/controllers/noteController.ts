@@ -630,8 +630,8 @@ async updateSharedNote(req: Request, res: Response): Promise<void> {
     // Verificar permisos
     const hasPermission = await pool.query(
       `SELECT 1 FROM shared_notes 
-       WHERE note_id = \$1 
-       AND shared_with_id = \$2 
+       WHERE note_id = $1 
+       AND shared_with_id = $2 
        AND can_edit = true`,
       [id, userId]
     );

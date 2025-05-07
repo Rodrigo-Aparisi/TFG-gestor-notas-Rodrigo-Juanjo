@@ -24,7 +24,7 @@ router.post('/unmark-all', noteController.unmarkAllNotes);
 
 // Nuevas rutas para permisos de edición
 router.put('/:id/share-permissions', noteController.updateSharedNotePermissions);
-router.put('/notes/shared/:id', authenticateToken, noteController.updateSharedNote);
+router.put('/shared-notes/:id', authenticateToken, noteController.updateSharedNote);
 
 // Rutas para preferencias de ordenación
 router.get('/sort-preferences', noteController.getUserSortPreferences);
