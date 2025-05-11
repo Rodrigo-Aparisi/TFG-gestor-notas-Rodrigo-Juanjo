@@ -31,6 +31,11 @@ CREATE TABLE settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+-- Crear tabla de grupos de personas
+CREATE TABLE groups (
+    
+    );
+
 -- Crear un índice para mejorar el rendimiento en búsquedas por user_id
 CREATE INDEX idx_settings_user_id ON settings(user_id);
 

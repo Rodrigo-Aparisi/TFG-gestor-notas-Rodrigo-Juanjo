@@ -13,6 +13,7 @@ import Notes from './pages/Notes';
 import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
 import ChatbotPage from './pages/ChatbotPage';
+import Groups from './pages/Groups';
 import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
@@ -97,6 +98,11 @@ function App() {
                 <Route path="/chatbot" element={
                   <PrivateRoute>
                     <ChatbotPage />
+                  </PrivateRoute>
+                } />
+                <Route path="groups" element={
+                  <PrivateRoute>
+                    <Groups/>
                   </PrivateRoute>
                 } />
 

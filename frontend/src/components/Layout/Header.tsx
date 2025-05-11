@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { FaCalendar, FaRobot } from "react-icons/fa";
+import { FaCalendar, FaRobot, FaUsers } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 
@@ -111,6 +111,14 @@ const Header: React.FC = () => {
               >
                 <BsStickyFill size={20} />
                 <span className="icon-label">Notas</span>
+              </button>
+              <button
+                className="icon-button"
+                onClick={() => navigate("/groups")}
+                aria-label="Ir a grupos"
+              >
+                <FaUsers size={20} />
+                <span className="icon-label">Grupos</span>
               </button>
               <button
                 className="icon-button"
