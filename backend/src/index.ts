@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
 import groupRoutes from './routes/groupRoutes';
+import userGroupRoutes from './routes/userGroupsRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
@@ -119,6 +120,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.use('/api/auth', authRoutes);     // Rutas de autenticación
 app.use('/api/notes', notesRoutes);   // Rutas de notas
 app.use('/api/groups', groupRoutes);
+app.use('/api/user-groups', userGroupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/chatbot', chatbotRoutes);

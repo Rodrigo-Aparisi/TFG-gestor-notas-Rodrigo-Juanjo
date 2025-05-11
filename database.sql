@@ -31,10 +31,77 @@ CREATE TABLE settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
--- Crear tabla de grupos de personas
-CREATE TABLE groups (
-    
-    );
+-- Crear tabla de grupos de usuarios
+CREATE TABLE user_groups (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear tabla de miembros de grupos
+CREATE TABLE group_members (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL DEFAULT 'member', -- 'owner', 'admin', 'member'
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_group_member UNIQUE (group_id, user_id)
+);
+
+-- Crear tabla para notas de grupo
+CREATE TABLE group_notes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    color VARCHAR(7) DEFAULT NULL,
+    images TEXT[] DEFAULT ARRAY[]::TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_color_format_group_notes CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
+);
+
+-- Crear índices para las nuevas tablas
+CREATE INDEX idx_user_groups_owner_id ON user_groups(owner_id);
+CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
+CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
+
+-- Crear triggers para actualizar updated_at automáticamente
+CREATE TRIGGER update_user_groups_updated_at
+    BEFORE UPDATE ON user_groups
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_group_notes_updated_at
+    BEFORE UPDATE ON group_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear vista para notas de grupo con información del creador
+CREATE VIEW v_group_notes AS
+SELECT 
+    gn.id,
+    gn.title,
+    gn.content,
+    gn.user_id,
+    u.username AS created_by_username,
+    gn.group_id,
+    gn.is_pinned,
+    gn.color,
+    gn.images,
+    gn.created_at,
+    gn.updated_at,
+    ug.name AS group_name
+FROM group_notes gn
+JOIN users u ON gn.user_id = u.id
+JOIN user_groups ug ON gn.group_id = ug.id;
 
 -- Crear un índice para mejorar el rendimiento en búsquedas por user_id
 CREATE INDEX idx_settings_user_id ON settings(user_id);
