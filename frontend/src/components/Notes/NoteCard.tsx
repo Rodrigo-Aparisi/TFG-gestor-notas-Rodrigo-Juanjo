@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Note, Group } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
+import NoteActionsMenu from './NoteActionsMenu';
 
 interface NoteCardProps {
   note: Note;
@@ -24,6 +25,8 @@ interface NoteCardProps {
   autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
+  handleFormatText: (noteId: string, format: string, isNewNote?: boolean) => void;
+  handleExportNote: (format: string, noteId?: string) => void;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -46,7 +49,9 @@ const NoteCard: React.FC<NoteCardProps> = ({
   handleDeleteNote,
   autoResizeTextarea,
   handleImageUpload,
-  handleDeleteImage
+  handleDeleteImage,
+  handleFormatText,
+  handleExportNote
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
@@ -186,45 +191,25 @@ const NoteCard: React.FC<NoteCardProps> = ({
       </div>
 
       <div className="note-actions-bottom">
-        <div className="list-buttons">
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              insertList(note.id, 'bullet');
-            }}
-            title="Insertar lista con viñetas"
-          >
-            <i className="fas fa-list-ul"></i>
-          </button>
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              insertList(note.id, 'number');
-            }}
-            title="Insertar lista numerada"
-          >
-            <i className="fas fa-list-ol"></i>
-          </button>
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              document.getElementById(`image-input-\${note.id}`)?.click();
-            }}
-            title="Insertar imagen"
-          >
-            <i className="fas fa-image"></i>
-          </button>
-          <input
-            id={`image-input-\${note.id}`}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={(e) => handleImageUpload(e, note.id)}
-          />
-        </div>
+        {/* Reemplazar los botones individuales con el menú desplegable */}
+        <NoteActionsMenu
+          noteId={note.id}
+          onFormat={handleFormatText}
+          onExport={handleExportNote}
+          onInsertList={insertList}
+          onImageUpload={() => document.getElementById(`image-input-${note.id}`)?.click()}
+        />
+        
+        {/* Mantener oculto el input de imagen */}
+        <input
+          id={`image-input-${note.id}`}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => handleImageUpload(e, note.id)}
+        />
+        
+        {/* Mantener el botón de eliminar */}
         <button 
           onClick={(e) => {
             e.stopPropagation();

@@ -321,6 +321,106 @@ export function useNotes() {
     setFilteredNotes(orderedFiltered);
   };
 
+  const handleFormatText = (noteId: string, format: string, isNewNote = false) => {
+    const textarea = document.activeElement as HTMLTextAreaElement;
+    let content: string;
+    let selStart: number;
+    let selEnd: number;
+    
+    if (isNewNote) {
+      content = newNote.content;
+      if (textarea) {
+        selStart = textarea.selectionStart;
+        selEnd = textarea.selectionEnd;
+      } else {
+        selStart = content.length;
+        selEnd = content.length;
+      }
+    } else {
+      const note = notes.find(n => n.id === noteId);
+      content = editingNote[noteId]?.content ?? note?.content ?? '';
+      if (textarea) {
+        selStart = textarea.selectionStart;
+        selEnd = textarea.selectionEnd;
+      } else {
+        selStart = content.length;
+        selEnd = content.length;
+      }
+    }
+
+    let newContent = content;
+    const selectedText = content.substring(selStart, selEnd);
+    
+    switch (format) {
+      case 'bold':
+        newContent = content.substring(0, selStart) + `**${selectedText}**` + content.substring(selEnd);
+        break;
+      case 'italic':
+        newContent = content.substring(0, selStart) + `*${selectedText}*` + content.substring(selEnd);
+        break;
+      case 'underline':
+        newContent = content.substring(0, selStart) + `__${selectedText}__` + content.substring(selEnd);
+        break;
+      case 'color-red':
+        newContent = content.substring(0, selStart) + `<span style="color:red">${selectedText}</span>` + content.substring(selEnd);
+        break;
+      case 'color-blue':
+        newContent = content.substring(0, selStart) + `<span style="color:blue">${selectedText}</span>` + content.substring(selEnd);
+        break;
+      case 'color-green':
+        newContent = content.substring(0, selStart) + `<span style="color:green">${selectedText}</span>` + content.substring(selEnd);
+        break;
+      case 'color-yellow':
+        newContent = content.substring(0, selStart) + `<span style="color:yellow">${selectedText}</span>` + content.substring(selEnd);
+        break;
+      default:
+        break;
+    }
+    
+    if (isNewNote) {
+      setNewNote(prev => ({ ...prev, content: newContent }));
+    } else {
+      handleNoteChange(noteId, 'content', newContent);
+    }
+  };
+
+  const handleExportNote = (format: string, noteId?: string) => {
+    if (!noteId) return;
+    
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    
+    const content = note.content;
+    const title = note.title || 'Nota sin título';
+    
+    switch (format) {
+      case 'pdf':
+        exportAsPDF(title, content);
+        break;
+      case 'txt':
+        exportAsTXT(title, content);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const exportAsPDF = (title: string, content: string) => {
+    // Aquí iría la lógica para exportar como PDF
+    showFeedback('Exportando nota como PDF...');
+  };
+
+  const exportAsTXT = (title: string, content: string) => {
+    const element = document.createElement('a');
+    const file = new Blob([content], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${title}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    showFeedback('Nota exportada como TXT');
+  };
+
   // Inicialización de datos
   useEffect(() => {
     loadNotes();
@@ -350,6 +450,8 @@ export function useNotes() {
     setMarkedNotes,
     setFilteredNotes,
     forceReorder,
-    handleFilteredNotes
+    handleFilteredNotes,
+    handleFormatText,
+    handleExportNote
   };
 }
