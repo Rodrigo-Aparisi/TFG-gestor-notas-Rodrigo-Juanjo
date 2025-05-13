@@ -3,17 +3,26 @@ import api from '../services/api';
 import { UserGroup, GroupNote, CreateGroupData, AddGroupMemberData, CreateGroupNoteData } from '../types';
 
 export const useUserGroups = () => {
+  // Estados para grupos y miembros
   const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
+  
+  // Estados para notas de grupo
   const [groupNotes, setGroupNotes] = useState<GroupNote[]>([]);
+  const [newNote, setNewNote] = useState<CreateGroupNoteData>({ title: '', content: '' });
+  const [editingNote, setEditingNote] = useState<Record<string, GroupNote>>({});
+  
+  // Estados para modales
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  
+  // Estados para grupo nuevo
+  const [newGroup, setNewGroup] = useState<CreateGroupData>({ name: '', description: '' });
+  
+  // Estados de UI
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [newGroup, setNewGroup] = useState<CreateGroupData>({ name: '', description: '' });
-  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [newNote, setNewNote] = useState<CreateGroupNoteData>({ title: '', content: '' });
-  const [editingNote, setEditingNote] = useState<Record<string, GroupNote>>({});
 
   // Mostrar mensaje de feedback
   const showFeedback = useCallback((message: string) => {
@@ -28,9 +37,9 @@ export const useUserGroups = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching user groups...'); // Log para depuración
+      console.log('Fetching user groups...');
       const response = await api.get('/user-groups');
-      console.log('Response:', response.data); // Log para depuración
+      console.log('Response:', response.data);
       
       // Asegúrate de que siempre sea un array, incluso si la API devuelve algo inesperado
       const groups = response.data?.groups || [];
@@ -45,28 +54,27 @@ export const useUserGroups = () => {
     }
   }, [showFeedback]);
 
-// Obtener notas de un grupo específico
-const fetchGroupNotes = useCallback(async (groupId: string) => {
-  setLoading(true);
-  setError(null);
-  try {
-    console.log('Fetching group notes for group:', groupId);
-    const response = await api.get(`/user-groups/${groupId}/notes`);
-    console.log('Group notes response:', response.data);
-    
-    const notes = response.data?.notes || [];
-    setGroupNotes(Array.isArray(notes) ? notes : []);
-  } catch (err: any) {
-    console.error('Error al cargar las notas del grupo:', err);
-    setError(err.message || 'Error al cargar las notas del grupo');
-    showFeedback('Error al cargar las notas del grupo');
-    setGroupNotes([]); 
-  } finally {
-    setLoading(false);
-  }
-}, [showFeedback]);
-
-// ... (resto del código)
+  // Obtener notas de un grupo específico
+  const fetchGroupNotes = useCallback(async (groupId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('Fetching group notes for group:', groupId);
+      const response = await api.get(`/user-groups/${groupId}/notes`);
+      console.log('Group notes response:', response.data);
+      
+      // Asegúrate de que siempre sea un array
+      const notes = response.data?.notes || [];
+      setGroupNotes(Array.isArray(notes) ? notes : []);
+    } catch (err: any) {
+      console.error('Error al cargar las notas del grupo:', err);
+      setError(err.message || 'Error al cargar las notas del grupo');
+      showFeedback('Error al cargar las notas del grupo');
+      setGroupNotes([]); // Siempre establece un array vacío en caso de error
+    } finally {
+      setLoading(false);
+    }
+  }, [showFeedback]);
 
   // Crear un nuevo grupo
   const createGroup = useCallback(async () => {
@@ -79,7 +87,7 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     setError(null);
     try {
       const response = await api.post('/user-groups', newGroup);
-      setUserGroups(prev => [...prev, response.data]);
+      setUserGroups(prev => [...prev, response.data.group]);
       setNewGroup({ name: '', description: '' });
       setShowCreateGroupModal(false);
       showFeedback('Grupo creado correctamente');
@@ -107,7 +115,10 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
       setUserGroups(prev => 
         prev.map(group => 
           group.id === data.groupId 
-            ? { ...group, members: [...group.members, response.data] } 
+            ? { 
+                ...group, 
+                members: [...(group.members || []), response.data.member] 
+              } 
             : group
         )
       );
@@ -115,7 +126,10 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
       // Si es el grupo seleccionado, actualizarlo también
       if (selectedGroup?.id === data.groupId) {
         setSelectedGroup(prev => 
-          prev ? { ...prev, members: [...prev.members, response.data] } : null
+          prev ? { 
+            ...prev, 
+            members: [...(prev.members || []), response.data.member] 
+          } : null
         );
       }
       
@@ -141,7 +155,10 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
       setUserGroups(prev => 
         prev.map(group => 
           group.id === groupId 
-            ? { ...group, members: group.members.filter(m => m.user_id !== userId) } 
+            ? { 
+                ...group, 
+                members: (group.members || []).filter(m => m.user_id !== userId) 
+              } 
             : group
         )
       );
@@ -149,7 +166,10 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
       // Si es el grupo seleccionado, actualizarlo también
       if (selectedGroup?.id === groupId) {
         setSelectedGroup(prev => 
-          prev ? { ...prev, members: prev.members.filter(m => m.user_id !== userId) } : null
+          prev ? { 
+            ...prev, 
+            members: (prev.members || []).filter(m => m.user_id !== userId) 
+          } : null
         );
       }
       
@@ -176,7 +196,7 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     setError(null);
     try {
       const response = await api.post(`/user-groups/${selectedGroup.id}/notes`, newNote);
-      setGroupNotes(prev => [...prev, response.data]);
+      setGroupNotes(prev => [...prev, response.data.note]);
       setNewNote({ title: '', content: '' });
       showFeedback('Nota creada correctamente');
       return true;
@@ -189,6 +209,22 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     }
   }, [selectedGroup, newNote, showFeedback]);
 
+  // Manejar cambios en una nota
+  const handleNoteChange = useCallback((noteId: string, field: keyof GroupNote, value: any) => {
+    setEditingNote(prev => {
+      const note = prev[noteId] || groupNotes.find(n => n.id === noteId);
+      if (!note) return prev;
+      
+      return {
+        ...prev,
+        [noteId]: {
+          ...note,
+          [field]: value
+        }
+      };
+    });
+  }, [groupNotes]);
+
   // Actualizar una nota de grupo
   const updateGroupNote = useCallback(async (noteId: string) => {
     if (!selectedGroup) return false;
@@ -198,9 +234,14 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.put(`/user-groups/${selectedGroup.id}/notes/${noteId}`, updatedNote);
+      const response = await api.put(`/user-groups/${selectedGroup.id}/notes/${noteId}`, {
+        title: updatedNote.title,
+        content: updatedNote.content,
+        images: updatedNote.images
+      });
+      
       setGroupNotes(prev => 
-        prev.map(note => note.id === noteId ? response.data : note)
+        prev.map(note => note.id === noteId ? response.data.note : note)
       );
       
       // Limpiar el estado de edición para esta nota
@@ -221,23 +262,7 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     }
   }, [selectedGroup, editingNote, showFeedback]);
 
-  // Manejar cambios en una nota
-  const handleNoteChange = useCallback((noteId: string, field: keyof GroupNote, value: any) => {
-    setEditingNote(prev => {
-      const note = prev[noteId] || groupNotes.find(n => n.id === noteId);
-      if (!note) return prev;
-      
-      return {
-        ...prev,
-        [noteId]: {
-          ...note,
-          [field]: value
-        }
-      };
-    });
-  }, [groupNotes]);
-
-  // Eliminar una nota de grupo
+  // Eliminar una nota del grupo
   const deleteGroupNote = useCallback(async (noteId: string) => {
     if (!selectedGroup) return false;
     
@@ -257,6 +282,33 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     }
   }, [selectedGroup, showFeedback]);
 
+  // Marcar/desmarcar una nota como importante
+  const togglePinGroupNote = useCallback(async (groupId: string, noteId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.patch(`/user-groups/${groupId}/notes/${noteId}/pin`);
+      
+      // Actualizar la nota en el estado
+      setGroupNotes(prev => 
+        prev.map(note => 
+          note.id === noteId 
+            ? { ...note, is_pinned: !note.is_pinned } 
+            : note
+        )
+      );
+      
+      showFeedback('Nota actualizada correctamente');
+      return response.data;
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar la nota');
+      showFeedback('Error al actualizar la nota');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [showFeedback]);
+
   // Seleccionar un grupo y cargar sus notas
   const selectGroup = useCallback(async (groupId: string) => {
     const group = userGroups.find(g => g.id === groupId) || null;
@@ -268,6 +320,7 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     }
   }, [userGroups, fetchGroupNotes]);
 
+  // Cargar grupos al montar el componente
   useEffect(() => {
     fetchUserGroups();
   }, [fetchUserGroups]);
@@ -294,6 +347,7 @@ const fetchGroupNotes = useCallback(async (groupId: string) => {
     handleNoteChange,
     deleteGroupNote,
     selectGroup,
+    togglePinGroupNote,
     showFeedback,
     setNewGroup,
     setShowCreateGroupModal,

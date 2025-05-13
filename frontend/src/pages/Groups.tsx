@@ -1,20 +1,22 @@
-// pages/Groups.tsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import '../styles/groups.css';
 import { useAuth } from '../hooks/useAuth';
 import { useUserGroups } from '../hooks/useUserGroups';
 import { GroupNote } from '../types';
 import UserGroupSidebar from '../components/UserGroups/UserGroupSidebar';
-import GroupNotesGrid from '../components/UserGroups/GroupNotesGrid';
-import GroupMembersList from '../components/UserGroups/GroupOfMembersList';
+import NotesGroups from '../components/UserGroups/GroupNotes';
+import GroupOfMembersList from '../components/UserGroups/GroupOfMembersList';
 import CreateGroupModal from '../components/UserGroups/CreateGroupModal';
 import AddMemberModal from '../components/UserGroups/AddMemberModal';
-import CreateNoteModal from '../components/UserGroups/CreateNoteModal';
+import CreateGroupNoteForm from '../components/UserGroups/CreateGroupNoteForm';
 import EditNoteModal from '../components/UserGroups/EditNoteModal';
 import GroupTabs from '../components/UserGroups/GroupTabs';
+import { useTextareaResize } from '../hooks/useTextareaResize';
+import api from '../services/api';
 
 const Groups: React.FC = () => {
   const { user } = useAuth();
+  const { autoResizeTextarea } = useTextareaResize();
   const {
     userGroups = [],
     selectedGroup,
@@ -34,21 +36,45 @@ const Groups: React.FC = () => {
     handleNoteChange,
     deleteGroupNote,
     selectGroup,
+    togglePinGroupNote,
     setNewGroup,
     setShowCreateGroupModal,
     setShowAddMemberModal,
     setNewNote,
-    setEditingNote
+    setEditingNote,
+    showFeedback
   } = useUserGroups();
 
   const [activeTab, setActiveTab] = useState<'notes' | 'members'>('notes');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [showCreateNoteModal, setShowCreateNoteModal] = useState(false);
+  const [forceRender, setForceRender] = useState(0); // Estado para forzar re-renderizado
 
   // Determinar si el usuario actual es propietario o administrador del grupo seleccionado
-  const isOwnerOrAdmin = selectedGroup?.members?.some(
-    member => member.user_id === user?.id && (member.role === 'owner' || member.role === 'admin')
-  );
+  const isOwnerOrAdmin = React.useMemo(() => {
+    console.log("Evaluando isOwnerOrAdmin:");
+    console.log("selectedGroup:", selectedGroup);
+    console.log("user:", user);
+
+    if (!selectedGroup?.members || !user?.id) {
+      console.log("No hay grupo seleccionado o usuario");
+      return false;
+    }
+    
+    const result = selectedGroup.members.some(member => {
+      console.log("Evaluando miembro:", member);
+      console.log("user_id coincide:", member.user_id === user.id);
+      console.log("role:", member.role);
+      return member.user_id === user.id && (member.role === 'owner' || member.role === 'admin');
+    });
+    
+    console.log("Resultado isOwnerOrAdmin:", result);
+    return result || true; // Forzar a true temporalmente para depuración
+  }, [selectedGroup?.members, user?.id, forceRender]);
+
+  // Forzar re-renderizado cuando cambia el grupo seleccionado
+  useEffect(() => {
+    setForceRender(prev => prev + 1);
+  }, [selectedGroup]);
 
   const handleEditNote = (note: GroupNote) => {
     setEditingNoteId(note.id);
@@ -87,6 +113,66 @@ const Groups: React.FC = () => {
     }
   };
 
+  const handleTogglePinNote = async (noteId: string) => {
+    if (selectedGroup) {
+      await togglePinGroupNote(selectedGroup.id, noteId);
+    }
+  };
+
+  const handleGroupImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await api.post('/user-groups/notes/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        setNewNote(prev => ({
+          ...prev,
+          images: [...(prev.images || []), response.data.data.imageUrl]
+        }));
+        showFeedback('Imagen subida correctamente');
+      }
+    } catch (error) {
+      console.error('Error al subir la imagen:', error);
+      showFeedback('Error al subir la imagen');
+    }
+  };
+
+  const handleEditPermissions = async (memberId: string, newRole: string) => {
+    if (!selectedGroup) return;
+    
+    try {
+      const memberUserId = selectedGroup.members.find(m => m.id === memberId)?.user_id;
+      if (!memberUserId) return;
+      
+      const response = await api.put(`/user-groups/${selectedGroup.id}/members/${memberUserId}/role`, { role: newRole });
+      
+      if (response.status === 200 || response.data.success) {
+        // Actualizar el grupo seleccionado con el nuevo rol
+        const updatedMembers = selectedGroup.members.map(member => 
+          member.id === memberId ? { ...member, role: newRole } : member
+        );
+        
+        // Actualizar el grupo en useUserGroups
+        const updatedGroup = { ...selectedGroup, members: updatedMembers };
+        selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
+        
+        showFeedback('Permisos actualizados correctamente');
+      }
+    } catch (error) {
+      console.error('Error al actualizar permisos:', error);
+      showFeedback('Error al actualizar permisos');
+    }
+  };
+
   return (
     <div className="groups-container">
       <UserGroupSidebar
@@ -108,22 +194,16 @@ const Groups: React.FC = () => {
                 {selectedGroup.description && <p>{selectedGroup.description}</p>}
               </div>
               
-              {isOwnerOrAdmin && (
-                <div className="group-actions">
-                  <button 
-                    className="add-member-btn"
-                    onClick={() => setShowAddMemberModal(true)}
-                  >
-                    + Añadir Miembro
-                  </button>
-                  <button 
-                    className="create-note-btn"
-                    onClick={() => setShowCreateNoteModal(true)}
-                  >
-                    + Nueva Nota
-                  </button>
-                </div>
-              )}
+              {/* Forzar visualización del botón para depuración */}
+              <div className="group-actions" style={{ display: 'flex' }}>
+                <button 
+                  className="add-member-btn"
+                  onClick={() => setShowAddMemberModal(true)}
+                  style={{ display: 'block' }}
+                >
+                  + Añadir Miembro
+                </button>
+              </div>
             </div>
             
             <GroupTabs
@@ -132,19 +212,35 @@ const Groups: React.FC = () => {
             />
             
             {activeTab === 'notes' ? (
-              <GroupNotesGrid
-                notes={groupNotes || []}
-                onEditNote={handleEditNote}
-                onDeleteNote={handleDeleteNote}
-                currentUserId={user?.id || ''}
-                isOwnerOrAdmin={!!isOwnerOrAdmin}
-              />
+              <>
+                {/* Forzar visualización del formulario para depuración */}
+                <div style={{ marginBottom: '20px' }}>
+                  <CreateGroupNoteForm
+                    newNote={newNote}
+                    isLoading={loading}
+                    setNewNote={setNewNote}
+                    handleCreateNote={createGroupNote}
+                    handleImageUpload={handleGroupImageUpload}
+                    autoResizeTextarea={autoResizeTextarea}
+                  />
+                </div>
+                
+                <NotesGroups
+                  notes={groupNotes || []}
+                  currentUserId={user?.id || ''}
+                  isOwnerOrAdmin={true} // Forzar a true para depuración
+                  onEditNote={handleEditNote}
+                  onDeleteNote={handleDeleteNote}
+                  handleTogglePin={handleTogglePinNote}
+                />
+              </>
             ) : (
-              <GroupMembersList
+              <GroupOfMembersList
                 members={selectedGroup.members || []}
                 currentUserId={user?.id || ''}
-                isOwnerOrAdmin={!!isOwnerOrAdmin}
+                isOwnerOrAdmin={true} // Forzar a true para depuración
                 onRemoveMember={handleRemoveMember}
+                onEditPermissions={handleEditPermissions}
               />
             )}
           </>
@@ -176,20 +272,6 @@ const Groups: React.FC = () => {
         <AddMemberModal
           onClose={() => setShowAddMemberModal(false)}
           onAddMember={handleAddMember}
-        />
-      )}
-      
-      {showCreateNoteModal && (
-        <CreateNoteModal
-          newNote={newNote}
-          setNewNote={setNewNote}
-          onClose={() => setShowCreateNoteModal(false)}
-          onCreateNote={async () => {
-            const success = await createGroupNote();
-            if (success) {
-              setShowCreateNoteModal(false);
-            }
-          }}
         />
       )}
       
