@@ -1,4 +1,3 @@
-// components/UserGroups/AddMemberModal.tsx
 import React, { useState } from 'react';
 
 interface AddMemberModalProps {
@@ -11,12 +10,18 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   onAddMember
 }) => {
   const [username, setUsername] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim()) {
-      onAddMember(username);
+    if (!username.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onAddMember(username);
       setUsername('');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -41,7 +46,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
+              placeholder="Ingresa un nombre de usuario o email"
               required
+              disabled={isSubmitting}
             />
           </div>
           
@@ -50,14 +57,16 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
               type="button"
               className="cancel-btn"
               onClick={onClose}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button 
               type="submit"
               className="add-btn"
+              disabled={!username.trim() || isSubmitting}
             >
-              Añadir
+              {isSubmitting ? 'Añadiendo...' : 'Añadir'}
             </button>
           </div>
         </form>

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CreateGroupNoteData } from '../../types';
 
 interface CreateNoteModalProps {
   newNote: CreateGroupNoteData;
   setNewNote: React.Dispatch<React.SetStateAction<CreateGroupNoteData>>;
   onClose: () => void;
-  onCreateNote: () => void;
+  onCreateNote: () => Promise<boolean>;
 }
 
 const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
@@ -14,9 +14,21 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
   onClose,
   onCreateNote
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onCreateNote();
+    if (!newNote.title.trim() || !newNote.content.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const success = await onCreateNote();
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -27,6 +39,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
           <button 
             className="close-modal-btn"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             &times;
           </button>
@@ -39,8 +52,10 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
               id="note-title"
               type="text"
               value={newNote.title}
-              onChange={e => setNewNote({...newNote, title: e.target.value})}
+              onChange={e => setNewNote(prev => ({...prev, title: e.target.value}))}
+              placeholder="Título de la nota"
               required
+              disabled={isSubmitting}
             />
           </div>
           
@@ -49,8 +64,10 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
             <textarea
               id="note-content"
               value={newNote.content}
-              onChange={e => setNewNote({...newNote, content: e.target.value})}
+              onChange={e => setNewNote(prev => ({...prev, content: e.target.value}))}
+              placeholder="Contenido de la nota"
               required
+              disabled={isSubmitting}
             />
           </div>
           
@@ -59,14 +76,16 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
               type="button"
               className="cancel-btn"
               onClick={onClose}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button 
               type="submit"
               className="create-btn"
+              disabled={!newNote.title.trim() || !newNote.content.trim() || isSubmitting}
             >
-              Crear Nota
+              {isSubmitting ? 'Creando...' : 'Crear Nota'}
             </button>
           </div>
         </form>

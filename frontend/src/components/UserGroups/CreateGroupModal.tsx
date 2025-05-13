@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CreateGroupData } from '../../types';
 
 interface CreateGroupModalProps {
   newGroup: CreateGroupData;
   setNewGroup: React.Dispatch<React.SetStateAction<CreateGroupData>>;
   onClose: () => void;
-  onCreateGroup: () => void;
+  onCreateGroup: () => Promise<boolean>;
 }
 
 const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
@@ -14,9 +14,21 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   onClose,
   onCreateGroup
 }) => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onCreateGroup();
+    if (!newGroup.name.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const success = await onCreateGroup();
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -27,6 +39,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
           <button 
             className="close-modal-btn"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             &times;
           </button>
@@ -40,7 +53,9 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               type="text"
               value={newGroup.name}
               onChange={e => setNewGroup({...newGroup, name: e.target.value})}
+              placeholder="Nombre del grupo"
               required
+              disabled={isSubmitting}
             />
           </div>
           
@@ -50,6 +65,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               id="group-description"
               value={newGroup.description || ''}
               onChange={e => setNewGroup({...newGroup, description: e.target.value})}
+              placeholder="Descripción del grupo"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -58,14 +75,16 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               type="button"
               className="cancel-btn"
               onClick={onClose}
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button 
               type="submit"
               className="create-btn"
+              disabled={!newGroup.name.trim() || isSubmitting}
             >
-              Crear Grupo
+              {isSubmitting ? 'Creando...' : 'Crear Grupo'}
             </button>
           </div>
         </form>
