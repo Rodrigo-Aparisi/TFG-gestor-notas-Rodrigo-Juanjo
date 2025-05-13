@@ -88,7 +88,7 @@ const Settings = () => {
     cuenta: [
       { key: "informacion", label: "Información de la cuenta" },
       { key: "email", label: "Email" },
-      // La sección de contraseña se modificará a continuación
+      { key: "contrasena", label: "Contraseña" },
     ],
   };
 
@@ -692,48 +692,6 @@ const Settings = () => {
                 >
                   {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
                 </button>
-              </div>
-              <div className="behavior-settings">
-                <h4>Comportamiento</h4>
-                <div className="setting-option">
-                  <label>Página de inicio predeterminada</label>
-                  <select
-                    value={settings.defaultPage}
-                    onChange={(e) =>
-                      handleSettingsChange({
-                        defaultPage: e.target.value as "notes" | "calendar" | "home",
-                      })
-                    }
-                  >
-                    <option value="notes">Notas</option>
-                    <option value="calendar">Calendario</option>
-                    <option value="home">Inicio</option>
-                  </select>
-                </div>
-                <div className="setting-option">
-                  <label>Ordenación predeterminada de notas</label>
-                  <select
-                    value={settings.defaultNoteSort}
-                    onChange={(e) =>
-                      handleSettingsChange({
-                        defaultNoteSort: e.target.value as "date" | "title" | "lastModified",
-                      })
-                    }
-                  >
-                    <option value="date">Fecha de creación</option>
-                    <option value="title">Título</option>
-                    <option value="lastModified">Última modificación</option>
-                  </select>
-                </div>
-                <div className="settings-buttons">
-                  <button
-                    className="save-settings-button"
-                    onClick={() => handleSettingsChange(settings)}
-                    disabled={loading}
-                  >
-                    {loading ? "Guardando..." : "Guardar cambios"}
-                  </button>
-                </div>
               </div>
             </div>
             <div id="general-notificaciones">

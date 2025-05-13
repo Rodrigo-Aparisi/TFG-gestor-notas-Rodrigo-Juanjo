@@ -115,7 +115,7 @@
   }
   
   .week-view-popup-content .weekday-header-item.today {
-    background-color: rgba(255, 203, 5, 0.1);
+    background-color: rgb(87, 70, 2);
   }
   
   .week-view-popup-content .weekday-header-top {

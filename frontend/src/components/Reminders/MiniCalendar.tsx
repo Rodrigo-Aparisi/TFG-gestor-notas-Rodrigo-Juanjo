@@ -8,7 +8,6 @@ interface MiniCalendarProps {
   reminders: Reminder[];
   onDateSelect: (date: Date) => void;
   onMonthChange: (newMonth: Date) => void;
-  onShowFullCalendar: () => void;
 }
 
 const MiniCalendar: React.FC<MiniCalendarProps> = ({
@@ -17,7 +16,6 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
   reminders,
   onDateSelect,
   onMonthChange,
-  onShowFullCalendar
 }) => {
   const generateMiniCalendarDays = () => {
     const days: React.ReactElement[] = [];
@@ -107,12 +105,6 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
       <div className="mini-calendar-days">
         {generateMiniCalendarDays()}
       </div>
-      <button 
-        className="expand-calendar-button"
-        onClick={onShowFullCalendar}
-      >
-        Ver calendario completo
-      </button>
     </div>
   );
 };
