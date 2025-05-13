@@ -38,7 +38,9 @@ const Notes: React.FC = () => {
     handleTogglePin,
     setNewNote,
     setMarkedNotes,
-    handleFilteredNotes
+    handleFilteredNotes,
+    handleFormatText, 
+    handleExportNote
   } = useNotes();
 
   const {
@@ -250,6 +252,8 @@ const Notes: React.FC = () => {
               insertList={insertList}
               handleImageUpload={handleImageUpload}
               autoResizeTextarea={autoResizeTextarea}
+              handleFormatText={handleFormatText}
+              handleExportNote={handleExportNote}
             />
             
             <NoteSort 
@@ -287,6 +291,8 @@ const Notes: React.FC = () => {
             autoResizeTextarea={autoResizeTextarea}
             handleImageUpload={handleImageUpload}
             handleDeleteImage={handleDeleteImage}
+            handleFormatText={handleFormatText}
+            handleExportNote={handleExportNote}
           />
         ) : (
           <SharedNotesGrid

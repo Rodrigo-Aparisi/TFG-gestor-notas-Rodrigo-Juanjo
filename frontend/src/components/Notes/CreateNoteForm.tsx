@@ -1,5 +1,6 @@
 import React from 'react';
 import NoteImage from './NoteImage';
+import NoteActionsMenu from './NoteActionsMenu';
 
 interface CreateNoteFormProps {
   newNote: { title: string; content: string; images: string[] };
@@ -12,6 +13,8 @@ interface CreateNoteFormProps {
   insertList: (noteId: string, type: 'bullet' | 'number', isNewNote?: boolean) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
+  handleFormatText: (noteId: string, format: string, isNewNote?: boolean) => void;
+  handleExportNote: (format: string, noteId?: string) => void;
 }
 
 const CreateNoteForm: React.FC<CreateNoteFormProps> = ({
@@ -24,7 +27,9 @@ const CreateNoteForm: React.FC<CreateNoteFormProps> = ({
   handleKeyDown,
   insertList,
   handleImageUpload,
-  autoResizeTextarea
+  autoResizeTextarea,
+  handleFormatText,
+  handleExportNote
 }) => {
   return (
     <div className="create-note">
@@ -72,32 +77,18 @@ const CreateNoteForm: React.FC<CreateNoteFormProps> = ({
             </div>
           )}
           
-          <div className="button-container">
+         <div className="button-container">
             <div className="left-actions">
-              <button 
-                className="list-button"
-                onClick={() => insertList('', 'bullet', true)}
-                title="Insertar lista con viñetas"
-              >
-                <i className="fas fa-list-ul"></i>
-              </button>
-              <button 
-                className="list-button"
-                onClick={() => insertList('', 'number', true)}
-                title="Insertar lista numerada"
-              >
-                <i className="fas fa-list-ol"></i>
-              </button>
-              <button 
-                className="list-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  document.getElementById('image-input-new')?.click();
-                }}
-                title="Insertar imagen"
-              >
-                <i className="fas fa-image"></i>
-              </button>
+              {/* Reemplazar los botones individuales con el menú desplegable */}
+              <NoteActionsMenu
+                isNewNote={true}
+                onFormat={handleFormatText}
+                onExport={handleExportNote}
+                onInsertList={insertList}
+                onImageUpload={() => document.getElementById('image-input-new')?.click()}
+              />
+              
+              {/* Mantener oculto el input de imagen */}
               <input
                 id="image-input-new"
                 type="file"

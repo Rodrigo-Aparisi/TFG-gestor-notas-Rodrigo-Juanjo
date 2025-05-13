@@ -24,6 +24,8 @@ interface NotesGridProps {
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
+  handleFormatText: (noteId: string, format: string, isNewNote?: boolean) => void;
+  handleExportNote: (format: string, noteId?: string) => void;
 }
 
 const NotesGrid: React.FC<NotesGridProps> = ({
@@ -46,7 +48,9 @@ const NotesGrid: React.FC<NotesGridProps> = ({
   handleDeleteNote,
   autoResizeTextarea,
   handleImageUpload,
-  handleDeleteImage
+  handleDeleteImage,
+  handleFormatText,
+  handleExportNote
 }) => {
   const breakpointColumns = {
     default: 5, // Número de columnas en pantallas grandes
@@ -85,6 +89,8 @@ const NotesGrid: React.FC<NotesGridProps> = ({
             autoResizeTextarea={autoResizeTextarea}
             handleImageUpload={handleImageUpload}
             handleDeleteImage={handleDeleteImage}
+            handleFormatText={handleFormatText}
+            handleExportNote={handleExportNote}
           />
         ))
       ) : (
