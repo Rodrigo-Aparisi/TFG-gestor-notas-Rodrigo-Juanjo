@@ -39,7 +39,6 @@ const Notes: React.FC = () => {
     setNewNote,
     setMarkedNotes,
     handleFilteredNotes,
-    handleFormatText, 
     handleExportNote
   } = useNotes();
 
@@ -172,35 +171,81 @@ const Notes: React.FC = () => {
 
   // Función para insertar listas
   const insertList = (noteId: string, type: 'bullet' | 'number', isNewNote = false) => {
-    let currentContent;
+    // Primero, intentamos obtener el textarea directamente por ID
+    let textarea: HTMLTextAreaElement | null = null;
+    
     if (isNewNote) {
-      currentContent = newNote.content;
+      textarea = document.querySelector('.create-note textarea') as HTMLTextAreaElement;
     } else {
-      // Usar el contenido del estado de edición si existe, si no usar el contenido original de la nota
-      const note = notes.find(n => n.id === noteId);
-      currentContent = editingNote[noteId]?.content ?? note?.content ?? '';
+      // Para notas existentes, buscamos el textarea dentro del contenedor de la nota
+      const noteContainer = document.querySelector(`[data-note-id="${noteId}"]`);
+      if (noteContainer) {
+        textarea = noteContainer.querySelector('textarea') as HTMLTextAreaElement;
+      }
     }
-  
-    const selectionStart = document.activeElement instanceof HTMLTextAreaElement ? 
-      document.activeElement.selectionStart : currentContent.length;
+    
+    if (!textarea) {
+      console.error(`No se pudo encontrar el textarea para la nota ${noteId}`);
+      showFeedback('Error al insertar lista');
+      return;
+    }
+    
+    const content = textarea.value;
+    const selectionStart = textarea.selectionStart;
+    
+    // Encontrar la línea actual y la anterior
+    const textBeforeCursor = content.substring(0, selectionStart);
+    const lines = textBeforeCursor.split('\n');
+    const currentLineIndex = lines.length - 1;
     
     let insertText = '\n';
+    
     if (type === 'bullet') {
       insertText += '• ';
-    } else {
-      insertText += '1. ';
+    } else if (type === 'number') {
+      // Buscar en todas las líneas anteriores, no solo la inmediata
+      let lastNumberedLine = -1;
+      let lastNumber = 0;
+      
+      for (let i = currentLineIndex; i >= 0; i--) {
+        const line = lines[i];
+        const numberMatch = line.match(/^(\s*)(\d+)\.(\s+)/);
+        
+        if (numberMatch) {
+          lastNumberedLine = i;
+          lastNumber = parseInt(numberMatch[2]);
+          break;
+        }
+      }
+      
+      // Si encontramos una línea numerada
+      if (lastNumberedLine !== -1) {
+        // Calcular el número correcto basado en la posición relativa
+        const nextNumber = lastNumber + (currentLineIndex - lastNumberedLine);
+        insertText += `${nextNumber + 1}. `;
+      } else {
+        // Si no hay línea numerada previa, comenzar en 1
+        insertText += '1. ';
+      }
     }
-  
-    const newContent = currentContent.slice(0, selectionStart) + 
-                      insertText + 
-                      currentContent.slice(selectionStart);
-  
+    
+    const newContent = content.substring(0, selectionStart) + insertText + content.substring(selectionStart);
+    
+    // Actualizar el contenido
     if (isNewNote) {
       setNewNote(prev => ({ ...prev, content: newContent }));
     } else {
       handleNoteChange(noteId, 'content', newContent);
     }
+    
+    // Mover el cursor después del texto insertado
+    const newPosition = selectionStart + insertText.length;
+    setTimeout(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(newPosition, newPosition);
+    }, 0);
   };
+
 
   return (
     <div className="notes-layout">
@@ -252,7 +297,6 @@ const Notes: React.FC = () => {
               insertList={insertList}
               handleImageUpload={handleImageUpload}
               autoResizeTextarea={autoResizeTextarea}
-              handleFormatText={handleFormatText}
               handleExportNote={handleExportNote}
             />
             
@@ -291,7 +335,6 @@ const Notes: React.FC = () => {
             autoResizeTextarea={autoResizeTextarea}
             handleImageUpload={handleImageUpload}
             handleDeleteImage={handleDeleteImage}
-            handleFormatText={handleFormatText}
             handleExportNote={handleExportNote}
           />
         ) : (

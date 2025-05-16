@@ -4,16 +4,17 @@ import '../../styles/notes.css';
 interface NoteActionsMenuProps {
   noteId?: string;
   isNewNote?: boolean;
-  onFormat: (format: string, noteId?: string, isNewNote?: boolean) => void;
   onExport: (format: string, noteId?: string) => void;
   onInsertList: (noteId: string, type: 'bullet' | 'number', isNewNote?: boolean) => void;
   onImageUpload: () => void;
 }
 
+// Variable global para almacenar la selección actual
+let savedSelection: {start: number, end: number, textareaId: string} | null = null;
+
 const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
   noteId = '',
   isNewNote = false,
-  onFormat,
   onExport,
   onInsertList,
   onImageUpload
@@ -21,9 +22,35 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Función para guardar la selección actual
+  const saveSelection = () => {
+    // Encuentra el textarea correspondiente a esta nota
+    let textarea: HTMLTextAreaElement | null = null;
+    
+    if (isNewNote) {
+      textarea = document.querySelector('.create-note textarea');
+    } else {
+      const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+      if (noteElement) {
+        textarea = noteElement.querySelector('textarea');
+      }
+    }
+    
+    if (textarea && document.activeElement === textarea) {
+      savedSelection = {
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd,
+        textareaId: isNewNote ? 'new' : noteId
+      };
+      console.log('Selección guardada:', savedSelection);
+    }
+  };
   
   const handleMouseEnter = (menuName: string) => {
+    // Guardar la selección actual cuando se muestra el menú
+    saveSelection();
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -35,7 +62,7 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
     // Añadir un retraso antes de cerrar el menú
     timeoutRef.current = setTimeout(() => {
       setActiveMenu(null);
-    }, 500); // 500ms de retraso
+    }, 300);
   };
   
   // Detectar si el cursor está sobre el menú desplegable
@@ -57,51 +84,17 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
 
   return (
     <div className="note-actions-menu" ref={menuRef}>
-      <div className="menu-grid">
-        <div 
-          className="menu-item-container"
-          onMouseEnter={() => handleMouseEnter('format')}
-          onMouseLeave={handleMouseLeave}
-        >
-          <button className="list-button" title="Formato de texto">
-            <i className="fas fa-text-height"></i>
-          </button>
-          
-          {activeMenu === 'format' && (
-            <div 
-              className="menu-dropdown"
-              ref={dropdownRef}
-              onMouseEnter={handleDropdownMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <div className="menu-item" onClick={() => onFormat('bold', noteId, isNewNote)}>
-                <i className="fas fa-bold"></i> Negrita
-              </div>
-              <div className="menu-item" onClick={() => onFormat('italic', noteId, isNewNote)}>
-                <i className="fas fa-italic"></i> Cursiva
-              </div>
-              <div className="menu-item" onClick={() => onFormat('underline', noteId, isNewNote)}>
-                <i className="fas fa-underline"></i> Subrayado
-              </div>
-              <div className="menu-item color-menu">
-                <span><i className="fas fa-palette"></i> Color</span>
-                <div className="color-options">
-                  <div className="color-option red" onClick={() => onFormat('color-red', noteId, isNewNote)}></div>
-                  <div className="color-option blue" onClick={() => onFormat('color-blue', noteId, isNewNote)}></div>
-                  <div className="color-option green" onClick={() => onFormat('color-green', noteId, isNewNote)}></div>
-                  <div className="color-option yellow" onClick={() => onFormat('color-yellow', noteId, isNewNote)}></div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        
+      <div className="menu-grid">        
         <div 
           className="menu-item-container"
           onMouseEnter={() => handleMouseEnter('list')}
           onMouseLeave={handleMouseLeave}
         >
-          <button className="list-button" title="Listas">
+          <button 
+            className="list-button" 
+            title="Listas"
+            onMouseEnter={saveSelection} // Guardar selección al entrar al botón
+          >
             <i className="fas fa-list"></i>
           </button>
           
@@ -126,7 +119,11 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
           onMouseEnter={() => handleMouseEnter('export')}
           onMouseLeave={handleMouseLeave}
         >
-          <button className="list-button" title="Exportar">
+          <button 
+            className="list-button" 
+            title="Exportar"
+            onMouseEnter={saveSelection} // Guardar selección al entrar al botón
+          >
             <i className="fas fa-file-export"></i>
           </button>
           
@@ -141,9 +138,6 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
               </div>
               <div className="menu-item" onClick={() => onExport('txt', noteId)}>
                 <i className="fas fa-file-alt"></i> TXT
-              </div>
-              <div className="menu-item" onClick={() => onExport('html', noteId)}>
-                <i className="fas fa-file-code"></i> HTML
               </div>
             </div>
           )}
@@ -163,4 +157,6 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
   );
 };
 
+// Exportar tanto el componente como la variable savedSelection
+export { savedSelection };
 export default NoteActionsMenu;
