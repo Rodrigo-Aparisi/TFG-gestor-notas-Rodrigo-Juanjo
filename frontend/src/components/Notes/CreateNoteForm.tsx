@@ -13,7 +13,6 @@ interface CreateNoteFormProps {
   insertList: (noteId: string, type: 'bullet' | 'number', isNewNote?: boolean) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
-  handleFormatText: (noteId: string, format: string, isNewNote?: boolean) => void;
   handleExportNote: (format: string, noteId?: string) => void;
 }
 
@@ -28,7 +27,6 @@ const CreateNoteForm: React.FC<CreateNoteFormProps> = ({
   insertList,
   handleImageUpload,
   autoResizeTextarea,
-  handleFormatText,
   handleExportNote
 }) => {
   return (
@@ -82,7 +80,6 @@ const CreateNoteForm: React.FC<CreateNoteFormProps> = ({
               {/* Reemplazar los botones individuales con el menú desplegable */}
               <NoteActionsMenu
                 isNewNote={true}
-                onFormat={handleFormatText}
                 onExport={handleExportNote}
                 onInsertList={insertList}
                 onImageUpload={() => document.getElementById('image-input-new')?.click()}

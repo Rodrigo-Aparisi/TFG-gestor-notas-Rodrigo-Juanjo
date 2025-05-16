@@ -25,7 +25,6 @@ interface NoteCardProps {
   autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
-  handleFormatText: (noteId: string, format: string, isNewNote?: boolean) => void;
   handleExportNote: (format: string, noteId?: string) => void;
 }
 
@@ -50,7 +49,6 @@ const NoteCard: React.FC<NoteCardProps> = ({
   autoResizeTextarea,
   handleImageUpload,
   handleDeleteImage,
-  handleFormatText,
   handleExportNote
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -71,11 +69,9 @@ const NoteCard: React.FC<NoteCardProps> = ({
     
     if (isFocused) {
       // Para notas enfocadas
-      const maxHeight = Math.min(window.innerHeight * 0.6, element.scrollHeight);
       element.style.height = `\${maxHeight}px`;
     } else {
       // Para notas normales
-      const newHeight = Math.min(element.scrollHeight, 500);
       element.style.height = `\${newHeight}px`;
     }
     
@@ -194,7 +190,6 @@ const NoteCard: React.FC<NoteCardProps> = ({
         {/* Reemplazar los botones individuales con el menú desplegable */}
         <NoteActionsMenu
           noteId={note.id}
-          onFormat={handleFormatText}
           onExport={handleExportNote}
           onInsertList={insertList}
           onImageUpload={() => document.getElementById(`image-input-${note.id}`)?.click()}

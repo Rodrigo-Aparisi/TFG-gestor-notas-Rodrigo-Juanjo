@@ -320,70 +320,7 @@ export function useNotes() {
     
     setFilteredNotes(orderedFiltered);
   };
-
-  const handleFormatText = (noteId: string, format: string, isNewNote = false) => {
-    const textarea = document.activeElement as HTMLTextAreaElement;
-    let content: string;
-    let selStart: number;
-    let selEnd: number;
-    
-    if (isNewNote) {
-      content = newNote.content;
-      if (textarea) {
-        selStart = textarea.selectionStart;
-        selEnd = textarea.selectionEnd;
-      } else {
-        selStart = content.length;
-        selEnd = content.length;
-      }
-    } else {
-      const note = notes.find(n => n.id === noteId);
-      content = editingNote[noteId]?.content ?? note?.content ?? '';
-      if (textarea) {
-        selStart = textarea.selectionStart;
-        selEnd = textarea.selectionEnd;
-      } else {
-        selStart = content.length;
-        selEnd = content.length;
-      }
-    }
-
-    let newContent = content;
-    const selectedText = content.substring(selStart, selEnd);
-    
-    switch (format) {
-      case 'bold':
-        newContent = content.substring(0, selStart) + `**${selectedText}**` + content.substring(selEnd);
-        break;
-      case 'italic':
-        newContent = content.substring(0, selStart) + `*${selectedText}*` + content.substring(selEnd);
-        break;
-      case 'underline':
-        newContent = content.substring(0, selStart) + `__${selectedText}__` + content.substring(selEnd);
-        break;
-      case 'color-red':
-        newContent = content.substring(0, selStart) + `<span style="color:red">${selectedText}</span>` + content.substring(selEnd);
-        break;
-      case 'color-blue':
-        newContent = content.substring(0, selStart) + `<span style="color:blue">${selectedText}</span>` + content.substring(selEnd);
-        break;
-      case 'color-green':
-        newContent = content.substring(0, selStart) + `<span style="color:green">${selectedText}</span>` + content.substring(selEnd);
-        break;
-      case 'color-yellow':
-        newContent = content.substring(0, selStart) + `<span style="color:yellow">${selectedText}</span>` + content.substring(selEnd);
-        break;
-      default:
-        break;
-    }
-    
-    if (isNewNote) {
-      setNewNote(prev => ({ ...prev, content: newContent }));
-    } else {
-      handleNoteChange(noteId, 'content', newContent);
-    }
-  };
-
+  
   const handleExportNote = (format: string, noteId?: string) => {
     if (!noteId) return;
     
@@ -395,7 +332,7 @@ export function useNotes() {
     
     switch (format) {
       case 'pdf':
-        exportAsPDF(title, content);
+        exportAsPDF(title, content, note);
         break;
       case 'txt':
         exportAsTXT(title, content);
@@ -405,10 +342,115 @@ export function useNotes() {
     }
   };
 
-  const exportAsPDF = (title: string, content: string) => {
-    // Aquí iría la lógica para exportar como PDF
-    showFeedback('Exportando nota como PDF...');
+  const exportAsPDF = (title: string, content: string, note: Note) => {
+    try {
+      showFeedback('Preparando exportación a PDF...');
+
+      // Eliminar iframe existente si hay alguno
+      const existingIframe = document.getElementById('pdf-print-frame');
+      if (existingIframe) {
+        document.body.removeChild(existingIframe);
+      }
+
+      // Crear un iframe oculto
+      const iframe = document.createElement('iframe');
+      iframe.id = 'pdf-print-frame';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '-9999px';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      document.body.appendChild(iframe);
+
+      // Formato simple para el contenido
+      const formattedContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\n/g, '<br>');
+
+      // Esperar a que el iframe esté cargado
+      iframe.onload = () => {
+        // Acceder al documento dentro del iframe
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          showFeedback('Error al crear el documento PDF');
+          return;
+        }
+
+        // Escribir el contenido HTML en el iframe
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 20px;
+                color: #333;
+              }
+              h1 {
+                color: #333;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 10px;
+              }
+              .content {
+                margin-top: 20px;
+              }
+              .images {
+                margin-top: 30px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                max-width: 20%;
+              }
+              .images img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            <div class="content">${formattedContent}</div>
+            
+            ${note.images && note.images.length > 0 ? `
+              <div class="images">
+                <h2>Imágenes adjuntas</h2>
+                ${note.images.map(img => `<img src="${process.env.REACT_APP_API_URL?.replace('/api', '')}${img}" alt="Imagen adjunta">`).join('')}
+              </div>
+            ` : ''}
+          </body>
+          </html>
+        `);
+
+        iframeDoc.close();
+
+        // Esperar un momento para que se cargue todo el contenido
+        setTimeout(() => {
+          try {
+            // Imprimir el iframe (esto abrirá el diálogo de impresión)
+            iframe.contentWindow?.print();
+            showFeedback('Documento preparado para descargar como PDF');
+          } catch (err) {
+            console.error('Error al imprimir:', err);
+            showFeedback('Error al generar el PDF');
+          }
+        }, 500);
+      };
+
+      // Iniciar la carga del iframe con un documento en blanco
+      iframe.src = 'about:blank';
+
+    } catch (error) {
+      console.error('Error al exportar como PDF:', error);
+      showFeedback('Error al exportar como PDF');
+    }
   };
+
 
   const exportAsTXT = (title: string, content: string) => {
     const element = document.createElement('a');
@@ -451,7 +493,6 @@ export function useNotes() {
     setFilteredNotes,
     forceReorder,
     handleFilteredNotes,
-    handleFormatText,
     handleExportNote
   };
 }
