@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { noteService } from '../services/api';
 import { Group, GroupResponse } from '../types';
 
-export function useGroups(showFeedback: (message: string) => void) {
+export function useGroups(showFeedback?: (message: string) => void) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [groups, setGroups] = useState<Group[]>([
     {
       id: 'main',
@@ -16,14 +19,40 @@ export function useGroups(showFeedback: (message: string) => void) {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroup, setNewGroup] = useState({ name: '', color: '#f1c40f' });
 
+  // Determinar el grupo activo basado en la URL al cargar
+  useEffect(() => {
+    const path = location.pathname;
+    
+    if (path === '/trash') {
+      setActiveGroup('trash');
+    } else if (path === '/notes') {
+      const searchParams = new URLSearchParams(location.search);
+      const groupParam = searchParams.get('group');
+      if (groupParam) {
+        setActiveGroup(groupParam);
+      } else {
+        setActiveGroup('main');
+      }
+    }
+  }, [location.pathname, location.search]);
+
   const handleGroupSelect = useCallback((groupId: string) => {
     setActiveGroup(groupId);
-  }, []);
+    
+    // Navegar según el grupo seleccionado
+    if (groupId === 'trash') {
+      navigate('/trash');
+    } else if (groupId === 'main') {
+      navigate('/notes');
+    } else {
+      navigate(`/notes?group=${groupId}`);
+    }
+  }, [navigate]);
 
   const handleCreateGroup = async (markedNotes: string[]) => {
     try {
       if (!newGroup.name.trim()) {
-        showFeedback('El nombre del grupo es requerido');
+        if (showFeedback) showFeedback('El nombre del grupo es requerido');
         return;
       }
   
@@ -49,13 +78,13 @@ export function useGroups(showFeedback: (message: string) => void) {
         setGroups(prev => [...prev, formattedGroup]);
         setShowGroupModal(false);
         setNewGroup({ name: '', color: '#f1c40f' });
-        showFeedback('Grupo creado exitosamente');
+        if (showFeedback) showFeedback('Grupo creado exitosamente');
         return true;
       }
       return false;
     } catch (error) {
       console.error('Error al crear grupo:', error);
-      showFeedback('Error al crear el grupo');
+      if (showFeedback) showFeedback('Error al crear el grupo');
       return false;
     }
   };
@@ -69,11 +98,12 @@ export function useGroups(showFeedback: (message: string) => void) {
         setGroups(prev => prev.filter(group => group.id !== groupId));
         if (activeGroup === groupId) {
           setActiveGroup('main');
+          navigate('/notes');
         }
-        showFeedback('Grupo eliminado exitosamente');
+        if (showFeedback) showFeedback('Grupo eliminado exitosamente');
       } catch (error) {
         console.error('Error al eliminar grupo:', error);
-        showFeedback('Error al eliminar el grupo');
+        if (showFeedback) showFeedback('Error al eliminar el grupo');
       }
     }
   };

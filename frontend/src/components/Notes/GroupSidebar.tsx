@@ -1,8 +1,6 @@
 import React from 'react';
 import { Group } from '../../types';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { FaPlus } from 'react-icons/fa';
-import TrashSidebar from './TrashSidebar';
+import { FaTrash } from 'react-icons/fa';
 
 interface GroupSidebarProps {
   groups: Group[];
@@ -17,32 +15,14 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
   onGroupSelect, 
   onDeleteGroup 
 }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isTrashActive = location.pathname === '/trash';
-
-  // Función para manejar la selección de grupos
-  const handleGroupClick = (groupId: string) => {
-    // Si el grupo no es "trash", usamos la función proporcionada por el padre
-    onGroupSelect(groupId);
-  };
-
-  // Función para manejar la selección de la papelera
-  const handleTrashSelect = () => {
-    // Solo navegamos a la papelera si no estamos ya en ella
-    if (!isTrashActive) {
-      navigate('/trash');
-    }
-  };
-
   return (
     <div className="notes-sidebar">
       <div className="group-list">
         {/* Elemento "Todas las notas" */}
         <div 
           key="group-main"
-          className={`group-item ${activeGroup === 'main' && !isTrashActive ? 'active' : ''}`}
-          onClick={() => handleGroupClick('main')}
+          className={`group-item ${activeGroup === 'main' ? 'active' : ''}`}
+          onClick={() => onGroupSelect('main')}
         >
           <div 
             className="group-color" 
@@ -57,8 +37,8 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
           .map((group) => (
           <div 
             key={`group-${group.id}`}
-            className={`group-item ${activeGroup === group.id && !isTrashActive ? 'active' : ''}`}
-            onClick={() => handleGroupClick(group.id)}
+            className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+            onClick={() => onGroupSelect(group.id)}
           >
             <div 
               className="group-color" 
@@ -80,10 +60,16 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
         ))}
 
         <div className="mt-4 border-t pt-2">
-          <TrashSidebar 
-            onTrashSelect={handleTrashSelect} 
-            isActive={isTrashActive}
-          />
+          <div 
+            className={`group-item ${activeGroup === 'trash' ? 'active' : ''}`}
+            onClick={() => onGroupSelect('trash')}
+          >
+            <div 
+              className="group-color" 
+              style={{ backgroundColor: '#e74c3c' }}
+            />
+            <span className="group-name" style={{ color: '#e74c3c' }}>Papelera</span>
+          </div>
         </div>
       </div>
     </div>

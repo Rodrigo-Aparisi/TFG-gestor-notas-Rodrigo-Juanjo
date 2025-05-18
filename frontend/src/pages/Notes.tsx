@@ -13,6 +13,7 @@ import GroupModal from '../components/Notes/GroupModal';
 import NotesGrid from '../components/Notes/NotesGrid';
 import SharedNotesGrid from '../components/Notes/SharedNotesGrid';
 import NoteSort from '../components/Notes/NoteSort';
+import { useLocation } from 'react-router-dom';
 
 const Notes: React.FC = () => {
   // Hooks personalizados
