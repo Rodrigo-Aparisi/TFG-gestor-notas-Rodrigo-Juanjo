@@ -62,6 +62,37 @@ export const noteService = {
     }
   },
 
+  // Obtener notas de la papelera
+  getTrashNotes: async () => {
+    try {
+      const response = await api.get('notes/trash');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trash notes:', error);
+      throw error;
+    }
+  },
+  
+  restoreNote: async (id: string) => {
+    try {
+      const response = await api.post(`notes/trash/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      throw error;
+    }
+  },
+  
+  emptyTrash: async () => {
+    try {
+      const response = await api.delete('/trash/empty');
+      return response.data;
+    } catch (error) {
+      console.error('Error emptying trash:', error);
+      throw error;
+    }
+  },
+
   createNote: async (noteData: { title: string; content: string; images?: string[] }) => {
     try {
       const response = await api.post('/notes', noteData);

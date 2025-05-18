@@ -74,7 +74,7 @@ export class NoteController {
   async getNotes(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user.id;
-  
+
       // Primero obtenemos las preferencias de ordenación
       const settingsResult = await pool.query(
         'SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1',
@@ -96,21 +96,21 @@ export class NoteController {
           orderBy = `is_pinned DESC, updated_at ${direction}`;
         }
       }
-  
-      // Obtenemos las notas con el orden especificado
+
+      // Modificar esta consulta para excluir notas en papelera
       const result = await pool.query(
         `SELECT * FROM notes 
-         WHERE user_id = $1 
-         ORDER BY ${orderBy}`,
+        WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)
+        ORDER BY ${orderBy}`,
         [userId]
       );
-  
+
       res.json({ notes: result.rows });
     } catch (error) {
+      console.error("Error al obtener notas:", error);
       res.status(500).json({ error: "Error al obtener las notas" });
     }
   }
-  
 
   // Actualizar una nota
   async updateNote(req: Request, res: Response): Promise<void> {
@@ -175,9 +175,7 @@ export class NoteController {
         details: error instanceof Error ? error.message : "Error desconocido",
       });
     }
-  }
-  
-  
+  }  
 
   // Eliminar una nota
   async deleteNote(req: Request, res: Response): Promise<void> {
@@ -185,9 +183,9 @@ export class NoteController {
       const { id } = req.params;
       const userId = req.user.id;
 
-      // Obtener el contenido de la nota para buscar imágenes
+      // Verificar si la nota existe y pertenece al usuario
       const noteResult = await pool.query(
-        'SELECT content FROM notes WHERE id = $1 AND user_id = $2',
+        'SELECT * FROM notes WHERE id = $1 AND user_id = $2',
         [id, userId]
       );
 
@@ -196,27 +194,83 @@ export class NoteController {
         return;
       }
 
-      // Eliminar imágenes asociadas si existen
-      const content = noteResult.rows[0].content;
-      const imageRegex = /!$$.*?$$$(\/uploads\/note-images\/.*?)$/g;
-      let match;
-      
-      while ((match = imageRegex.exec(content)) !== null) {
-        const imagePath = path.join(__dirname, '..', match[1]);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-        }
-      }
+      // Verificar si la nota ya está en la papelera
+      const isInTrash = noteResult.rows[0].is_deleted;
 
-      // Eliminar la nota
-      await pool.query(
-        'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+      if (isInTrash) {
+        // Si ya está en la papelera, eliminar permanentemente
+        await pool.query(
+          'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+          [id, userId]
+        );
+        res.json({ message: 'Nota eliminada permanentemente' });
+      } else {
+        // Si no está en la papelera, mover a la papelera
+        await pool.query(
+          'UPDATE notes SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND user_id = $2',
+          [id, userId]
+        );
+        res.json({ message: 'Nota movida a la papelera' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Error al procesar la nota" });
+    }
+  }
+
+  // Método para obtener notas de la papelera
+  async getTrashNotes(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+
+      const result = await pool.query(
+        "SELECT * FROM notes WHERE user_id = $1 AND is_deleted = true ORDER BY deleted_at DESC",
+        [userId]
+      );
+
+      res.json({ notes: result.rows });
+    } catch (error) {
+      res.status(500).json({ error: "Error al obtener las notas de la papelera" });
+    }
+  }
+
+  // Método para restaurar una nota de la papelera
+  async restoreNote(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+
+      const result = await pool.query(
+        "UPDATE notes SET is_deleted = false, deleted_at = NULL WHERE id = $1 AND user_id = $2 RETURNING *",
         [id, userId]
       );
 
-      res.json({ message: 'Nota eliminada exitosamente' });
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: "Nota no encontrada" });
+        return;
+      }
+
+      res.json({ 
+        message: "Nota restaurada exitosamente",
+        note: result.rows[0]
+      });
     } catch (error) {
-      res.status(500).json({ error: "Error al eliminar la nota" });
+      res.status(500).json({ error: "Error al restaurar la nota" });
+    }
+  }
+
+  // Método para eliminar permanentemente todas las notas de la papelera
+  async emptyTrash(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user.id;
+
+      await pool.query(
+        "DELETE FROM notes WHERE user_id = $1 AND is_deleted = true",
+        [userId]
+      );
+
+      res.json({ message: "Papelera vaciada exitosamente" });
+    } catch (error) {
+      res.status(500).json({ error: "Error al vaciar la papelera" });
     }
   }
 

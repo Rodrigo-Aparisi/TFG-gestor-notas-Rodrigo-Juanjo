@@ -19,6 +19,8 @@ export interface Note {
   created_at: string;
   updated_at: string;
   images: string[];
+  is_deleted?: boolean;
+  deleted_at?: string | null; 
 }
 
 export interface SharedNote extends Note {
