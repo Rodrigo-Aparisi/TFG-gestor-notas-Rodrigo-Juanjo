@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import '../styles/notes.css';
-import { useNavigate } from 'react-router-dom';
 import { useNotes } from '../hooks/useNotes';
 import { useGroups } from '../hooks/useGroups';
+import { useSharedNotes } from '../hooks/useSharedNotes';
+import { useTextareaResize } from '../hooks/useTextareaResize';
 import GroupSidebar from '../components/Notes/GroupSidebar';
 import NoteTabs from '../components/Notes/NoteTabs';
 import { FaTrash } from 'react-icons/fa';
 import Masonry from 'react-masonry-css';
+import NoteSort from '../components/Notes/NoteSort';
 
 const Trash: React.FC = () => {
-  const navigate = useNavigate();
-  
   // Hooks personalizados
   const {
     trashNotes,
@@ -24,16 +24,24 @@ const Trash: React.FC = () => {
 
   const {
     groups,
+    activeGroup,
+    handleGroupSelect,
     handleDeleteGroup
   } = useGroups();
 
-  // Función para manejar la selección de grupos desde el sidebar
-  const handleGroupSelect = (groupId: string) => {
-    if (groupId === 'main') {
-      navigate('/notes');
-    } else {
-      navigate(`/groups/${groupId}`);
-    }
+  const {
+    activeTab,
+    hasSharedNotes,
+    handleTabChange: handleTabChangeBase
+  } = useSharedNotes();
+
+  const {
+    autoResizeTextarea
+  } = useTextareaResize();
+
+  // Función para manejar cambio de pestañas
+  const handleTabChange = (tabId: string) => {
+    handleTabChangeBase(tabId, loadTrashNotes);
   };
 
   // Cargar las notas de la papelera cuando se monta el componente
@@ -110,19 +118,13 @@ const Trash: React.FC = () => {
       {/* Sidebar */}
       <GroupSidebar 
         groups={groups}
-        activeGroup="trash" // Esto indica que estamos en la papelera
-        onGroupSelect={handleGroupSelect} // Usamos nuestra función personalizada
+        activeGroup={activeGroup}
+        onGroupSelect={handleGroupSelect}
         onDeleteGroup={handleDeleteGroup}
       />
 
       {/* Contenido principal */}
       <div className="notes-main">
-        <NoteTabs 
-          activeTab="my-notes"
-          hasSharedNotes={false}
-          onTabChange={() => {}} // No es necesaria la funcionalidad de cambio de pestaña aquí
-        />
-        
         {feedback && <div className="feedback-message">{feedback}</div>}
         
         {/* Encabezado de la papelera */}
@@ -130,19 +132,32 @@ const Trash: React.FC = () => {
           Papelera
         </div>
         
-        <div className="flex justify-between items-center mb-6">
-          <p className="text-red-500">
-            Las notas que lleven más de 30 días en la papelera se eliminarán automáticamente.
-          </p>
-          
-          <button
-            onClick={handleEmptyTrash}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center text-sm"
-            disabled={trashNotes.length === 0}
-          >
-            <FaTrash className="mr-2" />
-            Vaciar papelera
-          </button>
+        {/* Añadimos un contenedor para herramientas similar a Notes.tsx */}
+        <div className="note-tools-container">
+          <div className="flex justify-between items-center w-full">
+            <p className="text-red-500">
+              Las notas que lleven más de 30 días en la papelera se eliminarán automáticamente.
+            </p>
+            
+            <div className="flex items-center">
+              {/* Añadimos un NoteSort vacío para mantener consistencia visual */}
+              <div className="mr-4">
+                <NoteSort 
+                  notes={trashNotes}
+                  onNotesFiltered={(filtered) => {}}
+                />
+              </div>
+              
+              <button
+                onClick={handleEmptyTrash}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center text-sm"
+                disabled={trashNotes.length === 0}
+              >
+                <FaTrash className="mr-2" />
+                Vaciar papelera
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Grid de notas en papelera */}
