@@ -6,6 +6,7 @@ import { Note, UpdateNoteData } from '../types';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [trashNotes, setTrashNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState({ title: '', content: '', images: [] as string[] });
   const [editingNote, setEditingNote] = useState<{ [key: string]: { title: string; content: string } }>({});
   const [markedNotes, setMarkedNotes] = useState<string[]>([]);
@@ -48,6 +49,23 @@ export function useNotes() {
         authService.logout();
         navigate('/login', { replace: true });
       }
+    }
+  }, [navigate]);
+
+  const loadTrashNotes = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await noteService.getTrashNotes();
+      setTrashNotes(response.notes || []);
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error loading trash notes:', error.message);
+      if ((err as any)?.response?.status === 401) {
+        authService.logout();
+        navigate('/login', { replace: true });
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, [navigate]);
 
@@ -232,12 +250,46 @@ export function useNotes() {
   const handleDeleteNote = async (id: string) => {
     try {
       await noteService.deleteNote(id);
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-      setMarkedNotes(prev => prev.filter(noteId => noteId !== id));
-      showFeedback('Nota eliminada');
+      
+      if (window.location.pathname === '/trash') {
+        setTrashNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+        showFeedback('Nota eliminada permanentemente');
+      } else {
+        setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+        setMarkedNotes(prev => prev.filter(noteId => noteId !== id));
+        showFeedback('Nota movida a la papelera');
+      }
     } catch (error) {
       console.error('Error deleting note:', error);
-      showFeedback('Error al eliminar la nota');
+      showFeedback('Error al procesar la nota');
+    }
+  };
+
+  const handleRestoreNote = async (id: string) => {
+    try {
+      const response = await noteService.restoreNote(id);
+      if (response && response.note) {
+        setTrashNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+        showFeedback('Nota restaurada exitosamente');
+      }
+    } catch (error) {
+      console.error('Error al restaurar nota:', error);
+      showFeedback('Error al restaurar la nota');
+    }
+  };
+
+  const handleEmptyTrash = async () => {
+    if (!window.confirm('¿Estás seguro de vaciar la papelera? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    try {
+      await noteService.emptyTrash();
+      setTrashNotes([]);
+      showFeedback('Papelera vaciada exitosamente');
+    } catch (error) {
+      console.error('Error al vaciar papelera:', error);
+      showFeedback('Error al vaciar la papelera');
     }
   };
 
@@ -246,13 +298,19 @@ export function useNotes() {
     
     if (window.confirm(`¿Estás seguro de que quieres eliminar ${markedNotes.length} nota(s)?`)) {
       try {
-        await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
-        setNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
+        if (window.location.pathname === '/trash') {
+          await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
+          setTrashNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
+          showFeedback('Notas eliminadas permanentemente');
+        } else {
+          await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
+          setNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
+          showFeedback('Notas movidas a la papelera');
+        }
         setMarkedNotes([]);
-        showFeedback('Notas eliminadas correctamente');
       } catch (error) {
-        console.error('Error al eliminar notas:', error);
-        showFeedback('Error al eliminar las notas');
+        console.error('Error al procesar notas:', error);
+        showFeedback('Error al procesar las notas');
       }
     }
   };
@@ -470,6 +528,7 @@ export function useNotes() {
 
   return {
     notes,
+    trashNotes,
     newNote,
     editingNote,
     markedNotes,
@@ -479,6 +538,7 @@ export function useNotes() {
     sortKey,
     showFeedback,
     loadNotes,
+    loadTrashNotes,
     handleCreateNote,
     handleNoteChange,
     handleUpdateNote,
@@ -488,6 +548,8 @@ export function useNotes() {
     handleDeleteMarkedNotes,
     handleToggleMark,
     handleTogglePin,
+    handleRestoreNote,
+    handleEmptyTrash,
     setNewNote,
     setMarkedNotes,
     setFilteredNotes,

@@ -46,7 +46,9 @@ CREATE TABLE notes (
     images TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
+    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$'),
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Crear tabla de grupos de notas

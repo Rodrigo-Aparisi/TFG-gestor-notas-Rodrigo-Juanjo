@@ -11,6 +11,7 @@ import groupRoutes from './routes/groupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
+import { setupTrashCleanup } from './utils/cleanupTasks';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -171,3 +172,5 @@ app.listen(PORT, () => {
 
 // Exportar pool para uso en otros archivos
 export { pool };
+
+setupTrashCleanup();

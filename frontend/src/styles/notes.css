@@ -1130,20 +1130,6 @@ button:focus {
   gap: 5px;
 }
 
-.color-option {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 1px solid #ddd;
-}
-
-.color-option.red { background-color: #ff5252; }
-.color-option.blue { background-color: #4285f4; }
-.color-option.green { background-color: #0f9d58; }
-.color-option.yellow { background-color: #f4b400; }
-
-
 /* Estilos para el menú desplegable */
 .note-actions-menu {
   position: relative;
@@ -1284,4 +1270,55 @@ button:focus {
   right: -10px;
   bottom: -10px;
   z-index: -1;
+}
+
+/* Estilos para la papelera */
+.trash-note-card {
+  border-color: #e74c3c;
+  border-width: 1px;
+  border-style: solid;
+  background-color: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 16px;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+.trash-note-card:hover {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.trash-note-card .note-content {
+  margin-bottom: 12px;
+}
+
+.trash-note-card h3 {
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.trash-note-card .note-text {
+  font-size: 14px;
+  color: #555;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-height: 100px;
+  overflow: hidden;
+}
+
+.trash-note-card .note-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.trash-note-card .note-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  max-height: 120px;
 }
