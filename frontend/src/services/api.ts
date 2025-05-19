@@ -196,6 +196,46 @@ export const noteService = {
     }
   },
 
+  updateGroup: async (groupId: string, groupData: { name: string; color: string }) => {
+    try {
+      const response = await api.put(`/groups/${groupId}`, groupData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating group:', error);
+      throw error;
+    }
+  },
+
+  reorderGroups: async (groupIds: string[]) => {
+    try {
+      const response = await api.put('/groups/reorder', { groupIds });
+      return response.data;
+    } catch (error) {
+      console.error('Error reordering groups:', error);
+      throw error;
+    }
+  },
+
+  addNoteToGroup: async (groupId: string, noteId: string) => {
+    try {
+      const response = await api.post('/groups/add-note', { groupId, noteId });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding note to group:', error);
+      throw error;
+    }
+  },
+
+  removeNoteFromGroup: async (groupId: string, noteId: string) => {
+    try {
+      const response = await api.delete(`/groups/${groupId}/notes/${noteId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing note from group:', error);
+      throw error;
+    }
+  },
+
   deleteGroup: async (groupId: string) => {
     try {
       const response = await api.delete(`/groups/${groupId}`);

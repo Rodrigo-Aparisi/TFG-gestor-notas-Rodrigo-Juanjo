@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
-import { useGroups } from '../hooks/useGroups';
+import { useGroups } from '../hooks/useNoteGroups';
 import { useSharedNotes } from '../hooks/useSharedNotes';
 import { useTextareaResize } from '../hooks/useTextareaResize';
 import GroupSidebar from '../components/Notes/GroupSidebar';

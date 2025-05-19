@@ -57,7 +57,8 @@ CREATE TABLE note_groups (
     name VARCHAR(255) NOT NULL,
     color VARCHAR(50) DEFAULT '#f1c40f',
     user_id UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    position INTEGER DEFAULT 0
 );
 
 CREATE TABLE note_group_items (
