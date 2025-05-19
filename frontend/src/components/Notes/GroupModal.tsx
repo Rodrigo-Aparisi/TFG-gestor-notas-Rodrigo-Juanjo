@@ -1,22 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface GroupModalProps {
+  isEdit?: boolean;
+  group?: { id: string; name: string; color: string };
   newGroup: { name: string; color: string };
   setNewGroup: React.Dispatch<React.SetStateAction<{ name: string; color: string }>>;
   onClose: () => void;
   onCreateGroup: () => void;
+  onUpdateGroup?: (groupId: string) => void;
 }
 
 const GroupModal: React.FC<GroupModalProps> = ({
+  isEdit = false,
+  group,
   newGroup,
   setNewGroup,
   onClose,
-  onCreateGroup
+  onCreateGroup,
+  onUpdateGroup
 }) => {
+  useEffect(() => {
+    // Si estamos en modo edición y tenemos un grupo, inicializar con sus datos
+    if (isEdit && group) {
+      setNewGroup({
+        name: group.name,
+        color: group.color
+      });
+    }
+  }, [isEdit, group, setNewGroup]);
+
+  const handleSubmit = () => {
+    if (isEdit && group && onUpdateGroup) {
+      onUpdateGroup(group.id);
+    } else {
+      onCreateGroup();
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h2>Crear nuevo grupo</h2>
+        <h2>{isEdit ? 'Editar grupo' : 'Crear nuevo grupo'}</h2>
         <div className="form-group">
           <label>Nombre del grupo</label>
           <input
@@ -36,7 +60,9 @@ const GroupModal: React.FC<GroupModalProps> = ({
         </div>
         <div className="modal-actions">
           <button onClick={onClose}>Cancelar</button>
-          <button onClick={onCreateGroup}>Crear grupo</button>
+          <button onClick={handleSubmit}>
+            {isEdit ? 'Guardar cambios' : 'Crear grupo'}
+          </button>
         </div>
       </div>
     </div>

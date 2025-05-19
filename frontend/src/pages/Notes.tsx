@@ -1,10 +1,12 @@
 import React from 'react';
+import { useEffect, useState } from 'react';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
-import { useGroups } from '../hooks/useGroups';
+import { useGroups } from '../hooks/useNoteGroups';
 import { useSharedNotes } from '../hooks/useSharedNotes';
 import { useUIEffects } from '../hooks/useUIEffects';
 import { useTextareaResize } from '../hooks/useTextareaResize';
+import { noteService } from '../services/api';
 import NoteTabs from '../components/Notes/NoteTabs';
 import GroupSidebar from '../components/Notes/GroupSidebar';
 import BulkActionsMenu from '../components/Notes/BulkActionsMenu';
@@ -51,12 +53,15 @@ const Notes: React.FC = () => {
     groups,
     activeGroup,
     showGroupModal,
-    newGroup,
+    newNoteGroup,
     handleGroupSelect,
     handleCreateGroup,
     handleDeleteGroup,
     setShowGroupModal,
-    setNewGroup
+    setNoteNewGroup,
+    handleMoveGroup,
+    handleAddNoteToGroup,
+    handleRemoveNoteFromGroup
   } = useGroups(showFeedback);
 
   const {
@@ -77,18 +82,100 @@ const Notes: React.FC = () => {
     setIsExpanded
   } = useUIEffects();
 
+  const [showGroupOptions, setShowGroupOptions] = useState(false);
+  const [shouldSyncMarkedNotes, setShouldSyncMarkedNotes] = useState(true);
+
   // Función para manejar cambio de pestañas
   const handleTabChange = (tabId: string) => {
     handleTabChangeBase(tabId, loadNotes);
   };
 
-  // Función para manejar la creación de grupos
+  // Función para manejar la creación de grupos con notas marcadas
   const handleCreateGroupWithMarkedNotes = async () => {
     const result = await handleCreateGroup(markedNotes);
     if (result) {
-      setMarkedNotes([]);
+      setMarkedNotes([]); // Desmarcar todas las notas después de crear el grupo
     }
   };
+
+  // Función para manejar la eliminación de notas marcadas
+  const handleDeleteMarkedNotesWithClear = async () => {
+    try {
+      await handleDeleteMarkedNotes();
+      setMarkedNotes([]); // Forzar el reseteo de las notas marcadas
+    } catch (error) {
+      console.error('Error al eliminar notas marcadas:', error);
+    }
+  };
+
+  // Función para añadir notas marcadas a un grupo
+  const handleAddNotesToGroup = async (groupId: string) => {
+    try {
+      // Crear un array de promesas para añadir cada nota al grupo
+      const addPromises = markedNotes.map(noteId => 
+        handleAddNoteToGroup(groupId, noteId)
+      );
+      
+      // Esperar a que todas las promesas se resuelvan
+      await Promise.all(addPromises);
+      
+      // Mostrar feedback
+      showFeedback(`Notas añadidas al grupo exitosamente`);
+      
+      // Importante: limpiar las notas marcadas
+      setMarkedNotes([]);
+      
+      // Recargar las notas para actualizar la UI
+      loadNotes();
+    } catch (error) {
+      console.error('Error al añadir notas al grupo:', error);
+      showFeedback('Error al añadir notas al grupo');
+    }
+  };
+
+  // Eliminar notas de un grupo
+  const handleRemoveNotesFromGroup = async (groupId: string) => {
+    try {
+      // Crear un array de promesas para eliminar cada nota del grupo
+      const removePromises = markedNotes.map(noteId => 
+        handleRemoveNoteFromGroup(groupId, noteId)
+      );
+      
+      // Esperar a que todas las promesas se resuelvan
+      await Promise.all(removePromises);
+      
+      // Mostrar feedback
+      showFeedback(`Notas eliminadas del grupo exitosamente`);
+      
+      // Limpiar las notas marcadas
+      setMarkedNotes([]);
+      
+      // Recargar notas para actualizar la vista
+      loadNotes();
+    } catch (error) {
+      console.error('Error al eliminar notas del grupo:', error);
+      showFeedback('Error al eliminar notas del grupo');
+    }
+  };
+
+  // Efecto para sincronizar notas marcadas solo cuando es necesario
+  useEffect(() => {
+    if (shouldSyncMarkedNotes) {
+      // Identificar notas que están marcadas según su propiedad is_marked
+      const markedNoteIds = notes
+        .filter(note => note.is_marked)
+        .map(note => note.id);
+      
+      // Actualizar el estado
+      setMarkedNotes(markedNoteIds);
+      setShouldSyncMarkedNotes(false);
+    }
+  }, [notes, shouldSyncMarkedNotes]);
+
+  // Actualiza este efecto para que se ejecute cuando cambie el grupo activo
+  useEffect(() => {
+    setShouldSyncMarkedNotes(true); // Esto forzará la sincronización cuando cambie el grupo
+  }, [activeGroup]);
 
   // Función para manejar teclas en textareas
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
@@ -256,6 +343,7 @@ const Notes: React.FC = () => {
         activeGroup={activeGroup}
         onGroupSelect={handleGroupSelect}
         onDeleteGroup={handleDeleteGroup}
+        onMoveGroup={handleMoveGroup}
       />
 
       {/* Contenido principal */}
@@ -280,8 +368,12 @@ const Notes: React.FC = () => {
         {/* Menú de acciones en masa */}
         <BulkActionsMenu 
           markedNotes={markedNotes}
+          groups={groups}
+          activeGroup={activeGroup}
           onShowGroupModal={() => setShowGroupModal(true)}
-          onDeleteMarkedNotes={handleDeleteMarkedNotes}
+          onDeleteMarkedNotes={handleDeleteMarkedNotesWithClear}
+          onAddToGroup={handleAddNotesToGroup}
+          onRemoveFromGroup={handleRemoveNotesFromGroup}
         />
 
         {/* Crear nota */}
@@ -351,8 +443,8 @@ const Notes: React.FC = () => {
         {/* Modal de creación de grupo */}
         {showGroupModal && (
           <GroupModal
-            newGroup={newGroup}
-            setNewGroup={setNewGroup}
+            newGroup={newNoteGroup}
+            setNewGroup={setNoteNewGroup}
             onClose={() => setShowGroupModal(false)}
             onCreateGroup={handleCreateGroupWithMarkedNotes}
           />

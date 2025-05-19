@@ -424,32 +424,49 @@ export class NoteController {
 
       await client.query("BEGIN");
 
-      // Crear el grupo
+      // Obtener la posición máxima actual
+      const positionResult = await client.query(
+        "SELECT COALESCE(MAX(position), -1) as max_position FROM note_groups WHERE user_id = $1",
+        [userId]
+      );
+      
+      const nextPosition = positionResult.rows[0].max_position + 1;
+
+      // Crear el grupo con la nueva posición
       const groupResult = await client.query(
-        "INSERT INTO note_groups (name, color, user_id) VALUES ($1, $2, $3) RETURNING *",
-        [name, color, userId]
+        "INSERT INTO note_groups (name, color, user_id, position) VALUES ($1, $2, $3, $4) RETURNING *",
+        [name, color, userId, nextPosition]
       );
 
       const groupId = groupResult.rows[0].id;
 
       // Añadir notas al grupo
       if (noteIds && noteIds.length > 0) {
-        const values = noteIds
-          .map((noteId: string) => `(${groupId}, '${noteId}')`)
-          .join(",");
+        // Corregir este tipo explícitamente
+        const placeholders = noteIds.map((_: any, idx: number) => `($1, $${idx + 2})`).join(',');
+        const values = [groupId, ...noteIds];
+        
         await client.query(`
           INSERT INTO note_group_items (group_id, note_id) 
-          VALUES ${values}
-        `);
+          VALUES ${placeholders}
+        `, values);
       }
 
       await client.query("COMMIT");
+      
+      // Devolver el grupo con las notas incluidas
+      const completeGroup = {
+        ...groupResult.rows[0],
+        note_ids: noteIds || []
+      };
+      
       res.status(201).json({
         message: "Grupo creado exitosamente",
-        group: groupResult.rows[0],
+        group: completeGroup,
       });
     } catch (error) {
       await client.query("ROLLBACK");
+      console.error("Error al crear el grupo:", error);
       res.status(500).json({ error: "Error al crear el grupo" });
     } finally {
       client.release();
@@ -460,12 +477,14 @@ export class NoteController {
     try {
       const userId = req.user.id;
       const result = await pool.query(
-        `SELECT g.*, COALESCE(array_agg(ngi.note_id) FILTER (WHERE ngi.note_id IS NOT NULL), ARRAY[]::uuid[]) as note_ids
-         FROM note_groups g
-         LEFT JOIN note_group_items ngi ON g.id = ngi.group_id
-         WHERE g.user_id = $1
-         GROUP BY g.id
-         ORDER BY g.created_at DESC`,
+        `SELECT g.*, 
+        COALESCE(array_agg(ngi.note_id) FILTER (WHERE ngi.note_id IS NOT NULL), ARRAY[]::uuid[]) as note_ids,
+        g.position
+        FROM note_groups g
+        LEFT JOIN note_group_items ngi ON g.id = ngi.group_id
+        WHERE g.user_id = $1
+        GROUP BY g.id
+        ORDER BY g.position ASC, g.created_at DESC`,
         [userId]
       );
 
@@ -479,6 +498,176 @@ export class NoteController {
     } catch (error) {
       console.error("Error in getGroups:", error);
       res.status(500).json({ error: "Error al obtener los grupos" });
+    }
+  }
+
+  async updateGroup(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { name, color } = req.body;
+      const userId = req.user.id;
+
+      // Verificar que el grupo existe y pertenece al usuario
+      const checkGroup = await pool.query(
+        "SELECT * FROM note_groups WHERE id = $1 AND user_id = $2",
+        [id, userId]
+      );
+
+      if (checkGroup.rows.length === 0) {
+        res.status(404).json({ error: "Grupo no encontrado" });
+        return;
+      }
+
+      // Actualizar el grupo
+      const result = await pool.query(
+        "UPDATE note_groups SET name = $1, color = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4 RETURNING *",
+        [name, color, id, userId]
+      );
+
+      // Obtener las notas asociadas al grupo
+      const notesResult = await pool.query(
+        `SELECT note_id FROM note_group_items WHERE group_id = $1`,
+        [id]
+      );
+
+      const noteIds = notesResult.rows.map(row => row.note_id);
+
+      res.json({ 
+        message: "Grupo actualizado exitosamente",
+        group: {
+          ...result.rows[0],
+          id: result.rows[0].id.toString(),
+          note_ids: noteIds
+        }
+      });
+    } catch (error) {
+      console.error("Error al actualizar grupo:", error);
+      res.status(500).json({ error: "Error al actualizar el grupo" });
+    }
+  }
+
+  async addNoteToGroup(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId, noteId } = req.body;
+      const userId = req.user.id;
+
+      // Verificar que el grupo existe y pertenece al usuario
+      const groupCheck = await pool.query(
+        "SELECT * FROM note_groups WHERE id = $1 AND user_id = $2",
+        [groupId, userId]
+      );
+
+      if (groupCheck.rows.length === 0) {
+        res.status(404).json({ error: "Grupo no encontrado" });
+        return;
+      }
+
+      // Verificar que la nota existe y pertenece al usuario
+      const noteCheck = await pool.query(
+        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
+        [noteId, userId]
+      );
+
+      if (noteCheck.rows.length === 0) {
+        res.status(404).json({ error: "Nota no encontrada" });
+        return;
+      }
+
+      // Verificar si la nota ya está en el grupo
+      const existingCheck = await pool.query(
+        "SELECT * FROM note_group_items WHERE group_id = $1 AND note_id = $2",
+        [groupId, noteId]
+      );
+
+      if (existingCheck.rows.length > 0) {
+        res.status(400).json({ error: "La nota ya está en este grupo" });
+        return;
+      }
+
+      // Añadir la nota al grupo
+      await pool.query(
+        "INSERT INTO note_group_items (group_id, note_id) VALUES ($1, $2)",
+        [groupId, noteId]
+      );
+
+      res.json({ message: "Nota añadida al grupo exitosamente" });
+    } catch (error) {
+      console.error("Error al añadir nota al grupo:", error);
+      res.status(500).json({ error: "Error al añadir la nota al grupo" });
+    }
+  }
+
+  async removeNoteFromGroup(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId, noteId } = req.params;
+      const userId = req.user.id;
+
+      // Verificar que el grupo existe y pertenece al usuario
+      const groupCheck = await pool.query(
+        "SELECT * FROM note_groups WHERE id = $1 AND user_id = $2",
+        [groupId, userId]
+      );
+
+      if (groupCheck.rows.length === 0) {
+        res.status(404).json({ error: "Grupo no encontrado" });
+        return;
+      }
+
+      // Eliminar la nota del grupo
+      await pool.query(
+        "DELETE FROM note_group_items WHERE group_id = $1 AND note_id = $2",
+        [groupId, noteId]
+      );
+
+      res.json({ message: "Nota eliminada del grupo exitosamente" });
+    } catch (error) {
+      console.error("Error al eliminar nota del grupo:", error);
+      res.status(500).json({ error: "Error al eliminar la nota del grupo" });
+    }
+  }
+
+  async reorderGroups(req: Request, res: Response): Promise<void> {
+    const client = await pool.connect();
+    try {
+      const { groupIds } = req.body;
+      const userId = req.user.id;
+
+      // Verificar si groupIds es un array y no está vacío
+      if (!Array.isArray(groupIds) || groupIds.length === 0) {
+        res.status(400).json({ error: "Se requiere un array de IDs de grupos" });
+        return;
+      }
+
+      await client.query("BEGIN");
+
+      // Verificar que todos los grupos pertenecen al usuario antes de reordenarlos
+      const groupsCheck = await client.query(
+        "SELECT id FROM note_groups WHERE id = ANY($1) AND user_id = $2",
+        [groupIds, userId]
+      );
+
+      if (groupsCheck.rows.length !== groupIds.length) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Uno o más grupos no existen o no pertenecen al usuario" });
+        return;
+      }
+
+      // Actualizar la posición de cada grupo con manejo adecuado de errores
+      for (let i = 0; i < groupIds.length; i++) {
+        await client.query(
+          "UPDATE note_groups SET position = $1 WHERE id = $2 AND user_id = $3",
+          [i, groupIds[i], userId]
+        );
+      }
+
+      await client.query("COMMIT");
+      res.json({ message: "Orden de grupos actualizado exitosamente" });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error al reordenar grupos:", error);
+      res.status(500).json({ error: "Error al reordenar los grupos", details: error instanceof Error ? error.message : "Error desconocido" });
+    } finally {
+      client.release();
     }
   }
 

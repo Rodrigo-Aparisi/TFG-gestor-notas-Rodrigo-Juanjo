@@ -116,16 +116,18 @@ const NoteCard: React.FC<NoteCardProps> = ({
     >
       <div className="note-actions">
         <button 
-          className={`action-button \${note.is_marked ? 'marked' : ''}`}
+          className={`action-button ${(note.is_marked || isMarked) ? 'marked' : ''}`}
           onClick={(e) => handleToggleMark(note.id, e)}
-          title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+          title={(note.is_marked || isMarked) ? 'Desmarcar nota' : 'Marcar nota'}
         >
           <i className="fas fa-check-circle"></i>
         </button>
+
         <button 
-          className={`action-button \${note.is_pinned ? 'pinned' : ''}`}
+          className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
           onClick={(e) => handleTogglePin(note.id, e)}
           title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+          style={note.is_pinned ? {color: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)'} : {}}
         >
           <i className="fas fa-thumbtack"></i>
         </button>
@@ -152,7 +154,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
       <div className="note-content">
         <input
           type="text"
-          value={editingNote[note.id]?.title ?? note.title}
+          value={editingNote[note.id]?.title || note.title || ''}
           onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
           onBlur={() => handleUpdateNote(note.id, 'title')}
           onClick={e => e.stopPropagation()}

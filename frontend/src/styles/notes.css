@@ -376,14 +376,6 @@ button:focus {
   transform: scale(1.1);
 }
 
-.action-button.marked {
-  color: #f1c40f;
-}
-
-.action-button.pinned {
-  color: #2ecc71;
-}
-
 .action-button i {
   font-size: 1.2rem;
 }
@@ -420,6 +412,95 @@ button:focus {
 .note-card.focused .delete-button {
   opacity: 1;
 }
+
+/* Estilos para el botón de eliminar del grupo */
+.remove-from-group-button {
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.remove-from-group-button:hover {
+  background-color: #d35400;
+}
+
+/* Estilos para los botones marcados y fijados */
+.action-button.marked {
+  color: #f1c40f !important;
+  background-color: rgba(241, 196, 15, 0.1) !important;
+}
+
+/* Estilos para el botón fijado */
+.action-button.pinned {
+  color: #2ecc71 !important;
+  background-color: rgba(46, 204, 113, 0.1) !important;
+}
+
+/* Para la nota completa cuando está marcada */
+.note-card.marked {
+  border-left: 3px solid #f1c40f;
+}
+
+/* Estilos para el menú desplegable de grupos */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-button:hover {
+  background-color: #2980b9;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content div {
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-content div:hover {
+  background-color: #f1f1f1;
+}
+
 
 /* === BOTÓN DE LISTA === */
 .list-buttons {

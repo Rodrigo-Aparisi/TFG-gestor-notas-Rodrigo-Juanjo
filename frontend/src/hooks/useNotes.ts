@@ -315,30 +315,31 @@ export function useNotes() {
     }
   };
 
+  // En el hook useNotes.ts
   const handleToggleMark = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
+    
     try {
-      const response = await noteService.toggleMark(id);
-      if (response && response.note) {
-        setNotes(prevNotes => 
-          prevNotes.map(note => 
-            note.id === id ? response.note : note
-          )
-        );
-        
-        setMarkedNotes(prev => {
-          if (response.note.is_marked) {
-            return [...prev, id];
-          } else {
-            return prev.filter(noteId => noteId !== id);
-          }
-        });
-        
-        forceReorder();
-      }
+      // Actualizar solo el estado local para mejor UX
+      setMarkedNotes(prev => {
+        const isCurrentlyMarked = prev.includes(id);
+        return isCurrentlyMarked 
+          ? prev.filter(noteId => noteId !== id) 
+          : [...prev, id];
+      });
+      
+      // Llamada a la API sin actualizar el estado de las notas
+      await noteService.toggleMark(id);
+      
     } catch (error) {
       console.error('Error al marcar/desmarcar nota:', error);
-      showFeedback('Error al actualizar la nota');
+      // Restaurar el estado anterior en caso de error
+      setMarkedNotes(prev => {
+        const wasMarked = !prev.includes(id);
+        return wasMarked 
+          ? [...prev, id] 
+          : prev.filter(noteId => noteId !== id);
+      });
     }
   };
   

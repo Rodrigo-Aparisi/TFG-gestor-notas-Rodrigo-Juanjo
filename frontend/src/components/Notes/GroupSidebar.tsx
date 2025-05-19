@@ -1,19 +1,21 @@
 import React from 'react';
 import { Group } from '../../types';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 
 interface GroupSidebarProps {
   groups: Group[];
   activeGroup: string;
   onGroupSelect: (groupId: string) => void;
   onDeleteGroup: (groupId: string, event: React.MouseEvent) => void;
+  onMoveGroup: (groupId: string, direction: 'up' | 'down') => void;
 }
 
 const GroupSidebar: React.FC<GroupSidebarProps> = ({ 
   groups, 
   activeGroup, 
   onGroupSelect, 
-  onDeleteGroup 
+  onDeleteGroup,
+  onMoveGroup
 }) => {
   return (
     <div className="notes-sidebar">
@@ -34,7 +36,7 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
         {/* Grupos */}
         {groups
           .filter(group => group.id !== 'main') // Filtramos el grupo principal que ya añadimos arriba
-          .map((group) => (
+          .map((group, index) => (
           <div 
             key={`group-${group.id}`}
             className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
@@ -46,15 +48,39 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
             />
             <span className="group-name">{group.name}</span>
             {!group.isDefault && (
-              <button 
-                className="action-button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Evitamos la propagación del clic
-                  onDeleteGroup(group.id, e);
-                }}
-              >
-                <i className="fas fa-times"></i>
-              </button>
+              <div className="group-actions">
+                {index > 0 && (
+                  <button 
+                    className="action-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveGroup(group.id, 'up');
+                    }}
+                  >
+                    <FaArrowUp />
+                  </button>
+                )}
+                {index < groups.filter(g => !g.isDefault).length - 1 && (
+                  <button 
+                    className="action-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMoveGroup(group.id, 'down');
+                    }}
+                  >
+                    <FaArrowDown />
+                  </button>
+                )}
+                <button 
+                  className="action-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteGroup(group.id, e);
+                  }}
+                >
+                  <FaTrash />
+                </button>
+              </div>
             )}
           </div>
         ))}
