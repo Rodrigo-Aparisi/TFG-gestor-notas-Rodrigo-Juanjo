@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
+import { Group } from '../types';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
 import { useGroups } from '../hooks/useNoteGroups';
@@ -61,7 +62,8 @@ const Notes: React.FC = () => {
     setNoteNewGroup,
     handleMoveGroup,
     handleAddNoteToGroup,
-    handleRemoveNoteFromGroup
+    handleRemoveNoteFromGroup,
+    handleUpdateGroup
   } = useGroups(showFeedback);
 
   const {
@@ -84,6 +86,7 @@ const Notes: React.FC = () => {
 
   const [showGroupOptions, setShowGroupOptions] = useState(false);
   const [shouldSyncMarkedNotes, setShouldSyncMarkedNotes] = useState(true);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   // Función para manejar cambio de pestañas
   const handleTabChange = (tabId: string) => {
@@ -95,6 +98,47 @@ const Notes: React.FC = () => {
     const result = await handleCreateGroup(markedNotes);
     if (result) {
       setMarkedNotes([]); // Desmarcar todas las notas después de crear el grupo
+      return true;
+    }
+    return false;
+  };
+
+  // Función para manejar la edición de grupos
+  const handleEditGroup = (group: Group, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingGroup(group);
+    setNoteNewGroup({ name: group.name, color: group.color });
+    setShowGroupModal(true);
+  };
+
+  //Funcion para manejar la creación o actualización de grupos
+  const handleSaveGroup = async () => {
+    if (editingGroup) {
+      // Si estamos editando un grupo existente
+      try {
+        const result = await handleUpdateGroup(editingGroup.id, {
+          name: newNoteGroup.name,
+          color: newNoteGroup.color
+        });
+        
+        if (result) {
+          // Cerrar el modal y limpiar el estado después de una actualización exitosa
+          setEditingGroup(null);
+          setShowGroupModal(false);
+          setNoteNewGroup({ name: '', color: '#f1c40f' });
+        }
+      } catch (error) {
+        console.error('Error al actualizar grupo:', error);
+        showFeedback('Error al actualizar el grupo');
+      }
+    } else {
+      // Si estamos creando un nuevo grupo
+      const result = await handleCreateGroupWithMarkedNotes();
+      if (result) {
+        // Cerrar el modal solo si la creación fue exitosa
+        setShowGroupModal(false);
+        setNoteNewGroup({ name: '', color: '#f1c40f' });
+      }
     }
   };
 
@@ -344,6 +388,7 @@ const Notes: React.FC = () => {
         onGroupSelect={handleGroupSelect}
         onDeleteGroup={handleDeleteGroup}
         onMoveGroup={handleMoveGroup}
+        onEditGroup={handleEditGroup}
       />
 
       {/* Contenido principal */}
@@ -443,10 +488,17 @@ const Notes: React.FC = () => {
         {/* Modal de creación de grupo */}
         {showGroupModal && (
           <GroupModal
+            isEdit={!!editingGroup}
+            group={editingGroup || undefined}
             newGroup={newNoteGroup}
             setNewGroup={setNoteNewGroup}
-            onClose={() => setShowGroupModal(false)}
-            onCreateGroup={handleCreateGroupWithMarkedNotes}
+            onClose={() => {
+              setShowGroupModal(false);
+              setEditingGroup(null);
+              setNoteNewGroup({ name: '', color: '#f1c40f' });
+            }}
+            onCreateGroup={handleSaveGroup}
+            onUpdateGroup={undefined}
           />
         )}
       </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group } from '../../types';
-import { FaTrash, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaTrash, FaArrowUp, FaArrowDown, FaEdit } from 'react-icons/fa';
 
 interface GroupSidebarProps {
   groups: Group[];
@@ -8,6 +8,7 @@ interface GroupSidebarProps {
   onGroupSelect: (groupId: string) => void;
   onDeleteGroup: (groupId: string, event: React.MouseEvent) => void;
   onMoveGroup: (groupId: string, direction: 'up' | 'down') => void;
+  onEditGroup: (group: Group, event: React.MouseEvent) => void;
 }
 
 const GroupSidebar: React.FC<GroupSidebarProps> = ({ 
@@ -15,7 +16,8 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
   activeGroup, 
   onGroupSelect, 
   onDeleteGroup,
-  onMoveGroup
+  onMoveGroup,
+  onEditGroup
 }) => {
   return (
     <div className="notes-sidebar">
@@ -35,20 +37,33 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
 
         {/* Grupos */}
         {groups
-          .filter(group => group.id !== 'main') // Filtramos el grupo principal que ya añadimos arriba
+          .filter(group => !group.isDefault && group.id !== 'trash') // Filtramos grupos predeterminados
           .map((group, index) => (
-          <div 
-            key={`group-${group.id}`}
-            className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
-            onClick={() => onGroupSelect(group.id)}
-          >
             <div 
-              className="group-color" 
-              style={{ backgroundColor: group.color }}
-            />
-            <span className="group-name">{group.name}</span>
-            {!group.isDefault && (
-              <div className="group-actions">
+              key={`group-${group.id}`}
+              className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+              onClick={() => onGroupSelect(group.id)}
+            >
+              <div className="group-actions-left">
+                <button 
+                  className="action-button edit-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditGroup(group, e);
+                  }}
+                  title="Editar grupo"
+                >
+                  <FaEdit />
+                </button>
+              </div>
+              
+              <div 
+                className="group-color" 
+                style={{ backgroundColor: group.color }}
+              />
+              <span className="group-name">{group.name}</span>
+              
+              <div className="group-actions-right">
                 {index > 0 && (
                   <button 
                     className="action-button"
@@ -56,34 +71,36 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
                       e.stopPropagation();
                       onMoveGroup(group.id, 'up');
                     }}
+                    title="Mover hacia arriba"
                   >
                     <FaArrowUp />
                   </button>
                 )}
-                {index < groups.filter(g => !g.isDefault).length - 1 && (
+                {index < groups.filter(g => !g.isDefault && g.id !== 'trash').length - 1 && (
                   <button 
                     className="action-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onMoveGroup(group.id, 'down');
                     }}
+                    title="Mover hacia abajo"
                   >
                     <FaArrowDown />
                   </button>
                 )}
                 <button 
-                  className="action-button"
+                  className="action-button delete-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteGroup(group.id, e);
                   }}
+                  title="Eliminar grupo"
                 >
                   <FaTrash />
                 </button>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
 
         <div className="mt-4 border-t pt-2">
           <div 

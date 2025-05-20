@@ -58,7 +58,8 @@ CREATE TABLE note_groups (
     color VARCHAR(50) DEFAULT '#f1c40f',
     user_id UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    position INTEGER DEFAULT 0
+    position INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE note_group_items (
@@ -258,5 +259,11 @@ CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
 -- Crear trigger para actualizar updated_at
 CREATE TRIGGER update_shared_notes_updated_at
     BEFORE UPDATE ON shared_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear trigger para actualizar updated_at automáticamente
+CREATE TRIGGER update_note_groups_updated_at
+    BEFORE UPDATE ON note_groups
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();

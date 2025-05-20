@@ -19,8 +19,8 @@ const GroupModal: React.FC<GroupModalProps> = ({
   onCreateGroup,
   onUpdateGroup
 }) => {
+  // Asegurarnos de que los datos iniciales se establezcan correctamente
   useEffect(() => {
-    // Si estamos en modo edición y tenemos un grupo, inicializar con sus datos
     if (isEdit && group) {
       setNewGroup({
         name: group.name,
@@ -30,11 +30,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
   }, [isEdit, group, setNewGroup]);
 
   const handleSubmit = () => {
-    if (isEdit && group && onUpdateGroup) {
-      onUpdateGroup(group.id);
-    } else {
-      onCreateGroup();
-    }
+    onCreateGroup(); // Esta función ahora maneja tanto creación como actualización
   };
 
   return (
@@ -58,14 +54,14 @@ const GroupModal: React.FC<GroupModalProps> = ({
             onChange={(e) => setNewGroup(prev => ({ ...prev, color: e.target.value }))}
           />
         </div>
-        <div className="modal-actions">
-          <button onClick={onClose}>Cancelar</button>
-          <button onClick={handleSubmit}>
-            {isEdit ? 'Guardar cambios' : 'Crear grupo'}
-          </button>
+          <div className="modal-actions">
+            <button onClick={onClose}>Cancelar</button>
+            <button onClick={handleSubmit}>
+              {isEdit ? 'Guardar cambios' : 'Crear grupo'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 
