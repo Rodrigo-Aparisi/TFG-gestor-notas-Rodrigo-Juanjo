@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import '../../styles/notes.css';
 
 interface NoteActionsMenuProps {
@@ -20,8 +21,11 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
   onImageUpload
 }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const listButtonRef = useRef<HTMLButtonElement>(null);
+  const exportButtonRef = useRef<HTMLButtonElement>(null);
   
   // Función para guardar la selección actual
   const saveSelection = () => {
@@ -43,13 +47,26 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
         end: textarea.selectionEnd,
         textareaId: isNewNote ? 'new' : noteId
       };
-      console.log('Selección guardada:', savedSelection);
     }
   };
   
-  const handleMouseEnter = (menuName: string) => {
+  // Función para actualizar la posición del menú desplegable
+  const updateMenuPosition = (buttonRef: React.RefObject<HTMLButtonElement>) => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      });
+    }
+  };
+  
+  const handleMouseEnter = (menuName: string, buttonRef: React.RefObject<HTMLButtonElement>) => {
     // Guardar la selección actual cuando se muestra el menú
     saveSelection();
+    
+    // Actualizar la posición del menú
+    updateMenuPosition(buttonRef);
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -62,7 +79,7 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
     // Añadir un retraso antes de cerrar el menú
     timeoutRef.current = setTimeout(() => {
       setActiveMenu(null);
-    }, 300);
+    }, 500); // 0.5 segundos de retraso
   };
   
   // Detectar si el cursor está sobre el menú desplegable
@@ -87,10 +104,11 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
       <div className="menu-grid">        
         <div 
           className="menu-item-container"
-          onMouseEnter={() => handleMouseEnter('list')}
+          onMouseEnter={() => handleMouseEnter('list', listButtonRef)}
           onMouseLeave={handleMouseLeave}
         >
           <button 
+            ref={listButtonRef}
             className="list-button" 
             title="Listas"
             onMouseEnter={saveSelection} // Guardar selección al entrar al botón
@@ -98,28 +116,79 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
             <i className="fas fa-list"></i>
           </button>
           
-          {activeMenu === 'list' && (
+          {activeMenu === 'list' && ReactDOM.createPortal(
             <div 
-              className="menu-dropdown"
+              className="portal-menu-dropdown"
+              style={{
+                position: 'absolute',
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+                backgroundColor: '#fff',
+                boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                borderRadius: '4px',
+                zIndex: 9999,
+                minWidth: '180px',
+                overflow: 'hidden',
+                color: '#333',
+                padding: '5px 0'
+              }}
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <div className="menu-item" onClick={() => onInsertList(noteId, 'bullet', isNewNote)}>
-                <i className="fas fa-list-ul"></i> Lista con viñetas
+              <div 
+                className="menu-item" 
+                onClick={() => onInsertList(noteId, 'bullet', isNewNote)}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#333',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <i className="fas fa-list-ul" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                Lista con viñetas
               </div>
-              <div className="menu-item" onClick={() => onInsertList(noteId, 'number', isNewNote)}>
-                <i className="fas fa-list-ol"></i> Lista numerada
+              <div 
+                className="menu-item" 
+                onClick={() => onInsertList(noteId, 'number', isNewNote)}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#333',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <i className="fas fa-list-ol" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                Lista numerada
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
         
         <div 
           className="menu-item-container"
-          onMouseEnter={() => handleMouseEnter('export')}
+          onMouseEnter={() => handleMouseEnter('export', exportButtonRef)}
           onMouseLeave={handleMouseLeave}
         >
           <button 
+            ref={exportButtonRef}
             className="list-button" 
             title="Exportar"
             onMouseEnter={saveSelection} // Guardar selección al entrar al botón
@@ -127,19 +196,69 @@ const NoteActionsMenu: React.FC<NoteActionsMenuProps> = ({
             <i className="fas fa-file-export"></i>
           </button>
           
-          {activeMenu === 'export' && (
+          {activeMenu === 'export' && ReactDOM.createPortal(
             <div 
-              className="menu-dropdown"
+              className="portal-menu-dropdown"
+              style={{
+                position: 'absolute',
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+                backgroundColor: '#fff',
+                boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                borderRadius: '4px',
+                zIndex: 9999,
+                minWidth: '180px',
+                overflow: 'hidden',
+                color: '#333',
+                padding: '5px 0'
+              }}
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <div className="menu-item" onClick={() => onExport('pdf', noteId)}>
-                <i className="fas fa-file-pdf"></i> PDF
+              <div 
+                className="menu-item" 
+                onClick={() => onExport('pdf', noteId)}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#333',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <i className="fas fa-file-pdf" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                PDF
               </div>
-              <div className="menu-item" onClick={() => onExport('txt', noteId)}>
-                <i className="fas fa-file-alt"></i> TXT
+              <div 
+                className="menu-item" 
+                onClick={() => onExport('txt', noteId)}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#333',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <i className="fas fa-file-alt" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                TXT
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
         

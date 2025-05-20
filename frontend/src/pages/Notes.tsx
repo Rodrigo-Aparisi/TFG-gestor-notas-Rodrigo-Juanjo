@@ -63,7 +63,8 @@ const Notes: React.FC = () => {
     handleMoveGroup,
     handleAddNoteToGroup,
     handleRemoveNoteFromGroup,
-    handleUpdateGroup
+    handleUpdateGroup,
+    removeNoteFromAllGroups
   } = useGroups(showFeedback);
 
   const {
@@ -91,6 +92,25 @@ const Notes: React.FC = () => {
   // Función para manejar cambio de pestañas
   const handleTabChange = (tabId: string) => {
     handleTabChangeBase(tabId, loadNotes);
+  };
+
+
+  const getNotesForActiveGroup = () => {
+    // Si estamos en "Todas las notas"
+    if (activeGroup === 'main') {
+      return notes;
+    }
+    
+    // Si estamos en un grupo específico
+    const currentGroup = groups.find(g => g.id === activeGroup);
+    if (!currentGroup || !Array.isArray(currentGroup.noteIds) || currentGroup.noteIds.length === 0) {
+      return []; // Grupo vacío o inválido - retornar array vacío
+    }
+    
+    // Filtrar las notas que pertenecen al grupo
+    return notes.filter(note => 
+      currentGroup.noteIds.includes(note.id.toString())
+    );
   };
 
   // Función para manejar la creación de grupos con notas marcadas
@@ -151,6 +171,16 @@ const Notes: React.FC = () => {
       console.error('Error al eliminar notas marcadas:', error);
     }
   };
+
+  const handleDeleteNoteWithGroupUpdate = async (noteId: string) => {
+  try {
+    await handleDeleteNote(noteId);
+    // Después de eliminar la nota, también la eliminamos de todos los grupos
+    removeNoteFromAllGroups(noteId);
+  } catch (error) {
+    console.error("Error al eliminar nota:", error);
+  }
+};
 
   // Función para añadir notas marcadas a un grupo
   const handleAddNotesToGroup = async (groupId: string) => {
@@ -220,6 +250,25 @@ const Notes: React.FC = () => {
   useEffect(() => {
     setShouldSyncMarkedNotes(true); // Esto forzará la sincronización cuando cambie el grupo
   }, [activeGroup]);
+
+  useEffect(() => {
+    // Cuando cambia el grupo activo, actualiza las notas filtradas
+    if (activeGroup === 'main') {
+      handleFilteredNotes(notes);
+    } else {
+      const currentGroup = groups.find(g => g.id === activeGroup);
+      if (!currentGroup || !currentGroup.noteIds || currentGroup.noteIds.length === 0) {
+        // Si el grupo está vacío o no existe, establecer notas filtradas como array vacío
+        handleFilteredNotes([]);
+      } else {
+        // Filtrar las notas que pertenecen al grupo
+        const groupNotes = notes.filter(note => 
+          currentGroup.noteIds.includes(note.id.toString())
+        );
+        handleFilteredNotes(groupNotes);
+      }
+    }
+  }, [activeGroup, groups, notes]);
 
   // Función para manejar teclas en textareas
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
@@ -325,12 +374,23 @@ const Notes: React.FC = () => {
     const content = textarea.value;
     const selectionStart = textarea.selectionStart;
     
-    // Encontrar la línea actual y la anterior
+    // Encontrar la línea actual
     const textBeforeCursor = content.substring(0, selectionStart);
     const lines = textBeforeCursor.split('\n');
     const currentLineIndex = lines.length - 1;
+    const currentLine = lines[currentLineIndex] || '';
     
-    let insertText = '\n';
+    // Determinar si estamos al principio del textarea o al inicio de una línea
+    const isAtBeginning = selectionStart === 0;
+    const isAtLineStart = currentLine.trim() === '';
+    
+    // Decidir si añadir un salto de línea o no
+    let insertText = '';
+    
+    // Solo añadir salto de línea si no estamos al principio del textarea ni al inicio de una línea
+    if (!isAtBeginning && !isAtLineStart) {
+      insertText += '\n';
+    }
     
     if (type === 'bullet') {
       insertText += '• ';
@@ -440,11 +500,14 @@ const Notes: React.FC = () => {
             
             <NoteSort 
               key={`note-sort-${sortKey}`}
-              notes={activeGroup === 'main' ? notes : notes.filter(note => {
-                const currentGroup = groups.find(g => g.id === activeGroup);
-                return currentGroup && Array.isArray(currentGroup.noteIds) && 
-                  currentGroup.noteIds.includes(note.id.toString());
-              })}
+              notes={activeGroup === 'main' ? 
+                notes : 
+                notes.filter(note => {
+                  const currentGroup = groups.find(g => g.id === activeGroup);
+                  return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                    currentGroup.noteIds.includes(note.id.toString());
+                })
+              }
               onNotesFiltered={handleFilteredNotes}
             />
           </div>
@@ -453,7 +516,14 @@ const Notes: React.FC = () => {
         {/* Grid de notas */}
         {activeTab === 'my-notes' ? (
           <NotesGrid
-            notes={filteredNotes}
+            notes={activeGroup === 'main' ? 
+              filteredNotes : 
+              filteredNotes.filter(note => {
+                const currentGroup = groups.find(g => g.id === activeGroup);
+                return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                  currentGroup.noteIds.includes(note.id.toString());
+              })
+            }
             editingNote={editingNote}
             focusedNoteId={focusedNoteId}
             sharingNoteId={sharingNoteId}
