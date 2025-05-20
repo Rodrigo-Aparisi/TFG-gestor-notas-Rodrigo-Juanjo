@@ -22,17 +22,18 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
   // Asegurar que members es un array
   const safeMembers = Array.isArray(members) ? members : [];
   
-  console.log("GroupOfMembersList props:", {
+  console.log("GroupOfMembersList props detalladas:", {
     members: safeMembers,
     currentUserId,
-    isOwnerOrAdmin
+    isOwnerOrAdmin,
+    currentUserInMembers: safeMembers.find(m => m.user_id === currentUserId)
   });
   
   // Manejar el cambio de rol
   const handleRoleChange = (memberId: string, newRole: string) => {
     console.log(`Cambiando rol de ${memberId} a ${newRole}`);
     onEditPermissions(memberId, newRole);
-    setEditingMemberId(null); // Cerrar el modo de edición
+    setEditingMemberId(null);
   };
 
   return (
@@ -84,8 +85,10 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
                 </div>
               )}
 
-              {/* Mostrar el botón de editar permisos siempre para depuración */}
-              {editingMemberId !== member.id && member.role !== 'owner' && (
+              {/* Mostrar el botón de editar permisos solo si el usuario es el propietario o administrador */}
+              {editingMemberId !== member.id && 
+              member.role !== 'owner' && 
+              isOwnerOrAdmin && (
                 <button
                   className="edit-permissions-btn"
                   onClick={() => setEditingMemberId(member.id)}

@@ -600,88 +600,136 @@ export class UserGroupController {
   }
 
   // Cambiar el rol de un miembro
-  async updateMemberRole(req: Request, res: Response): Promise<void> {
-    try {
-      const groupId = req.params.id;
-      const memberUserId = req.params.userId;
-      const userId = req.user.id;
-      const { role } = req.body;
+async updateMemberRole(req: Request, res: Response): Promise<void> {
+  try {
+    const groupId = req.params.id;
+    const memberUserId = req.params.userId;
+    const userId = req.user.id;
+    const { role } = req.body;
 
-      if (!["admin", "member"].includes(role)) {
-        res.status(400).json({ error: "Rol no válido" });
-        return;
-      }
-
-      // Verificar que el usuario que actualiza es el propietario
-      const ownerCheckResult = await pool.query(
-        `
-        SELECT owner_id FROM user_groups WHERE id = \$1
-      `,
-        [groupId]
-      );
-
-      if (ownerCheckResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
-      }
-
-      if (ownerCheckResult.rows[0].owner_id !== userId) {
-        res
-          .status(403)
-          .json({ error: "Solo el propietario puede cambiar roles" });
-        return;
-      }
-
-      // No se puede cambiar el rol del propietario
-      if (memberUserId === ownerCheckResult.rows[0].owner_id) {
-        res
-          .status(403)
-          .json({ error: "No se puede cambiar el rol del propietario" });
-        return;
-      }
-
-      // Actualizar el rol
-      const updateResult = await pool.query(
-        `
-        UPDATE group_members
-        SET role = \$1
-        WHERE group_id = $2 AND user_id = $3
-        RETURNING *
-      `,
-        [role, groupId, memberUserId]
-      );
-
-      if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "Miembro no encontrado" });
-        return;
-      }
-
-      // Obtener información completa del miembro
-      const getMemberResult = await pool.query(
-        `
-        SELECT 
-          gm.id,
-          gm.user_id,
-          u.username,
-          u.profile_image,
-          gm.role,
-          gm.joined_at
-        FROM group_members gm
-        JOIN users u ON gm.user_id = u.id
-        WHERE gm.group_id = $1 AND gm.user_id = $2
-      `,
-        [groupId, memberUserId]
-      );
-
-      res.json({
-        message: "Rol actualizado correctamente",
-        member: getMemberResult.rows[0],
-      });
-    } catch (error) {
-      console.error("Error al actualizar rol de miembro:", error);
-      res.status(500).json({ error: "Error al actualizar rol de miembro" });
+    // Validar el rol proporcionado
+    if (!["admin", "member"].includes(role)) {
+      res.status(400).json({ error: "Rol no válido" });
+      return;
     }
+
+    // No permitir que un usuario cambie su propio rol
+    if (memberUserId === userId) {
+      res.status(403).json({ error: "No puedes cambiar tus propios permisos" });
+      return;
+    }
+
+    // Obtener información del grupo y verificar que existe
+    const groupResult = await pool.query(
+      `
+      SELECT owner_id FROM user_groups WHERE id = $1
+      `,
+      [groupId]
+    );
+
+    if (groupResult.rows.length === 0) {
+      res.status(404).json({ error: "Grupo no encontrado" });
+      return;
+    }
+
+    // No se puede cambiar el rol del propietario
+    if (memberUserId === groupResult.rows[0].owner_id) {
+      res
+        .status(403)
+        .json({ error: "No se puede cambiar el rol del propietario" });
+      return;
+    }
+
+    // Verificar el rol del usuario actual en el grupo
+    const currentUserRoleResult = await pool.query(
+      `
+      SELECT role FROM group_members 
+      WHERE group_id = $1 AND user_id = $2
+      `,
+      [groupId, userId]
+    );
+
+    if (currentUserRoleResult.rows.length === 0) {
+      res.status(403).json({ error: "No tienes acceso a este grupo" });
+      return;
+    }
+
+    const currentUserRole = currentUserRoleResult.rows[0].role;
+    
+    // Solo propietarios y administradores pueden cambiar roles
+    if (currentUserRole !== "owner" && currentUserRole !== "admin") {
+      res
+        .status(403)
+        .json({ error: "No tienes permisos para cambiar roles" });
+      return;
+    }
+
+    // Obtener el rol actual del miembro a modificar
+    const memberRoleResult = await pool.query(
+      `
+      SELECT role FROM group_members 
+      WHERE group_id = $1 AND user_id = $2
+      `,
+      [groupId, memberUserId]
+    );
+
+    if (memberRoleResult.rows.length === 0) {
+      res.status(404).json({ error: "Miembro no encontrado" });
+      return;
+    }
+
+    const memberCurrentRole = memberRoleResult.rows[0].role;
+
+    // Si el usuario actual es admin, no puede cambiar el rol de otros admins
+    if (currentUserRole === "admin" && memberCurrentRole === "admin") {
+      res
+        .status(403)
+        .json({ error: "Los administradores no pueden modificar el rol de otros administradores" });
+      return;
+    }
+
+    // Actualizar el rol
+    const updateResult = await pool.query(
+      `
+      UPDATE group_members
+      SET role = $1
+      WHERE group_id = $2 AND user_id = $3
+      RETURNING *
+      `,
+      [role, groupId, memberUserId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      res.status(404).json({ error: "Miembro no encontrado" });
+      return;
+    }
+
+    // Obtener información completa del miembro
+    const getMemberResult = await pool.query(
+      `
+      SELECT 
+        gm.id,
+        gm.user_id,
+        u.username,
+        u.profile_image,
+        gm.role,
+        gm.joined_at
+      FROM group_members gm
+      JOIN users u ON gm.user_id = u.id
+      WHERE gm.group_id = $1 AND gm.user_id = $2
+      `,
+      [groupId, memberUserId]
+    );
+
+    res.json({
+      message: "Rol actualizado correctamente",
+      member: getMemberResult.rows[0],
+    });
+  } catch (error) {
+    console.error("Error al actualizar rol de miembro:", error);
+    res.status(500).json({ error: "Error al actualizar rol de miembro" });
   }
+}
 
   // Obtener notas de un grupo
   async getGroupNotes(req: Request, res: Response): Promise<void> {

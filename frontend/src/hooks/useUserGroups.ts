@@ -17,7 +17,7 @@ export const useUserGroups = () => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   
   // Estados para grupo nuevo
-  const [newGroup, setNewGroup] = useState<CreateGroupData>({ name: '', description: '' });
+  const [newUserGroup, setUserNewGroup] = useState<CreateGroupData>({ name: '', description: '' });
   
   // Estados de UI
   const [loading, setLoading] = useState<boolean>(false);
@@ -70,7 +70,7 @@ export const useUserGroups = () => {
       console.error('Error al cargar las notas del grupo:', err);
       setError(err.message || 'Error al cargar las notas del grupo');
       showFeedback('Error al cargar las notas del grupo');
-      setGroupNotes([]); // Siempre establece un array vacío en caso de error
+      setGroupNotes([]);
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export const useUserGroups = () => {
 
   // Crear un nuevo grupo
   const createGroup = useCallback(async () => {
-    if (!newGroup.name.trim()) {
+    if (!newUserGroup.name.trim()) {
       showFeedback('El nombre del grupo es obligatorio');
       return false;
     }
@@ -86,9 +86,9 @@ export const useUserGroups = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.post('/user-groups', newGroup);
+      const response = await api.post('/user-groups', newUserGroup);
       setUserGroups(prev => [...prev, response.data.group]);
-      setNewGroup({ name: '', description: '' });
+      setUserNewGroup({ name: '', description: '' });
       setShowCreateGroupModal(false);
       showFeedback('Grupo creado correctamente');
       return true;
@@ -99,7 +99,7 @@ export const useUserGroups = () => {
     } finally {
       setLoading(false);
     }
-  }, [newGroup, showFeedback]);
+  }, [newUserGroup, showFeedback]);
 
   // Añadir un miembro al grupo
   const addGroupMember = useCallback(async (data: AddGroupMemberData) => {
@@ -332,7 +332,7 @@ export const useUserGroups = () => {
     loading,
     error,
     feedback,
-    newGroup,
+    newUserGroup,
     showCreateGroupModal,
     showAddMemberModal,
     newNote,
@@ -349,7 +349,7 @@ export const useUserGroups = () => {
     selectGroup,
     togglePinGroupNote,
     showFeedback,
-    setNewGroup,
+    setUserNewGroup,
     setShowCreateGroupModal,
     setShowAddMemberModal,
     setNewNote,

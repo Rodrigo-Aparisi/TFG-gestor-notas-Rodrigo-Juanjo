@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { CreateGroupData } from '../../types';
 
 interface CreateGroupModalProps {
-  newGroup: CreateGroupData;
-  setNewGroup: React.Dispatch<React.SetStateAction<CreateGroupData>>;
+  newUserGroup: CreateGroupData;
+  setUserNewGroup: React.Dispatch<React.SetStateAction<CreateGroupData>>;
   onClose: () => void;
   onCreateGroup: () => Promise<boolean>;
 }
 
 const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
-  newGroup,
-  setNewGroup,
+  newUserGroup,
+  setUserNewGroup,
   onClose,
   onCreateGroup
 }) => {
@@ -18,7 +18,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGroup.name.trim()) return;
+    if (!newUserGroup.name.trim()) return;
     
     setIsSubmitting(true);
     try {
@@ -51,8 +51,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <input
               id="group-name"
               type="text"
-              value={newGroup.name}
-              onChange={e => setNewGroup({...newGroup, name: e.target.value})}
+              value={newUserGroup.name}
+              onChange={e => setUserNewGroup({...newUserGroup, name: e.target.value})}
               placeholder="Nombre del grupo"
               required
               disabled={isSubmitting}
@@ -63,8 +63,8 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <label htmlFor="group-description">Descripción (opcional)</label>
             <textarea
               id="group-description"
-              value={newGroup.description || ''}
-              onChange={e => setNewGroup({...newGroup, description: e.target.value})}
+              value={newUserGroup.description || ''}
+              onChange={e => setUserNewGroup({...newUserGroup, description: e.target.value})}
               placeholder="Descripción del grupo"
               disabled={isSubmitting}
             />
@@ -82,7 +82,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             <button 
               type="submit"
               className="create-btn"
-              disabled={!newGroup.name.trim() || isSubmitting}
+              disabled={!newUserGroup.name.trim() || isSubmitting}
             >
               {isSubmitting ? 'Creando...' : 'Crear Grupo'}
             </button>

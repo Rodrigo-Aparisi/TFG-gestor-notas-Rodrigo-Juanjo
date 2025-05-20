@@ -23,7 +23,7 @@ const Groups: React.FC = () => {
     groupNotes = [],
     loading,
     feedback,
-    newGroup,
+    newUserGroup,
     showCreateGroupModal,
     showAddMemberModal,
     newNote,
@@ -37,7 +37,7 @@ const Groups: React.FC = () => {
     deleteGroupNote,
     selectGroup,
     togglePinGroupNote,
-    setNewGroup,
+    setUserNewGroup,
     setShowCreateGroupModal,
     setShowAddMemberModal,
     setNewNote,
@@ -47,28 +47,35 @@ const Groups: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'notes' | 'members'>('notes');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [forceRender, setForceRender] = useState(0); // Estado para forzar re-renderizado
+  const [forceRender, setForceRender] = useState(0);
 
   // Determinar si el usuario actual es propietario o administrador del grupo seleccionado
   const isOwnerOrAdmin = React.useMemo(() => {
     console.log("Evaluando isOwnerOrAdmin:");
     console.log("selectedGroup:", selectedGroup);
     console.log("user:", user);
+    console.log("ID de usuario actual:", user?.id);
 
     if (!selectedGroup?.members || !user?.id) {
       console.log("No hay grupo seleccionado o usuario");
       return false;
     }
     
-    const result = selectedGroup.members.some(member => {
-      console.log("Evaluando miembro:", member);
-      console.log("user_id coincide:", member.user_id === user.id);
-      console.log("role:", member.role);
-      return member.user_id === user.id && (member.role === 'owner' || member.role === 'admin');
-    });
+    // Buscar directamente al usuario en los miembros del grupo
+    const userMember = selectedGroup.members.find(member => member.user_id === user.id);
+    console.log("Usuario miembro encontrado:", userMember);
     
-    console.log("Resultado isOwnerOrAdmin:", result);
-    return result || true; // Forzar a true temporalmente para depuración
+    if (userMember) {
+      console.log(`Usuario es ${userMember.role}`);
+      // El usuario es propietario o admin
+      if (userMember.role === 'owner' || userMember.role === 'admin') {
+        console.log("Usuario es propietario o admin - Tiene permisos");
+        return true;
+      }
+    }
+    
+    console.log("Usuario no tiene permisos de propietario o admin");
+    return false;
   }, [selectedGroup?.members, user?.id, forceRender]);
 
   // Forzar re-renderizado cuando cambia el grupo seleccionado
@@ -146,32 +153,53 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleEditPermissions = async (memberId: string, newRole: string) => {
-    if (!selectedGroup) return;
+const handleEditPermissions = async (memberId: string, newRole: string) => {
+  if (!selectedGroup) return;
+  
+  try {
+    // Obtener el user_id del miembro que se está editando
+    const memberToEdit = selectedGroup.members.find(m => m.id === memberId);
+    if (!memberToEdit) return;
     
-    try {
-      const memberUserId = selectedGroup.members.find(m => m.id === memberId)?.user_id;
-      if (!memberUserId) return;
+    // Verificar si el usuario está intentando editar sus propios permisos
+    if (memberToEdit.user_id === user?.id) {
+      showFeedback('No puedes editar tus propios permisos');
+      return;
+    }
+    
+    const response = await api.put(`/user-groups/${selectedGroup.id}/members/${memberToEdit.user_id}/role`, { role: newRole });
+    
+    if (response.status === 200 || response.data.success) {
+      // Actualizar el grupo seleccionado con el nuevo rol
+      const updatedMembers = selectedGroup.members.map(member => 
+        member.id === memberId ? { ...member, role: newRole } : member
+      );
       
-      const response = await api.put(`/user-groups/${selectedGroup.id}/members/${memberUserId}/role`, { role: newRole });
+      // Actualizar el grupo en useUserGroups
+      const updatedGroup = { ...selectedGroup, members: updatedMembers };
+      selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
       
-      if (response.status === 200 || response.data.success) {
-        // Actualizar el grupo seleccionado con el nuevo rol
-        const updatedMembers = selectedGroup.members.map(member => 
-          member.id === memberId ? { ...member, role: newRole } : member
-        );
-        
-        // Actualizar el grupo en useUserGroups
-        const updatedGroup = { ...selectedGroup, members: updatedMembers };
-        selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
-        
-        showFeedback('Permisos actualizados correctamente');
-      }
-    } catch (error) {
-      console.error('Error al actualizar permisos:', error);
+      showFeedback('Permisos actualizados correctamente');
+    }
+  } catch (error: any) {
+    console.error('Error al actualizar permisos:', error);
+    
+    // Verificar si el error es específicamente por intentar editar los propios permisos
+    if (error.response?.data?.message?.includes('own permissions') || 
+        error.response?.data?.error?.includes('own permissions')) {
+      showFeedback('No puedes editar tus propios permisos');
+    } else {
       showFeedback('Error al actualizar permisos');
     }
-  };
+  }
+};
+
+  // Añadir un log para depuración antes de renderizar
+  console.log("Antes de renderizar componentes:", {
+    userId: user?.id,
+    isOwnerOrAdmin,
+    selectedGroup
+  });
 
   return (
     <div className="groups-container">
@@ -194,7 +222,6 @@ const Groups: React.FC = () => {
                 {selectedGroup.description && <p>{selectedGroup.description}</p>}
               </div>
               
-              {/* Forzar visualización del botón para depuración */}
               <div className="group-actions" style={{ display: 'flex' }}>
                 <button 
                   className="add-member-btn"
@@ -213,7 +240,6 @@ const Groups: React.FC = () => {
             
             {activeTab === 'notes' ? (
               <>
-                {/* Forzar visualización del formulario para depuración */}
                 <div style={{ marginBottom: '20px' }}>
                   <CreateGroupNoteForm
                     newNote={newNote}
@@ -228,7 +254,7 @@ const Groups: React.FC = () => {
                 <NotesGroups
                   notes={groupNotes || []}
                   currentUserId={user?.id || ''}
-                  isOwnerOrAdmin={true} // Forzar a true para depuración
+                  isOwnerOrAdmin={isOwnerOrAdmin}
                   onEditNote={handleEditNote}
                   onDeleteNote={handleDeleteNote}
                   handleTogglePin={handleTogglePinNote}
@@ -238,7 +264,7 @@ const Groups: React.FC = () => {
               <GroupOfMembersList
                 members={selectedGroup.members || []}
                 currentUserId={user?.id || ''}
-                isOwnerOrAdmin={true} // Forzar a true para depuración
+                isOwnerOrAdmin={isOwnerOrAdmin}
                 onRemoveMember={handleRemoveMember}
                 onEditPermissions={handleEditPermissions}
               />
@@ -261,8 +287,8 @@ const Groups: React.FC = () => {
       {/* Modales */}
       {showCreateGroupModal && (
         <CreateGroupModal
-          newGroup={newGroup}
-          setNewGroup={setNewGroup}
+          newUserGroup={newUserGroup}
+          setUserNewGroup={setUserNewGroup}
           onClose={() => setShowCreateGroupModal(false)}
           onCreateGroup={createGroup}
         />
