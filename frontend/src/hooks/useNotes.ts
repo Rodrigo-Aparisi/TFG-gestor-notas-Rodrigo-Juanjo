@@ -255,8 +255,15 @@ export function useNotes() {
         setTrashNotes(prevNotes => prevNotes.filter(note => note.id !== id));
         showFeedback('Nota eliminada permanentemente');
       } else {
+        // Actualizamos la lista de notas
         setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+        
+        // Actualizamos la lista de notas marcadas
         setMarkedNotes(prev => prev.filter(noteId => noteId !== id));
+        
+        // AÑADIR ESTO: También actualizamos filteredNotes para que se actualice la UI inmediatamente
+        setFilteredNotes(prevFiltered => prevFiltered.filter(note => note.id !== id));
+        
         showFeedback('Nota movida a la papelera');
       }
     } catch (error) {

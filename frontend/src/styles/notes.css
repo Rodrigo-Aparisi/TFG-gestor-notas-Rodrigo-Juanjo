@@ -185,6 +185,11 @@ html, body {
   width: 100%;
 }
 
+.note-card .flex.space-x-2 {
+  display: flex;
+  gap: 10px;
+}
+
 .note-card.focusing {
   position: fixed;
   z-index: 1000;
@@ -456,8 +461,8 @@ button:focus {
 }
 
 .dropdown-button {
-  background-color: #3498db;
-  color: white;
+  background-color: #f1f1f1;
+  color: #333;
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
@@ -479,9 +484,12 @@ button:focus {
   background-color: #f9f9f9;
   min-width: 160px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
+  z-index: 1000;
   border-radius: 4px;
   overflow: hidden;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
 }
 
 .dropdown:hover .dropdown-content {
@@ -495,6 +503,7 @@ button:focus {
   color: #333;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  z-index: 1000;
 }
 
 .dropdown-content div:hover {
@@ -1200,47 +1209,6 @@ button:focus {
   gap: 5px;
 }
 
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-button {
-  background-color: #f1f1f1;
-  color: #333;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.dropdown-button:hover {
-  background-color: #ddd;
-}
-
-.dropdown-content {
-  position: absolute;
-  background-color: #f9f9f9;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.dropdown-content div {
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-  color: #333;
-  cursor: pointer;
-}
-
-.dropdown-content div:hover {
-  background-color: #f1f1f1;
-}
-
 /* Submenu para colores */
 .submenu {
   position: relative;
@@ -1455,4 +1423,127 @@ button:focus {
   height: auto;
   border-radius: 4px;
   max-height: 120px;
+}
+
+
+/* Ajustar la posición del NoteSort en la papelera */
+.note-tools-container .note-sort-container {
+  position: static !important; /* Anula el posicionamiento absoluto */
+  bottom: auto;
+  right: auto;
+  z-index: 1;
+}
+
+/* Contenedor del mensaje y botón de papelera */
+.note-tools-container .flex.justify-between {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  background-color: transparent;
+  padding: 0;
+  margin-bottom: 20px;
+  box-shadow: none;
+}
+
+/* Mensaje de advertencia */
+.note-tools-container .text-red-500 {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e74c3c;
+  margin: 0;
+  padding-left: 8px;
+  border-left: 3px solid #e74c3c;
+}
+
+/* Contenedor de los botones a la derecha */
+.note-tools-container .flex.items-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Quitar el margen derecho que podría estar causando problemas */
+.note-tools-container .mr-4 {
+  margin-right: 0;
+}
+
+/* Botón de vaciar papelera */
+button.px-4.py-2.bg-red-500 {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+button.px-4.py-2.bg-red-500:hover {
+  background-color: #dc2626;
+}
+
+/* Estilos específicos para el menú desplegable en bulk actions */
+.bulk-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.bulk-dropdown .dropdown-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.bulk-dropdown .dropdown-button:hover {
+  background-color: #2980b9;
+}
+
+.bulk-dropdown-content {
+  display: none;
+  position: fixed;
+  background-color: #ffffff;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 9999;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.bulk-dropdown:hover + .bulk-dropdown-content,
+.bulk-dropdown-content:hover {
+  display: block;
+}
+
+.bulk-dropdown-content div {
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bulk-dropdown-content div:hover {
+  background-color: #f1f1f1;
+}
+
+/* Añadir un espacio para asegurar que el hover funcione */
+.bulk-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: transparent;
 }

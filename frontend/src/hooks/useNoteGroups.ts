@@ -91,11 +91,7 @@ export function useGroups(showFeedback?: (message: string) => void) {
 
   const handleUpdateGroup = async (groupId: string, groupData: { name: string; color: string }) => {
     try {
-      console.log("Enviando datos al servidor:", { groupId, groupData }); // Para depuración
-      
       const response = await noteService.updateGroup(groupId, groupData);
-      
-      console.log("Respuesta del servidor:", response); // Para depuración
       
       if (response && response.group) {
         setGroups(prev => prev.map(group => 
@@ -113,11 +109,8 @@ export function useGroups(showFeedback?: (message: string) => void) {
       }
       return false;
     } catch (error) {
-      console.error('Error completo al actualizar grupo:', error);
-      console.error('Mensaje de error:', error.message);
-      console.error('Datos de respuesta:', error.response?.data);
-      
-      if (showFeedback) showFeedback(`Error al actualizar el grupo: ${error.response?.data?.message || error.message}`);
+      console.error('Error al actualizar grupo:', error);
+      if (showFeedback) showFeedback('Error al actualizar el grupo');
       return false;
     }
   };
@@ -219,6 +212,18 @@ export function useGroups(showFeedback?: (message: string) => void) {
     }
   };
 
+  const removeNoteFromAllGroups = (noteId: string) => {
+    setGroups(prev => prev.map(group => {
+      if (group.noteIds.includes(noteId)) {
+        return {
+          ...group,
+          noteIds: group.noteIds.filter(id => id !== noteId)
+        };
+      }
+      return group;
+    }));
+  };
+
   const handleDeleteGroup = async (groupId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (window.confirm('¿Estás seguro de que quieres eliminar este grupo?')) {
@@ -282,6 +287,7 @@ export function useGroups(showFeedback?: (message: string) => void) {
     setNoteNewGroup,
     handleUpdateGroup,
     handleAddNoteToGroup,
-    handleRemoveNoteFromGroup
+    handleRemoveNoteFromGroup,
+    removeNoteFromAllGroups
   };
 }
