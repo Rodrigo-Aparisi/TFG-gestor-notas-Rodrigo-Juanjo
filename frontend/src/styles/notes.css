@@ -557,7 +557,8 @@ button:focus {
 }
 
 .note-card:hover .delete-button,
-.note-card.focused .delete-button {
+.note-card.focused .delete-button,
+.group-item .delete-button {
   opacity: 1;
 }
 
@@ -838,6 +839,7 @@ button:focus {
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
   border-left: 3px solid transparent;
+  position: relative;
 }
 
 .group-item:hover {
@@ -847,7 +849,6 @@ button:focus {
 .group-item.active {
   background-color: rgba(255, 255, 255, 0.1);
   border-left-color: currentColor;
-  color: inherit;
 }
 
 .group-color {
@@ -855,11 +856,15 @@ button:focus {
   height: 12px;
   border-radius: 50%;
   margin-right: 10px;
+  flex-shrink: 0;
 }
 
 .group-name {
   flex-grow: 1;
   font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .active-group-header {
@@ -879,6 +884,54 @@ button:focus {
 .notes-container.group-active {
   border-top: 2px solid;
   border-color: inherit;
+}
+
+.group-actions-left,
+.group-actions-right {
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s ease;
+}
+
+.group-actions-left {
+  margin-right: 8px;
+}
+
+.group-actions-right {
+  margin-left: 8px;
+  gap: 4px;
+}
+
+.group-item .action-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.group-item .action-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.group-item .edit-button:hover {
+  color: #3498db;
+}
+
+.group-item .delete-button:hover {
+  color: #e74c3c;
+}
+
+/* Para asegurar que los iconos tengan el tamaño correcto */
+.group-item .action-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Modal */

@@ -91,7 +91,11 @@ export function useGroups(showFeedback?: (message: string) => void) {
 
   const handleUpdateGroup = async (groupId: string, groupData: { name: string; color: string }) => {
     try {
+      console.log("Enviando datos al servidor:", { groupId, groupData }); // Para depuración
+      
       const response = await noteService.updateGroup(groupId, groupData);
+      
+      console.log("Respuesta del servidor:", response); // Para depuración
       
       if (response && response.group) {
         setGroups(prev => prev.map(group => 
@@ -109,8 +113,11 @@ export function useGroups(showFeedback?: (message: string) => void) {
       }
       return false;
     } catch (error) {
-      console.error('Error al actualizar grupo:', error);
-      if (showFeedback) showFeedback('Error al actualizar el grupo');
+      console.error('Error completo al actualizar grupo:', error);
+      console.error('Mensaje de error:', error.message);
+      console.error('Datos de respuesta:', error.response?.data);
+      
+      if (showFeedback) showFeedback(`Error al actualizar el grupo: ${error.response?.data?.message || error.message}`);
       return false;
     }
   };
