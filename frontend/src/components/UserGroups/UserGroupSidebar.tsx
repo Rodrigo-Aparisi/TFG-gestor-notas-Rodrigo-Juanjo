@@ -32,10 +32,9 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
         {safeGroups.length === 0 ? (
           <p className="no-groups-message">No tienes grupos creados</p>
         ) : (
-          // Usar un fragmento con key para el caso en que haya grupos
           safeGroups.map(group => (
             <div 
-              key={group.id} // Esta key ya está correcta
+              key={group.id}
               className={`group-item ${selectedGroup?.id === group.id ? 'selected' : ''}`}
               onClick={() => onGroupSelect(group.id)}
             >
