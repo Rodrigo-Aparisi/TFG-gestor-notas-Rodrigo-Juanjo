@@ -29,6 +29,14 @@ const ChatbotInput: React.FC<ChatbotInputProps> = ({ onSendMessage, onUploadImag
     }
   };
   
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && message.trim() && !isLoading) {
+      e.preventDefault();
+      onSendMessage(message);
+      setMessage('');
+    }
+  };
+  
   return (
     <form className="chatbot-input" onSubmit={handleSubmit}>
       <button 
@@ -36,6 +44,7 @@ const ChatbotInput: React.FC<ChatbotInputProps> = ({ onSendMessage, onUploadImag
         className="image-upload-button"
         onClick={() => fileInputRef.current?.click()}
         disabled={isLoading}
+        title="Subir imagen"
       >
         <i className="fas fa-image"></i>
       </button>
@@ -51,11 +60,17 @@ const ChatbotInput: React.FC<ChatbotInputProps> = ({ onSendMessage, onUploadImag
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder={isLoading ? "Procesando..." : "Escribe un mensaje..."}
         className="message-input"
         disabled={isLoading}
       />
-      <button type="submit" className="send-button" disabled={isLoading || !message.trim()}>
+      <button 
+        type="submit" 
+        className="send-button" 
+        disabled={isLoading || !message.trim()}
+        title="Enviar mensaje"
+      >
         <i className="fas fa-paper-plane"></i>
       </button>
     </form>

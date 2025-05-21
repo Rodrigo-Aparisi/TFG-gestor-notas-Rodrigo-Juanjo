@@ -1,10 +1,13 @@
 import React from 'react';
+import { useEffect, useState } from 'react';
+import { Group } from '../types';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
-import { useGroups } from '../hooks/useGroups';
+import { useGroups } from '../hooks/useNoteGroups';
 import { useSharedNotes } from '../hooks/useSharedNotes';
 import { useUIEffects } from '../hooks/useUIEffects';
 import { useTextareaResize } from '../hooks/useTextareaResize';
+import { noteService } from '../services/api';
 import NoteTabs from '../components/Notes/NoteTabs';
 import GroupSidebar from '../components/Notes/GroupSidebar';
 import BulkActionsMenu from '../components/Notes/BulkActionsMenu';
@@ -13,6 +16,7 @@ import GroupModal from '../components/Notes/GroupModal';
 import NotesGrid from '../components/Notes/NotesGrid';
 import SharedNotesGrid from '../components/Notes/SharedNotesGrid';
 import NoteSort from '../components/Notes/NoteSort';
+import { useLocation } from 'react-router-dom';
 
 const Notes: React.FC = () => {
   // Hooks personalizados
@@ -38,7 +42,8 @@ const Notes: React.FC = () => {
     handleTogglePin,
     setNewNote,
     setMarkedNotes,
-    handleFilteredNotes
+    handleFilteredNotes,
+    handleExportNote
   } = useNotes();
 
   const {
@@ -49,12 +54,17 @@ const Notes: React.FC = () => {
     groups,
     activeGroup,
     showGroupModal,
-    newGroup,
+    newNoteGroup,
     handleGroupSelect,
     handleCreateGroup,
     handleDeleteGroup,
     setShowGroupModal,
-    setNewGroup
+    setNoteNewGroup,
+    handleMoveGroup,
+    handleAddNoteToGroup,
+    handleRemoveNoteFromGroup,
+    handleUpdateGroup,
+    removeNoteFromAllGroups
   } = useGroups(showFeedback);
 
   const {
@@ -75,18 +85,190 @@ const Notes: React.FC = () => {
     setIsExpanded
   } = useUIEffects();
 
+  const [showGroupOptions, setShowGroupOptions] = useState(false);
+  const [shouldSyncMarkedNotes, setShouldSyncMarkedNotes] = useState(true);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+
   // Función para manejar cambio de pestañas
   const handleTabChange = (tabId: string) => {
     handleTabChangeBase(tabId, loadNotes);
   };
 
-  // Función para manejar la creación de grupos
+
+  const getNotesForActiveGroup = () => {
+    // Si estamos en "Todas las notas"
+    if (activeGroup === 'main') {
+      return notes;
+    }
+    
+    // Si estamos en un grupo específico
+    const currentGroup = groups.find(g => g.id === activeGroup);
+    if (!currentGroup || !Array.isArray(currentGroup.noteIds) || currentGroup.noteIds.length === 0) {
+      return []; // Grupo vacío o inválido - retornar array vacío
+    }
+    
+    // Filtrar las notas que pertenecen al grupo
+    return notes.filter(note => 
+      currentGroup.noteIds.includes(note.id.toString())
+    );
+  };
+
+  // Función para manejar la creación de grupos con notas marcadas
   const handleCreateGroupWithMarkedNotes = async () => {
     const result = await handleCreateGroup(markedNotes);
     if (result) {
-      setMarkedNotes([]);
+      setMarkedNotes([]); // Desmarcar todas las notas después de crear el grupo
+      return true;
+    }
+    return false;
+  };
+
+  // Función para manejar la edición de grupos
+  const handleEditGroup = (group: Group, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingGroup(group);
+    setNoteNewGroup({ name: group.name, color: group.color });
+    setShowGroupModal(true);
+  };
+
+  //Funcion para manejar la creación o actualización de grupos
+  const handleSaveGroup = async () => {
+    if (editingGroup) {
+      // Si estamos editando un grupo existente
+      try {
+        const result = await handleUpdateGroup(editingGroup.id, {
+          name: newNoteGroup.name,
+          color: newNoteGroup.color
+        });
+        
+        if (result) {
+          // Cerrar el modal y limpiar el estado después de una actualización exitosa
+          setEditingGroup(null);
+          setShowGroupModal(false);
+          setNoteNewGroup({ name: '', color: '#f1c40f' });
+        }
+      } catch (error) {
+        console.error('Error al actualizar grupo:', error);
+        showFeedback('Error al actualizar el grupo');
+      }
+    } else {
+      // Si estamos creando un nuevo grupo
+      const result = await handleCreateGroupWithMarkedNotes();
+      if (result) {
+        // Cerrar el modal solo si la creación fue exitosa
+        setShowGroupModal(false);
+        setNoteNewGroup({ name: '', color: '#f1c40f' });
+      }
     }
   };
+
+  // Función para manejar la eliminación de notas marcadas
+  const handleDeleteMarkedNotesWithClear = async () => {
+    try {
+      await handleDeleteMarkedNotes();
+      setMarkedNotes([]); // Forzar el reseteo de las notas marcadas
+    } catch (error) {
+      console.error('Error al eliminar notas marcadas:', error);
+    }
+  };
+
+  const handleDeleteNoteWithGroupUpdate = async (noteId: string) => {
+  try {
+    await handleDeleteNote(noteId);
+    // Después de eliminar la nota, también la eliminamos de todos los grupos
+    removeNoteFromAllGroups(noteId);
+  } catch (error) {
+    console.error("Error al eliminar nota:", error);
+  }
+};
+
+  // Función para añadir notas marcadas a un grupo
+  const handleAddNotesToGroup = async (groupId: string) => {
+    try {
+      // Crear un array de promesas para añadir cada nota al grupo
+      const addPromises = markedNotes.map(noteId => 
+        handleAddNoteToGroup(groupId, noteId)
+      );
+      
+      // Esperar a que todas las promesas se resuelvan
+      await Promise.all(addPromises);
+      
+      // Mostrar feedback
+      showFeedback(`Notas añadidas al grupo exitosamente`);
+      
+      // Importante: limpiar las notas marcadas
+      setMarkedNotes([]);
+      
+      // Recargar las notas para actualizar la UI
+      loadNotes();
+    } catch (error) {
+      console.error('Error al añadir notas al grupo:', error);
+      showFeedback('Error al añadir notas al grupo');
+    }
+  };
+
+  // Eliminar notas de un grupo
+  const handleRemoveNotesFromGroup = async (groupId: string) => {
+    try {
+      // Crear un array de promesas para eliminar cada nota del grupo
+      const removePromises = markedNotes.map(noteId => 
+        handleRemoveNoteFromGroup(groupId, noteId)
+      );
+      
+      // Esperar a que todas las promesas se resuelvan
+      await Promise.all(removePromises);
+      
+      // Mostrar feedback
+      showFeedback(`Notas eliminadas del grupo exitosamente`);
+      
+      // Limpiar las notas marcadas
+      setMarkedNotes([]);
+      
+      // Recargar notas para actualizar la vista
+      loadNotes();
+    } catch (error) {
+      console.error('Error al eliminar notas del grupo:', error);
+      showFeedback('Error al eliminar notas del grupo');
+    }
+  };
+
+  // Efecto para sincronizar notas marcadas solo cuando es necesario
+  useEffect(() => {
+    if (shouldSyncMarkedNotes) {
+      // Identificar notas que están marcadas según su propiedad is_marked
+      const markedNoteIds = notes
+        .filter(note => note.is_marked)
+        .map(note => note.id);
+      
+      // Actualizar el estado
+      setMarkedNotes(markedNoteIds);
+      setShouldSyncMarkedNotes(false);
+    }
+  }, [notes, shouldSyncMarkedNotes]);
+
+  // Actualiza este efecto para que se ejecute cuando cambie el grupo activo
+  useEffect(() => {
+    setShouldSyncMarkedNotes(true); // Esto forzará la sincronización cuando cambie el grupo
+  }, [activeGroup]);
+
+  useEffect(() => {
+    // Cuando cambia el grupo activo, actualiza las notas filtradas
+    if (activeGroup === 'main') {
+      handleFilteredNotes(notes);
+    } else {
+      const currentGroup = groups.find(g => g.id === activeGroup);
+      if (!currentGroup || !currentGroup.noteIds || currentGroup.noteIds.length === 0) {
+        // Si el grupo está vacío o no existe, establecer notas filtradas como array vacío
+        handleFilteredNotes([]);
+      } else {
+        // Filtrar las notas que pertenecen al grupo
+        const groupNotes = notes.filter(note => 
+          currentGroup.noteIds.includes(note.id.toString())
+        );
+        handleFilteredNotes(groupNotes);
+      }
+    }
+  }, [activeGroup, groups, notes]);
 
   // Función para manejar teclas en textareas
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
@@ -170,35 +352,92 @@ const Notes: React.FC = () => {
 
   // Función para insertar listas
   const insertList = (noteId: string, type: 'bullet' | 'number', isNewNote = false) => {
-    let currentContent;
-    if (isNewNote) {
-      currentContent = newNote.content;
-    } else {
-      // Usar el contenido del estado de edición si existe, si no usar el contenido original de la nota
-      const note = notes.find(n => n.id === noteId);
-      currentContent = editingNote[noteId]?.content ?? note?.content ?? '';
-    }
-  
-    const selectionStart = document.activeElement instanceof HTMLTextAreaElement ? 
-      document.activeElement.selectionStart : currentContent.length;
+    // Primero, intentamos obtener el textarea directamente por ID
+    let textarea: HTMLTextAreaElement | null = null;
     
-    let insertText = '\n';
+    if (isNewNote) {
+      textarea = document.querySelector('.create-note textarea') as HTMLTextAreaElement;
+    } else {
+      // Para notas existentes, buscamos el textarea dentro del contenedor de la nota
+      const noteContainer = document.querySelector(`[data-note-id="${noteId}"]`);
+      if (noteContainer) {
+        textarea = noteContainer.querySelector('textarea') as HTMLTextAreaElement;
+      }
+    }
+    
+    if (!textarea) {
+      console.error(`No se pudo encontrar el textarea para la nota ${noteId}`);
+      showFeedback('Error al insertar lista');
+      return;
+    }
+    
+    const content = textarea.value;
+    const selectionStart = textarea.selectionStart;
+    
+    // Encontrar la línea actual
+    const textBeforeCursor = content.substring(0, selectionStart);
+    const lines = textBeforeCursor.split('\n');
+    const currentLineIndex = lines.length - 1;
+    const currentLine = lines[currentLineIndex] || '';
+    
+    // Determinar si estamos al principio del textarea o al inicio de una línea
+    const isAtBeginning = selectionStart === 0;
+    const isAtLineStart = currentLine.trim() === '';
+    
+    // Decidir si añadir un salto de línea o no
+    let insertText = '';
+    
+    // Solo añadir salto de línea si no estamos al principio del textarea ni al inicio de una línea
+    if (!isAtBeginning && !isAtLineStart) {
+      insertText += '\n';
+    }
+    
     if (type === 'bullet') {
       insertText += '• ';
-    } else {
-      insertText += '1. ';
+    } else if (type === 'number') {
+      // Buscar en todas las líneas anteriores, no solo la inmediata
+      let lastNumberedLine = -1;
+      let lastNumber = 0;
+      
+      for (let i = currentLineIndex; i >= 0; i--) {
+        const line = lines[i];
+        const numberMatch = line.match(/^(\s*)(\d+)\.(\s+)/);
+        
+        if (numberMatch) {
+          lastNumberedLine = i;
+          lastNumber = parseInt(numberMatch[2]);
+          break;
+        }
+      }
+      
+      // Si encontramos una línea numerada
+      if (lastNumberedLine !== -1) {
+        // Calcular el número correcto basado en la posición relativa
+        const nextNumber = lastNumber + (currentLineIndex - lastNumberedLine);
+        insertText += `${nextNumber + 1}. `;
+      } else {
+        // Si no hay línea numerada previa, comenzar en 1
+        insertText += '1. ';
+      }
     }
-  
-    const newContent = currentContent.slice(0, selectionStart) + 
-                      insertText + 
-                      currentContent.slice(selectionStart);
-  
+    
+    const newContent = content.substring(0, selectionStart) + insertText + content.substring(selectionStart);
+    
+    // Actualizar el contenido
     if (isNewNote) {
       setNewNote(prev => ({ ...prev, content: newContent }));
     } else {
       handleNoteChange(noteId, 'content', newContent);
     }
+    
+    // Mover el cursor después del texto insertado
+    const newPosition = selectionStart + insertText.length;
+    setTimeout(() => {
+      textarea?.focus();
+      textarea?.setSelectionRange(newPosition, newPosition);
+    }, 0);
   };
+
 
   return (
     <div className="notes-layout">
@@ -208,6 +447,8 @@ const Notes: React.FC = () => {
         activeGroup={activeGroup}
         onGroupSelect={handleGroupSelect}
         onDeleteGroup={handleDeleteGroup}
+        onMoveGroup={handleMoveGroup}
+        onEditGroup={handleEditGroup}
       />
 
       {/* Contenido principal */}
@@ -232,8 +473,12 @@ const Notes: React.FC = () => {
         {/* Menú de acciones en masa */}
         <BulkActionsMenu 
           markedNotes={markedNotes}
+          groups={groups}
+          activeGroup={activeGroup}
           onShowGroupModal={() => setShowGroupModal(true)}
-          onDeleteMarkedNotes={handleDeleteMarkedNotes}
+          onDeleteMarkedNotes={handleDeleteMarkedNotesWithClear}
+          onAddToGroup={handleAddNotesToGroup}
+          onRemoveFromGroup={handleRemoveNotesFromGroup}
         />
 
         {/* Crear nota */}
@@ -250,15 +495,19 @@ const Notes: React.FC = () => {
               insertList={insertList}
               handleImageUpload={handleImageUpload}
               autoResizeTextarea={autoResizeTextarea}
+              handleExportNote={handleExportNote}
             />
             
             <NoteSort 
               key={`note-sort-${sortKey}`}
-              notes={activeGroup === 'main' ? notes : notes.filter(note => {
-                const currentGroup = groups.find(g => g.id === activeGroup);
-                return currentGroup && Array.isArray(currentGroup.noteIds) && 
-                  currentGroup.noteIds.includes(note.id.toString());
-              })}
+              notes={activeGroup === 'main' ? 
+                notes : 
+                notes.filter(note => {
+                  const currentGroup = groups.find(g => g.id === activeGroup);
+                  return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                    currentGroup.noteIds.includes(note.id.toString());
+                })
+              }
               onNotesFiltered={handleFilteredNotes}
             />
           </div>
@@ -267,7 +516,14 @@ const Notes: React.FC = () => {
         {/* Grid de notas */}
         {activeTab === 'my-notes' ? (
           <NotesGrid
-            notes={filteredNotes}
+            notes={activeGroup === 'main' ? 
+              filteredNotes : 
+              filteredNotes.filter(note => {
+                const currentGroup = groups.find(g => g.id === activeGroup);
+                return currentGroup && Array.isArray(currentGroup.noteIds) && 
+                  currentGroup.noteIds.includes(note.id.toString());
+              })
+            }
             editingNote={editingNote}
             focusedNoteId={focusedNoteId}
             sharingNoteId={sharingNoteId}
@@ -287,6 +543,7 @@ const Notes: React.FC = () => {
             autoResizeTextarea={autoResizeTextarea}
             handleImageUpload={handleImageUpload}
             handleDeleteImage={handleDeleteImage}
+            handleExportNote={handleExportNote}
           />
         ) : (
           <SharedNotesGrid
@@ -302,10 +559,17 @@ const Notes: React.FC = () => {
         {/* Modal de creación de grupo */}
         {showGroupModal && (
           <GroupModal
-            newGroup={newGroup}
-            setNewGroup={setNewGroup}
-            onClose={() => setShowGroupModal(false)}
-            onCreateGroup={handleCreateGroupWithMarkedNotes}
+            isEdit={!!editingGroup}
+            group={editingGroup || undefined}
+            newGroup={newNoteGroup}
+            setNewGroup={setNoteNewGroup}
+            onClose={() => {
+              setShowGroupModal(false);
+              setEditingGroup(null);
+              setNoteNewGroup({ name: '', color: '#f1c40f' });
+            }}
+            onCreateGroup={handleSaveGroup}
+            onUpdateGroup={undefined}
           />
         )}
       </div>

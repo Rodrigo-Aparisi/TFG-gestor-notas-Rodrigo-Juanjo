@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Note, Group } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
+import NoteActionsMenu from './NoteActionsMenu';
 
 interface NoteCardProps {
   note: Note;
@@ -21,9 +22,10 @@ interface NoteCardProps {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => void;
   insertList: (noteId: string, type: 'bullet' | 'number') => void;
   handleDeleteNote: (id: string) => Promise<void>;
-  autoResizeTextarea: (element: HTMLTextAreaElement) => void;
+  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
+  handleExportNote: (format: string, noteId?: string) => void;
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({
@@ -46,9 +48,60 @@ const NoteCard: React.FC<NoteCardProps> = ({
   handleDeleteNote,
   autoResizeTextarea,
   handleImageUpload,
-  handleDeleteImage
+  handleDeleteImage,
+  handleExportNote
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+  
+  // Implementación interna de autoResizeTextarea si no se proporciona como prop
+  const resizeTextarea = (element: HTMLTextAreaElement) => {
+    if (!element) return;
+    
+    // Guarda la posición actual del scroll
+    const scrollPos = element.scrollTop;
+    
+    // Resetea la altura para obtener la altura real del contenido
+    element.style.height = 'auto';
+    
+    const parentNote = element.closest('.note-card');
+    const isFocused = parentNote?.classList.contains('focused');
+    
+    if (isFocused) {
+      // Para notas enfocadas
+      element.style.height = `\${maxHeight}px`;
+    } else {
+      // Para notas normales
+      element.style.height = `\${newHeight}px`;
+    }
+    
+    // Restaura la posición del scroll
+    element.scrollTop = scrollPos;
+  };
+
+  // Usar la función proporcionada como prop o la implementación interna
+  const resizeTextareaFn = autoResizeTextarea || resizeTextarea;
+
+  // Aplicar resize cuando el componente se monta o cuando cambia el contenido o el estado de foco
+  useEffect(() => {
+    if (textareaRef.current) {
+      resizeTextareaFn(textareaRef.current);
+    }
+  }, [note.content, focusedNoteId === note.id]);
+
+  // Añadir listener para el resize de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        resizeTextareaFn(textareaRef.current);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   
   return (
     <div 
@@ -63,16 +116,18 @@ const NoteCard: React.FC<NoteCardProps> = ({
     >
       <div className="note-actions">
         <button 
-          className={`action-button ${note.is_marked ? 'marked' : ''}`}
+          className={`action-button ${(note.is_marked || isMarked) ? 'marked' : ''}`}
           onClick={(e) => handleToggleMark(note.id, e)}
-          title={note.is_marked ? 'Desmarcar nota' : 'Marcar nota'}
+          title={(note.is_marked || isMarked) ? 'Desmarcar nota' : 'Marcar nota'}
         >
           <i className="fas fa-check-circle"></i>
         </button>
+
         <button 
           className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
           onClick={(e) => handleTogglePin(note.id, e)}
           title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
+          style={note.is_pinned ? {color: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.1)'} : {}}
         >
           <i className="fas fa-thumbtack"></i>
         </button>
@@ -99,7 +154,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
       <div className="note-content">
         <input
           type="text"
-          value={editingNote[note.id]?.title ?? note.title}
+          value={editingNote[note.id]?.title || note.title || ''}
           onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
           onBlur={() => handleUpdateNote(note.id, 'title')}
           onClick={e => e.stopPropagation()}
@@ -120,58 +175,38 @@ const NoteCard: React.FC<NoteCardProps> = ({
         )}
 
         <textarea
+          ref={textareaRef}
           value={editingNote[note.id]?.content ?? note.content}
           onChange={(e) => {
             handleNoteChange(note.id, 'content', e.target.value);
-            autoResizeTextarea(e.target as HTMLTextAreaElement);
+            resizeTextareaFn(e.target as HTMLTextAreaElement);
           }}
           onKeyDown={(e) => handleKeyDown(e, note.id)}
-          onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+          onInput={(e) => resizeTextareaFn(e.target as HTMLTextAreaElement)}
           onBlur={() => handleUpdateNote(note.id, 'content')}
           onClick={(e) => e.stopPropagation()}
         />
       </div>
 
       <div className="note-actions-bottom">
-        <div className="list-buttons">
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              insertList(note.id, 'bullet');
-            }}
-            title="Insertar lista con viñetas"
-          >
-            <i className="fas fa-list-ul"></i>
-          </button>
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              insertList(note.id, 'number');
-            }}
-            title="Insertar lista numerada"
-          >
-            <i className="fas fa-list-ol"></i>
-          </button>
-          <button 
-            className="list-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              document.getElementById(`image-input-${note.id}`)?.click();
-            }}
-            title="Insertar imagen"
-          >
-            <i className="fas fa-image"></i>
-          </button>
-          <input
-            id={`image-input-${note.id}`}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={(e) => handleImageUpload(e, note.id)}
-          />
-        </div>
+        {/* Reemplazar los botones individuales con el menú desplegable */}
+        <NoteActionsMenu
+          noteId={note.id}
+          onExport={handleExportNote}
+          onInsertList={insertList}
+          onImageUpload={() => document.getElementById(`image-input-${note.id}`)?.click()}
+        />
+        
+        {/* Mantener oculto el input de imagen */}
+        <input
+          id={`image-input-${note.id}`}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => handleImageUpload(e, note.id)}
+        />
+        
+        {/* Mantener el botón de eliminar */}
         <button 
           onClick={(e) => {
             e.stopPropagation();

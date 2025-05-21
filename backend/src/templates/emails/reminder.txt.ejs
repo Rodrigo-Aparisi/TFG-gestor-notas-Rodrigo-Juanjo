@@ -1,0 +1,23 @@
+Recordatorio: <%= reminder.title %>
+
+Hola <%= reminder.username %>,
+
+Te recordamos que tienes un recordatorio próximamente:
+
+RECORDATORIO: <%= reminder.title %>
+
+FECHA: <%= new Date(reminder.dateTime).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+<% if (reminder.hasTime) { %>
+HORA: <%= new Date(reminder.dateTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) %>
+<% } %>
+
+<% if (reminder.description && reminder.description.trim()) { %>
+DESCRIPCIÓN:
+<%= reminder.description %>
+<% } %>
+
+Accede a tu cuenta para ver más detalles o actualizar este recordatorio:
+<%= process.env.APP_URL %>/reminders
+
+Este es un mensaje automático, por favor no respondas a este correo.
+© <%= new Date().getFullYear() %> Tu Aplicación de Recordatorios. Todos los derechos reservados.

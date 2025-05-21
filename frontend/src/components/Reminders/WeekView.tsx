@@ -11,6 +11,7 @@ interface WeekViewProps {
   onDateSelect: (date: Date) => void;
   onReminderClick: (reminder: Reminder, e: React.MouseEvent) => void;
   onShowMore: (date: Date) => void;
+  isInPopup?: boolean;
 }
 
 const WeekView: React.FC<WeekViewProps> = ({
@@ -20,7 +21,8 @@ const WeekView: React.FC<WeekViewProps> = ({
   focusedReminder,
   onDateSelect,
   onReminderClick,
-  onShowMore
+  onShowMore,
+  isInPopup = false
 }) => {
   // Genera la vista de cabeceras de los días de la semana
   const generateWeekDaysHeader = () => {
@@ -36,7 +38,7 @@ const WeekView: React.FC<WeekViewProps> = ({
     });
   
     return (
-      <div className="weekdays-header">
+      <div className={`weekdays-header \${isInPopup ? 'in-popup' : ''}`}>
         {weekDays.map((date, index) => {
           const dayName = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'][index];
           // Obtener los recordatorios para este día

@@ -35,7 +35,10 @@ const ReminderPopup: React.FC<ReminderPopupProps> = ({
             className={`reminder-popup-item status-${reminder.statusId}`}
           >
             <div className="reminder-popup-details">
-              <div className="reminder-popup-title">{reminder.title}</div>
+              <div className="reminder-popup-title">
+                {reminder.title}
+                {reminder.sendEmail && <span className="notification-indicator" title="Notificación por email activada"></span>}
+              </div>
               <div className="reminder-popup-description">{reminder.description}</div>
               <div className="reminder-popup-footer">
                 <div className="reminder-info">
