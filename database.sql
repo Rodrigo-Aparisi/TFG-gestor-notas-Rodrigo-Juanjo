@@ -106,6 +106,7 @@ CREATE TABLE reminders (
     description TEXT,
     date_time TIMESTAMP NOT NULL,
     has_time BOOLEAN DEFAULT false,
+    send_email BOOLEAN DEFAULT false,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

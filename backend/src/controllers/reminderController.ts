@@ -66,14 +66,14 @@ export const reminderController = {
           error: 'Usuario no autenticado'
         });
       }
-  
+
       // Validar campos requeridos
       if (!req.body.title || !req.body.dateTime) {
         return res.status(400).json({
           error: 'El título y la fecha son requeridos'
         });
       }
-  
+
       // Crear el objeto de datos con los tipos correctos
       const reminderData = {
         title: req.body.title,
@@ -82,20 +82,20 @@ export const reminderController = {
         userId: req.user.id,
         statusId: req.body.statusId || 1,
         hasTime: req.body.hasTime || false,
-        // Añadir los campos requeridos por la interfaz ReminderData
+        sendEmail: req.body.sendEmail || false,
         createdAt: new Date(),
         updatedAt: new Date()
       };
-  
+
       // Validar fecha válida
       if (isNaN(reminderData.dateTime.getTime())) {
         return res.status(400).json({
           error: 'Fecha inválida'
         });
       }
-  
+
       console.log('Creando recordatorio con datos:', reminderData); // Debug
-  
+
       const reminder = await Reminder.create(reminderData);
       res.status(201).json({ reminder });
     } catch (error) {
@@ -109,8 +109,7 @@ export const reminderController = {
         details: apiError.message
       });
     }
-  }
-  ,
+  },
 
   async updateReminderStatus(req: Request, res: Response) {
     try {
@@ -171,6 +170,7 @@ export const reminderController = {
             dateTime: req.body.date_time ? new Date(req.body.date_time) : undefined,
             statusId: req.body.status_id,
             hasTime: req.body.has_time,
+            sendEmail: req.body.send_email,
             updatedAt: new Date()
         };
 
