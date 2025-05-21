@@ -11,13 +11,21 @@ export function useSharedNotes() {
     try {
       setIsLoading(true);
       const data = await noteService.getSharedNotes();
-      setSharedNotes(data.sharedNotes);
+  
+      const transformedNotes = data.sharedNotes.map((note: any) => ({
+        ...note,
+        shared_note_id: note.id,
+        id: note.id,
+      }));
+  
+      setSharedNotes(transformedNotes);
     } catch (err) {
       console.error('Error al cargar notas compartidas:', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
+  
 
   const checkSharedNotes = useCallback(async () => {
     try {

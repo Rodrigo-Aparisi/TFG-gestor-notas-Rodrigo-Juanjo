@@ -694,41 +694,41 @@ export class NoteController {
 
   async shareNote(req: Request, res: Response): Promise<void> {
     try {
-      const { noteId, username } = req.body;
+      const { noteId, username, includeImages = true, canEdit = false } = req.body;
       const ownerId = req.user.id;
-
+  
       // Validar datos de entrada
       if (!noteId || !username) {
         res.status(400).json({ error: "Se requieren noteId y username" });
         return;
       }
-
+  
       // Verificar que la nota existe y pertenece al usuario actual
       const note = await pool.query(
         "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
         [noteId, ownerId]
       );
-
+  
       if (note.rows.length === 0) {
         res
           .status(404)
           .json({ error: "Nota no encontrada o no tienes permiso" });
         return;
       }
-
+  
       // Buscar al usuario con quien compartir
       const targetUser = await pool.query(
-        "SELECT id FROM users WHERE username = $1",
+        "SELECT id FROM users WHERE username = \$1",
         [username]
       );
-
+  
       if (targetUser.rows.length === 0) {
         res.status(404).json({ error: "Usuario no encontrado" });
         return;
       }
-
+  
       const sharedWithId = targetUser.rows[0].id;
-
+  
       // Evitar compartir con uno mismo
       if (sharedWithId === ownerId) {
         res
@@ -736,26 +736,32 @@ export class NoteController {
           .json({ error: "No puedes compartir una nota contigo mismo" });
         return;
       }
-
+  
       // Verificar si ya está compartida con este usuario
       const existingShare = await pool.query(
         "SELECT * FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2",
         [noteId, sharedWithId]
       );
-
+  
       if (existingShare.rows.length > 0) {
+        // Si ya está compartida, actualizamos los permisos
+        await pool.query(
+          "UPDATE shared_notes SET can_edit = $1, include_images = $2, updated_at = CURRENT_TIMESTAMP WHERE note_id = $3 AND shared_with_id = $4",
+          [canEdit, includeImages, noteId, sharedWithId]
+        );
+        
         res
-          .status(400)
-          .json({ error: "La nota ya está compartida con este usuario" });
+          .status(200)
+          .json({ success: true, message: "Permisos de nota compartida actualizados" });
         return;
       }
-
-      // Insertar en la tabla shared_notes
+  
+      // Insertar en la tabla shared_notes con los nuevos campos
       await pool.query(
-        "INSERT INTO shared_notes (note_id, owner_id, shared_with_id) VALUES ($1, $2, $3)",
-        [noteId, ownerId, sharedWithId]
+        "INSERT INTO shared_notes (note_id, owner_id, shared_with_id, can_edit, include_images) VALUES ($1, $2, $3, $4, \$5)",
+        [noteId, ownerId, sharedWithId, canEdit, includeImages]
       );
-
+  
       res
         .status(200)
         .json({ success: true, message: "Nota compartida exitosamente" });
@@ -770,11 +776,20 @@ export class NoteController {
       const userId = req.user.id;
       
       const result = await pool.query(`
-        SELECT n.*, u.username as shared_by
+        SELECT 
+          n.id, 
+          n.title, 
+          n.content, 
+          CASE WHEN sn.include_images THEN n.images ELSE ARRAY[]::TEXT[] END AS images,
+          n.color, 
+          u.username as shared_by,
+          sn.can_edit,
+          sn.include_images,
+          sn.created_at
         FROM notes n
         JOIN shared_notes sn ON n.id = sn.note_id
         JOIN users u ON sn.owner_id = u.id
-        WHERE sn.shared_with_id = $1
+        WHERE sn.shared_with_id = \$1
         ORDER BY n.updated_at DESC
       `, [userId]);
       
@@ -784,6 +799,162 @@ export class NoteController {
       res.status(500).json({ error: 'Error al obtener las notas compartidas' });
     }
   }
+
+  async updateSharedNotePermissions(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { username, canEdit, includeImages } = req.body;
+      const ownerId = req.user.id;
+      
+      // Buscar al usuario con quien se compartió
+      const targetUser = await pool.query(
+        "SELECT id FROM users WHERE username = \$1",
+        [username]
+      );
+      
+      if (targetUser.rows.length === 0) {
+        res.status(404).json({ error: "Usuario no encontrado" });
+        return;
+      }
+      
+      const sharedWithId = targetUser.rows[0].id;
+      
+      // Verificar que el usuario actual es el propietario de la nota
+      const isOwner = await pool.query(
+        "SELECT 1 FROM shared_notes WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = \$3",
+        [id, ownerId, sharedWithId]
+      );
+      
+      if (isOwner.rows.length === 0) {
+        res.status(403).json({ 
+          error: "No tienes permiso para modificar los permisos de esta nota compartida" 
+        });
+        return;
+      }
+      
+      // Actualizar los permisos
+      let updateQuery = "UPDATE shared_notes SET updated_at = CURRENT_TIMESTAMP";
+      const queryParams = [id, ownerId, sharedWithId];
+      let paramIndex = 4;
+      
+      if (canEdit !== undefined) {
+        updateQuery += `, can_edit = $${paramIndex}`;
+        queryParams.push(canEdit);
+        paramIndex++;
+      }
+      
+      if (includeImages !== undefined) {
+        updateQuery += `, include_images = $${paramIndex}`;
+        queryParams.push(includeImages);
+        paramIndex++;
+      }
+      
+      updateQuery += " WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = \$3";
+      
+      await pool.query(updateQuery, queryParams);
+      
+      res.json({ message: "Permisos actualizados exitosamente" });
+      
+    } catch (error) {
+      console.error("Error al actualizar permisos:", error);
+      res.status(500).json({ error: "Error al actualizar permisos" });
+    }
+  }
+  
+async updateSharedNote(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { title, content, images } = req.body;
+    const userId = req.user.id;
+    
+    console.log('Updating shared note:', { id, userId, data: req.body });
+
+    // Verificar permisos
+    const hasPermission = await pool.query(
+      `SELECT 1 FROM shared_notes 
+       WHERE note_id = $1 
+       AND shared_with_id = $2 
+       AND can_edit = true`,
+      [id, userId]
+    );
+
+    console.log('Permission check result:', hasPermission.rows);
+
+    if (hasPermission.rows.length === 0) {
+      console.log('Permission denied for user', userId, 'on note', id);
+      res.status(403).json({ 
+        error: "No tienes permiso para editar esta nota" 
+      });
+      return;
+    }
+
+    // Construir la consulta de actualización
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updateFields.push(`title = $${paramCount}`);
+      values.push(title);
+      paramCount++;
+    }
+
+    if (content !== undefined) {
+      updateFields.push(`content = $${paramCount}`);
+      values.push(content);
+      paramCount++;
+    }
+
+    if (images !== undefined) {
+      updateFields.push(`images = $${paramCount}`);
+      values.push(images);
+      paramCount++;
+    }
+
+    if (updateFields.length === 0) {
+      console.log('No fields to update');
+      res.status(400).json({ error: "No hay campos para actualizar" });
+      return;
+    }
+
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const query = `
+      UPDATE notes 
+      SET ${updateFields.join(', ')} 
+      WHERE id = $${paramCount} 
+      RETURNING *
+    `;
+
+    console.log('Query:', query);
+    console.log('Values:', values);
+
+    const result = await pool.query(query, values);
+
+    console.log('Update result:', result.rows);
+
+    if (result.rows.length === 0) {
+      console.log('Note not found:', id);
+      res.status(404).json({ error: "Nota no encontrada" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      note: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Error in updateSharedNote:', error);
+    res.status(500).json({ 
+      error: "Error al actualizar la nota",
+      details: error instanceof Error ? error.message : "Error desconocido"
+    });
+  }
+}
+
+  
   
 
   async getUserSortPreferences(req: Request, res: Response): Promise<void> {

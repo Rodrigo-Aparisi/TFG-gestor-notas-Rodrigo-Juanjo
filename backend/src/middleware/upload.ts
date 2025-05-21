@@ -1,15 +1,24 @@
+// middleware/upload.ts
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-
 // Configurar el almacenamiento
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads', 'note-images');
+    // Determinar la carpeta de destino según la ruta
+    let uploadDir;
+    
+    if (req.originalUrl.includes('/user-groups')) {
+      uploadDir = path.join(__dirname, '..', 'uploads', 'group-note-images');
+    } else {
+      uploadDir = path.join(__dirname, '..', 'uploads', 'note-images');
+    }
+    
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
+    
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {

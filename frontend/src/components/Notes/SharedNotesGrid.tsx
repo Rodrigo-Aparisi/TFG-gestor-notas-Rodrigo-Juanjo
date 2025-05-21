@@ -3,11 +3,12 @@ import Masonry from 'react-masonry-css';
 import SharedNoteCard from './SharedNoteCard';
 
 interface SharedNotesGridProps {
-  sharedNotes: any[]; // Tipo para las notas compartidas
+  sharedNotes: any[];
   focusedNoteId: string | null;
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
+  showFeedback?: (message: string) => void;
 }
 
 const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
@@ -15,13 +16,14 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
   focusedNoteId,
   handleFocus,
   handleFocusIndicatorClick,
-  autoResizeTextarea
+  autoResizeTextarea,
+  showFeedback
 }) => {
   const breakpointColumns = {
-    default: 5, // Número de columnas en pantallas grandes
-    1100: 3,    // 3 columnas en pantallas medianas
-    768: 2,     // 2 columnas en tablets
-    480: 1      // 1 columna en móviles
+    default: 5,
+    1100: 3,
+    768: 2,
+    480: 1
   };
 
   return (
@@ -39,6 +41,7 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
             handleFocus={handleFocus}
             handleFocusIndicatorClick={handleFocusIndicatorClick}
             autoResizeTextarea={autoResizeTextarea}
+            showFeedback={showFeedback}
           />
         ))
       ) : (
