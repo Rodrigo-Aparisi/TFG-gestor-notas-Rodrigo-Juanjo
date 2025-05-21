@@ -1,4 +1,3 @@
-// routes/userGroupRoutes.ts
 import express from 'express';
 import { UserGroupController } from '../controllers/UserGroupController';
 import { authenticateToken } from '../middleware/auth';
