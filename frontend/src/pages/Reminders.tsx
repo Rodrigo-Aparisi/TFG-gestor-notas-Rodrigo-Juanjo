@@ -29,7 +29,8 @@ const Reminders: React.FC = () => {
     date: new Date(),
     time: '',
     statusId: 1,
-    hasTime: false
+    hasTime: false,
+    sendEmail: false
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -128,9 +129,10 @@ const Reminders: React.FC = () => {
         description: newReminder.description,
         dateTime: dateTime,
         statusId: selectedStatus,
-        hasTime: newReminder.hasTime
+        hasTime: newReminder.hasTime,
+        sendEmail: newReminder.sendEmail
       };
-  
+    
       console.log('Creating reminder with data:', reminderData); // Para debug
       const response = await calendarService.createReminder(reminderData);
   
@@ -215,11 +217,12 @@ const Reminders: React.FC = () => {
         });
 
         const updatePayload: UpdateReminderData = {
-            title: editingReminder.title,
-            description: editingReminder.description,
-            date_time: editingReminder.dateTime.toISOString(),
-            status_id: editingStatus,
-            has_time: editingReminder.hasTime
+          title: editingReminder.title,
+          description: editingReminder.description,
+          date_time: editingReminder.dateTime.toISOString(),
+          status_id: editingStatus,
+          has_time: editingReminder.hasTime,
+          send_email: editingReminder.sendEmail
         };
 
         console.log('Enviando actualización:', updatePayload);
@@ -341,7 +344,6 @@ const Reminders: React.FC = () => {
                   reminders={reminders}
                   onDateSelect={handleDateSelect}
                   onMonthChange={setCurrentMonth}
-                  onShowFullCalendar={() => setShowFullCalendar(true)}
                 />
               </div>
               <ReminderForm
@@ -426,7 +428,8 @@ const Reminders: React.FC = () => {
               title: reminder.title,
               description: reminder.description ?? '',
               dateTime: new Date(reminder.dateTime),
-              hasTime: reminder.hasTime
+              hasTime: reminder.hasTime,
+              sendEmail: focusedReminder?.sendEmail || false
             });
             setIsFromPopup(true);
           }}

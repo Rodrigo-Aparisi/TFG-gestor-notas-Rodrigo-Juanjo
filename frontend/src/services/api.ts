@@ -304,7 +304,8 @@ export const calendarService = {
       const reminderData = {
         ...data,
         dateTime: data.dateTime.toISOString(),
-        hasTime: data.hasTime
+        hasTime: data.hasTime,
+        sendEmail: data.sendEmail
       };
       
       const response = await api.post('/reminders', reminderData);
@@ -332,7 +333,8 @@ export const calendarService = {
         description: data.description,
         date_time: data.date_time,
         status_id: data.status_id,
-        has_time: data.has_time
+        has_time: data.has_time,
+        send_email: data.send_email 
       });
       
       if (response.data?.reminder) {
@@ -341,7 +343,8 @@ export const calendarService = {
             ...response.data.reminder,
             dateTime: new Date(response.data.reminder.date_time),
             statusId: response.data.reminder.status_id,
-            hasTime: response.data.reminder.has_time
+            hasTime: response.data.reminder.has_time,
+            sendEmail: response.data.reminder.send_email
           }
         };
       }
