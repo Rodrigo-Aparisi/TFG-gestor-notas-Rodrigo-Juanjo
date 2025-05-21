@@ -9,6 +9,8 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
   const [username, setUsername] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [feedback, setFeedback] = useState({ message: '', type: '' });
+  const [includeImages, setIncludeImages] = useState(true);
+  const [canEdit, setCanEdit] = useState(false);
   
   const handleShare = async () => {
     if (!username) {
@@ -18,8 +20,10 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
     
     try {
       setIsSharing(true);
-      // Asumiendo que actualizarás el servicio para aceptar username en lugar de email
-      const response = await noteService.shareNote(noteId, username);
+      const response = await noteService.shareNote(noteId, username, {
+        includeImages,
+        canEdit
+      });
       setFeedback({ message: 'Nota compartida exitosamente', type: 'success' });
       setUsername('');
     } catch (error) {
@@ -33,7 +37,8 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
   return (
     <div className="share-note-container">
       {feedback.message && (
-        <div className={`share-feedback ${feedback.type}`}>
+        <div className={`share-feedback \${feedback.type}`}>
+          <i className={feedback.type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'}></i>
           {feedback.message}
         </div>
       )}
@@ -45,6 +50,27 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Nombre de usuario"
         />
+      </div>
+      
+      <div className="share-options">
+        <label className="share-option-label">
+          <input
+            type="checkbox"
+            checked={includeImages}
+            onChange={(e) => setIncludeImages(e.target.checked)}
+          />
+          <span>Incluir imágenes</span>
+        </label>
+        
+        <label className="share-option-label">
+          <input
+            type="checkbox"
+            checked={canEdit}
+            onChange={(e) => setCanEdit(e.target.checked)}
+          />
+          <span>Permitir edición</span>
+        </label>
+        
         <button 
           className="share-button"
           onClick={handleShare}
