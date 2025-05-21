@@ -1,0 +1,857 @@
+/* === RESET Y CONFIGURACIÓN BÁSICA === */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
+#root {
+  width: 85%;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* === CONTENEDOR PRINCIPAL === */
+.groups-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* === SIDEBAR === */
+.groups-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #1e1e1e;
+  padding: 20px;
+  color: #fff;
+  flex-shrink: 0;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.groups-header {
+  padding: 0 0 20px 0;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.groups-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.create-group-btn {
+  background: #f1c40f;
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  width: 100%;
+  text-align: center;
+}
+
+.create-group-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.create-group-btn:focus {
+  outline: 2px solid #f1c40f;
+  outline-offset: 2px;
+}
+
+.create-group-btn.large {
+  padding: 12px 24px;
+  font-size: 1rem;
+}
+
+.groups-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  margin-top: 10px;
+}
+
+.group-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.group-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.group-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left-color: #f1c40f;
+  color: #f1c40f;
+}
+
+.group-item h3 {
+  margin: 0 10px 0 0;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.group-members-count {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.no-groups-message {
+  text-align: center;
+  padding: 20px;
+  color: #aaa;
+}
+
+/* === CONTENIDO PRINCIPAL === */
+.group-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  /* Fondo removido */
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.group-header h1 {
+  margin: 0 0 5px 0;
+  color: #f1c40f;
+}
+
+.group-header p {
+  margin: 0;
+  color: #666;
+}
+
+.group-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-member-btn, .create-note-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.add-member-btn {
+  background: #f1c40f;
+  color: #000;
+}
+
+.add-member-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.create-note-btn {
+  background: #f1c40f;
+  color: #000;
+}
+
+.create-note-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Formulario de crear nota de grupo --- */
+.create-note {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  width: 450px;
+  min-width: 450px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto 10px auto;
+}
+
+.create-note.expanded {
+  max-height: 500px;
+}
+
+.create-note input,
+.create-note textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  padding: 8px;
+}
+
+.create-note input {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 8px;
+  font-size: 16px;
+  background: transparent;
+}
+
+.create-note textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 8px;
+  font-size: 14px;
+  resize: none;
+  min-height: 60px;
+  max-height: 200px;
+  background: transparent;
+  overflow: auto;
+}
+
+/* Estilos del scrollbar para el textarea de crear nota */
+.create-note textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.create-note textarea::-webkit-scrollbar-track {
+  background: rgba(54, 54, 54, 0.8);
+  border-radius: 4px;
+}
+
+.create-note textarea::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
+}
+
+.create-note textarea::placeholder {
+  color: #999;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.create-note:hover textarea::placeholder {
+  opacity: 1;
+}
+
+.create-note textarea:focus::placeholder {
+  opacity: 1;
+}
+
+.create-note:hover textarea,
+.create-note textarea:focus {
+  opacity: 1;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.create-note .button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.left-actions, .right-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.create-note .left-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.create-note .right-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* --- Acciones de miembros del grupo --- */
+.member-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* --- Botón de editar permisos --- */
+.edit-permissions-btn {
+  background-color: #f1c40f;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+  margin-right: 6px;
+  font-weight: 600;
+}
+
+.edit-permissions-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.role-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.role-select {
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 1em;
+  margin-right: 6px;
+}
+
+.cancel-edit-btn {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.cancel-edit-btn:hover {
+  background-color: #d0d0d0;
+}
+
+.leave-group-btn {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.leave-group-btn:hover {
+  background: #c0392b;
+}
+
+/* --- Reforzar visibilidad de grupo-actions y botones --- */
+.group-actions {
+  display: flex !important;
+  gap: 10px !important;
+  margin-left: auto !important;
+}
+
+.add-member-btn, .create-note-btn {
+  display: block !important;
+  padding: 8px 16px !important;
+  font-size: 1em !important;
+}
+
+/* === TABS === */
+.group-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.tab:hover {
+  color: #fff;
+}
+
+.tab.active {
+  border-bottom: 2px solid #f1c40f;
+  color: #000;
+}
+
+/* === GRID DE NOTAS === */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Contenedor principal de Masonry */
+.masonry-grid {
+  display: flex;
+  margin-left: -15px;
+  width: 90%;
+}
+
+/* Columnas de Masonry */
+.masonry-grid_column {
+  padding-left: 15px;
+  background-clip: padding-box;
+}
+
+/* Ajuste de las tarjetas dentro de las columnas */
+.masonry-grid_column > .note-card {
+  margin-bottom: 15px;
+}
+
+.note-card {
+  position: relative;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  margin-bottom: 15px;
+  break-inside: avoid;
+  transition: transform 0.2s ease, border-color 0.3s ease;
+  padding-right: calc(15px + 8px);
+  box-sizing: border-box;
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.note-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  word-break: break-word;
+}
+
+.note-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.note-card:hover .note-actions {
+  opacity: 1;
+}
+
+.edit-note-btn, .delete-note-btn {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.edit-note-btn {
+  color: #2196f3;
+}
+
+.edit-note-btn:hover {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.delete-note-btn {
+  color: #f44336;
+}
+
+.delete-note-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.note-content {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  word-break: break-word;
+  color: #555;
+}
+
+.note-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.empty-notes {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+}
+
+/* === LISTA DE MIEMBROS === */
+.group-members {
+  margin-top: 20px;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s;
+}
+
+.member-item:hover {
+  background-color: #f0f0f0;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.member-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f1c40f;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.member-info div h4 {
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.member-role {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.member-role.owner {
+  background-color: #ffd700;
+  color: #333;
+}
+
+.member-role.admin {
+  background-color: #2196f3;
+  color: white;
+}
+
+.member-role.member {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.remove-member-btn {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.remove-member-btn:hover {
+  background: #c0392b;
+}
+
+/* === ESTADO SIN GRUPO SELECCIONADO === */
+.no-group-selected {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-group-selected h2 {
+  margin-bottom: 16px;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.no-group-selected p {
+  margin-bottom: 24px;
+  color: #666;
+  font-size: 1rem;
+}
+
+/* === MODAL === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.close-modal-btn:hover {
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #f1c40f;
+  outline: none;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-btn {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #d0d0d0;
+}
+
+.create-btn, .add-btn, .update-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.create-btn {
+  background-color: #f1c40f;
+  color: #000;
+}
+
+.create-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-btn {
+  background-color: #f1c40f;
+  color: #000;
+}
+
+.add-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.update-btn {
+  background-color: #f1c40f;
+  color: #000;
+}
+
+.update-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* === ESTADOS DE CARGA Y FEEDBACK === */
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.feedback-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .groups-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .groups-sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    border-right: none;
+    border-bottom: 1px solid #333;
+  }
+
+  .group-content {
+    padding: 15px;
+  }
+
+  .group-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .group-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    width: 95%;
+    padding: 15px;
+  }
+}

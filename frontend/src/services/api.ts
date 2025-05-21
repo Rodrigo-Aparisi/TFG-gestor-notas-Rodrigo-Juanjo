@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { authService } from './auth';
-import { User, UpdateReminderData, CreateReminderData, UpdateNoteData } from '../types';
+import { User, UpdateReminderData, CreateReminderData} from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -18,6 +18,11 @@ interface UpdateResponse {
 interface ProfileImageResponse {
   profile_image: string;
   message: string;
+}
+
+interface ShareNoteOptions {
+  includeImages?: boolean;
+  canEdit?: boolean;
 }
 
 // Crear instancia de axios
@@ -103,14 +108,33 @@ export const noteService = {
     }
   },
 
-  shareNote: async (noteId: string, username: string) => {
-    const response = await api.post('/notes/share', { noteId, username });
+  shareNote: async (noteId: string, username: string, options: ShareNoteOptions | boolean = {}) => {
+    const shareOptions: ShareNoteOptions = typeof options === 'boolean' 
+      ? { includeImages: options, canEdit: false }
+      : { includeImages: true, canEdit: false, ...options };
+    
+    const response = await api.post('/notes/share', { 
+      noteId, 
+      username, 
+      includeImages: shareOptions.includeImages,
+      canEdit: shareOptions.canEdit
+    });
+    
+    return response.data;
+  },
+
+  updateSharedNotePermissions: async (noteId: string, username: string, options: ShareNoteOptions) => {
+    const response = await api.put(`/notes/${noteId}/share-permissions`, {
+      username,
+      ...options
+    });
     return response.data;
   },
 
   getSharedNotes: async () => {
     try {
       const response = await api.get('/notes/shared-notes');
+
       return response.data;
     } catch (error) {
       console.error('Error fetching shared notes:', error);
@@ -118,7 +142,7 @@ export const noteService = {
     }
   },
 
-  updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
+  updateNote: async (id: string, noteData: { title?: string; content?: string}) => {
     try {
       const response = await api.put(`/notes/${id}`, noteData);
       if (!response.data) {
@@ -138,6 +162,52 @@ export const noteService = {
     }
   },
 
+  updateSharedNote: async (
+    id: string,
+    noteData: { title?: string; content?: string }
+  ) => {
+    try {
+      const response = await api.put(`/notes/shared-notes/${id}`, noteData);
+      if (!response.data) {
+        throw new Error('No se recibieron datos del servidor');
+      }
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Nota no encontrada');
+        } else if (error.response?.status === 500) {
+          throw new Error('Error del servidor al actualizar la nota');
+        }
+        throw new Error(error.response?.data?.error || 'Error al actualizar la nota');
+      }
+      throw new Error('Error inesperado al actualizar la nota');
+    }
+  },
+  
+  updateSharedNoteImages: async (
+    id: string,
+    images: string[]
+  ) => {
+    try {
+      const response = await api.put(`/notes/shared-notes/${id}`, { images });
+      if (!response.data) {
+        throw new Error('No se recibieron datos del servidor');
+      }
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Nota no encontrada');
+        } else if (error.response?.status === 500) {
+          throw new Error('Error del servidor al actualizar imágenes');
+        }
+        throw new Error(error.response?.data?.error || 'Error al actualizar imágenes de la nota');
+      }
+      throw new Error('Error inesperado al actualizar imágenes de la nota');
+    }
+  },
+  
   uploadNoteImage: async (formData: FormData) => {
     try {
       const response = await api.post('/notes/upload-image', formData, {
@@ -151,6 +221,7 @@ export const noteService = {
       throw error;
     }
   },
+  
 
   deleteNote: async (id: string) => {
     try {

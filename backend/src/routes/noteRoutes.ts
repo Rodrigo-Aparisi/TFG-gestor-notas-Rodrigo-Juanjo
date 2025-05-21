@@ -22,6 +22,10 @@ router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);
 router.post('/unmark-all', noteController.unmarkAllNotes);
 
+// Nuevas rutas para permisos de edición
+router.put('/:id/share-permissions', noteController.updateSharedNotePermissions);
+router.put('/shared-notes/:id', authenticateToken, noteController.updateSharedNote);
+
 //Rutas de la papelera
 router.get('/trash', noteController.getTrashNotes);
 router.post('/trash/:id/restore', noteController.restoreNote);

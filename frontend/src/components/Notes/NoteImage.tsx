@@ -24,7 +24,8 @@ const NoteImage: React.FC<NoteImageProps> = ({ imageUrl, index, onDelete }) => {
                 className={`note-image ${loaded ? 'loaded' : ''}`}
                 style={{ display: loaded ? 'block' : 'none' }}
             />
-            <button 
+            <button
+                title="Eliminar imagen"
                 className="delete-image-button"
                 onClick={(e) => {
                     e.stopPropagation();

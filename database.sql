@@ -31,6 +31,78 @@ CREATE TABLE settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+-- Crear tabla de grupos de usuarios
+CREATE TABLE user_groups (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear tabla de miembros de grupos
+CREATE TABLE group_members (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL DEFAULT 'member', -- 'owner', 'admin', 'member'
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_group_member UNIQUE (group_id, user_id)
+);
+
+-- Crear tabla para notas de grupo
+CREATE TABLE group_notes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    color VARCHAR(7) DEFAULT NULL,
+    images TEXT[] DEFAULT ARRAY[]::TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_color_format_group_notes CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
+);
+
+-- Crear índices para las nuevas tablas
+CREATE INDEX idx_user_groups_owner_id ON user_groups(owner_id);
+CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
+CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
+
+-- Crear triggers para actualizar updated_at automáticamente
+CREATE TRIGGER update_user_groups_updated_at
+    BEFORE UPDATE ON user_groups
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_group_notes_updated_at
+    BEFORE UPDATE ON group_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear vista para notas de grupo con información del creador
+CREATE VIEW v_group_notes AS
+SELECT 
+    gn.id,
+    gn.title,
+    gn.content,
+    gn.user_id,
+    u.username AS created_by_username,
+    gn.group_id,
+    gn.is_pinned,
+    gn.color,
+    gn.images,
+    gn.created_at,
+    gn.updated_at,
+    ug.name AS group_name
+FROM group_notes gn
+JOIN users u ON gn.user_id = u.id
+JOIN user_groups ug ON gn.group_id = ug.id;
+
 -- Crear un índice para mejorar el rendimiento en búsquedas por user_id
 CREATE INDEX idx_settings_user_id ON settings(user_id);
 
@@ -76,7 +148,7 @@ CREATE TABLE tags (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format_tags CHECK (color ~* '^#[0-9A-F]{6}$')
+    CONSTRAINT check_color_format_tags CHECK (color ~* '^#[0-9A-F]{6}\$')
 );
 
 -- Crear tabla de relación entre notas y etiquetas
@@ -124,6 +196,19 @@ CREATE TABLE reminder_recurrence (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Crear tabla para notas compartidas con los nuevos campos de permisos
+CREATE TABLE shared_notes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shared_with_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    can_edit BOOLEAN DEFAULT FALSE,
+    include_images BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
+);
+
 -- Crear todos los índices necesarios
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
@@ -138,6 +223,10 @@ CREATE INDEX idx_reminders_date_time ON reminders(date_time);
 CREATE INDEX idx_reminders_status ON reminders(status_id);
 CREATE INDEX idx_reminder_recurrence_reminder_id ON reminder_recurrence(reminder_id);
 CREATE INDEX idx_notes_images ON notes USING gin(images);
+CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
+CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
+CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
+CREATE INDEX idx_shared_notes_can_edit ON shared_notes(can_edit);
 
 -- Crear función para actualizar el timestamp de updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -176,6 +265,11 @@ CREATE TRIGGER update_reminders_updated_at
 
 CREATE TRIGGER update_reminder_recurrence_updated_at
     BEFORE UPDATE ON reminder_recurrence
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_shared_notes_updated_at
+    BEFORE UPDATE ON shared_notes
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
@@ -221,6 +315,28 @@ FROM notes n
 LEFT JOIN note_tags nt ON n.id = nt.note_id
 LEFT JOIN tags t ON nt.tag_id = t.id
 GROUP BY n.id;
+
+-- Crear vista para notas compartidas con información de permisos
+CREATE OR REPLACE VIEW v_shared_notes AS
+SELECT 
+    sn.id AS shared_note_id,
+    sn.note_id,
+    n.title,
+    n.content,
+    CASE WHEN sn.include_images THEN n.images ELSE ARRAY[]::TEXT[] END AS images,
+    n.color,
+    sn.owner_id,
+    owner.username AS owner_username,
+    sn.shared_with_id,
+    shared_with.username AS shared_with_username,
+    sn.can_edit,
+    sn.include_images,
+    sn.created_at,
+    sn.updated_at
+FROM shared_notes sn
+JOIN notes n ON sn.note_id = n.id
+JOIN users owner ON sn.owner_id = owner.id
+JOIN users shared_with ON sn.shared_with_id = shared_with.id;
 
 -- Script para actualizar una base de datos existente
 DO $$ 

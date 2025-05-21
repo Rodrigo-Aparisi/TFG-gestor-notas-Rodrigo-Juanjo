@@ -34,6 +34,57 @@ export interface SharedNote extends Note {
   images: string[];
 }
 
+export interface UserGroup {
+  id: string;
+  name: string;
+  description?: string;
+  owner_id: string;
+  created_at: Date;
+  updated_at: Date;
+  members: GroupMember[];
+}
+
+export interface GroupMember {
+  id: string;
+  user_id: string;
+  username: string;
+  profile_image?: string;
+  role: 'owner' | 'admin' | 'member';
+  joined_at: Date;
+}
+
+export interface GroupNote {
+  id: string;
+  title: string;
+  content: string;
+  user_id: string;
+  created_by_username: string;
+  group_id: string;
+  is_pinned: boolean;
+  color: string | null;
+  created_at: string;
+  updated_at: string;
+  images: string[];
+}
+
+export interface CreateGroupData {
+  name: string;
+  description?: string;
+}
+
+export interface AddGroupMemberData {
+  groupId: string;
+  username: string;
+  role?: 'admin' | 'member';
+}
+
+export interface CreateGroupNoteData {
+  title: string;
+  content: string;
+  images?: string[];
+}
+
+
 
 export interface NotePosition {
   rect: DOMRect;

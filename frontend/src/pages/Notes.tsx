@@ -552,6 +552,7 @@ const Notes: React.FC = () => {
             handleFocus={handleFocus}
             handleFocusIndicatorClick={handleFocusIndicatorClick}
             autoResizeTextarea={autoResizeTextarea}
+            showFeedback={showFeedback}
           />
         )}
 
