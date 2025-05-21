@@ -12,7 +12,6 @@ import CalendarGrid from '../components/Reminders/CalendarGrid';
 import WeekView from '../components/Reminders/WeekView';
 import { formatDateForInput, getWeekStart } from '../components/Reminders/ReminderUtils';
 
-
 const Reminders: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -29,7 +28,8 @@ const Reminders: React.FC = () => {
     date: new Date(),
     time: '',
     statusId: 1,
-    hasTime: false
+    hasTime: false,
+    emailNotification: false
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +39,7 @@ const Reminders: React.FC = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   
-  useEffect(() => {
+ useEffect(() => {
     const loadReminders = async () => {
       try {
         setIsLoading(true);
@@ -71,11 +71,16 @@ const Reminders: React.FC = () => {
         });
   
         if (response && response.reminders) {
-          const transformedReminders = response.reminders.map((reminder: Reminder) => ({
+          const transformedReminders = response.reminders.map((reminder: any) => ({
             ...reminder,
-            dateTime: new Date(reminder.dateTime)
+            dateTime: new Date(reminder.dateTime),
+            // Asegurarse de que emailNotification se mapea correctamente
+            emailNotification: reminder.email_notification !== undefined 
+              ? reminder.email_notification 
+              : reminder.emailNotification
           }));
           
+          console.log('Recordatorios transformados:', transformedReminders);
           setReminders(transformedReminders);
         }
       } catch (error) {
@@ -114,7 +119,8 @@ const Reminders: React.FC = () => {
       }
   
       const dateTime = new Date(newReminder.date);
-      
+      console.log('Creando recordatorio con emailNotification:', newReminder.emailNotification);
+
       if (newReminder.hasTime && newReminder.time) {
         const [hours, minutes] = newReminder.time.split(':');
         dateTime.setHours(parseInt(hours), parseInt(minutes));
@@ -128,7 +134,8 @@ const Reminders: React.FC = () => {
         description: newReminder.description,
         dateTime: dateTime,
         statusId: selectedStatus,
-        hasTime: newReminder.hasTime
+        hasTime: newReminder.hasTime,
+        emailNotification: newReminder.emailNotification || false // Añadido el nuevo campo
       };
   
       console.log('Creating reminder with data:', reminderData); // Para debug
@@ -151,11 +158,15 @@ const Reminders: React.FC = () => {
           startDate: visibleStartDate,
           endDate: visibleEndDate
         });
-  
+      
         if (updatedResponse && updatedResponse.reminders) {
-          setReminders(updatedResponse.reminders.map((reminder: Reminder) => ({
+          setReminders(updatedResponse.reminders.map((reminder: any) => ({
             ...reminder,
-            dateTime: new Date(reminder.dateTime)
+            dateTime: new Date(reminder.dateTime),
+            // Asegurarse de que emailNotification se mapea correctamente
+            emailNotification: reminder.email_notification !== undefined 
+              ? reminder.email_notification 
+              : reminder.emailNotification
           })));
         }
   
@@ -165,7 +176,8 @@ const Reminders: React.FC = () => {
           date: new Date(),
           time: '',
           statusId: 1,
-          hasTime: false
+          hasTime: false,
+          emailNotification: false
         });
       }
     } catch (error) {
@@ -219,7 +231,8 @@ const Reminders: React.FC = () => {
             description: editingReminder.description,
             date_time: editingReminder.dateTime.toISOString(),
             status_id: editingStatus,
-            has_time: editingReminder.hasTime
+            has_time: editingReminder.hasTime,
+            email_notification: editingReminder.emailNotification // Añadido el nuevo campo
         };
 
         console.log('Enviando actualización:', updatePayload);
@@ -240,7 +253,10 @@ const Reminders: React.FC = () => {
                   ...response.reminder,
                   dateTime: new Date(response.reminder.date_time),
                   statusId: response.reminder.status_id,
-                  hasTime: response.reminder.has_time
+                  hasTime: response.reminder.has_time,
+                  emailNotification: response.reminder.email_notification !== undefined 
+                    ? response.reminder.email_notification 
+                    : response.reminder.emailNotification
                 }
               : reminder
           )
@@ -262,11 +278,14 @@ const Reminders: React.FC = () => {
         });
 
         if (updatedResponse?.reminders) {
-          setReminders(updatedResponse.reminders.map((r: Reminder) => ({
+          setReminders(updatedResponse.reminders.map((r: any) => ({
             ...r,
             dateTime: new Date(r.dateTime),
             statusId: r.statusId,
-            hasTime: r.hasTime
+            hasTime: r.hasTime,
+            emailNotification: r.email_notification !== undefined 
+              ? r.email_notification 
+              : r.emailNotification
           })));
         }
 
@@ -341,7 +360,6 @@ const Reminders: React.FC = () => {
                   reminders={reminders}
                   onDateSelect={handleDateSelect}
                   onMonthChange={setCurrentMonth}
-                  onShowFullCalendar={() => setShowFullCalendar(true)}
                 />
               </div>
               <ReminderForm
@@ -426,7 +444,8 @@ const Reminders: React.FC = () => {
               title: reminder.title,
               description: reminder.description ?? '',
               dateTime: new Date(reminder.dateTime),
-              hasTime: reminder.hasTime
+              hasTime: reminder.hasTime,
+              emailNotification: reminder.emailNotification || false // Añadido el nuevo campo
             });
             setIsFromPopup(true);
           }}

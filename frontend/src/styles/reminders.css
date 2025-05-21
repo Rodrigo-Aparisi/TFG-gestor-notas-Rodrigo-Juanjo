@@ -1427,3 +1427,80 @@
 .reminder-edit-content textarea::placeholder {
   color: rgba(255, 215, 0, 0.7);
 }
+
+/* Estilos para el checkbox de notificación por email */
+.form-check.email-notification-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+}
+
+.form-check.email-notification-check input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  accent-color: var(--dorado);
+  height: 18px;
+  width: 18px;
+  cursor: pointer;
+}
+
+.form-check.email-notification-check label {
+  color: var(--dorado);
+  cursor: pointer;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Estilos para el indicador de estado de notificación */
+.reminder-notification-status {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 4px;
+  background: rgba(54, 54, 54, 0.8);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.email-notification-active {
+  color: #4CAF50;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.email-notification-active::before {
+  content: '✓';
+  margin-right: 8px;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.email-notification-inactive {
+  color: #999;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.email-notification-inactive::before {
+  content: '✗';
+  margin-right: 8px;
+  font-weight: bold;
+  color: #999;
+}
+
+/* Estilos para la vista de recordatorio en el popup */
+.reminder-pill .notification-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #4CAF50;
+  border-radius: 50%;
+  margin-left: 5px;
+  display: inline-block;
+}

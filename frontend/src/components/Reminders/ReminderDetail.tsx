@@ -59,6 +59,13 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
             <div className="reminder-description">
               {focusedReminder.description || 'Sin descripción'}
             </div>
+            {/* Mostrar si tiene notificación por email */}
+            <div className="reminder-notification-status">
+              {(focusedReminder.emailNotification === true) ? 
+                <span className="email-notification-active">Notificación por email activada</span> :
+                <span className="email-notification-inactive">Sin notificación por email</span>
+              }
+            </div>
             <div className="reminder-popup-actions">
               <button 
                 className="edit-button"
@@ -68,7 +75,8 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
                     title: focusedReminder.title,
                     description: focusedReminder.description ?? '',
                     dateTime: new Date(focusedReminder.dateTime),
-                    hasTime: focusedReminder.hasTime
+                    hasTime: focusedReminder.hasTime,
+                    emailNotification: focusedReminder.emailNotification || focusedReminder.email_notification || false
                   });
                 }}
               >
@@ -150,6 +158,22 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
                   />
                 )}
               </div>
+            </div>
+            {/* Nuevo checkbox para notificación por email */}
+            <div className="form-check email-notification-check">
+              <input
+                type="checkbox"
+                id="editEmailNotificationCheckbox"
+                checked={editingReminder.emailNotification || false}
+                onChange={e => 
+                  setEditingReminder(prev => 
+                    prev ? { ...prev, emailNotification: e.target.checked } : null
+                  )
+                }
+              />
+              <label htmlFor="editEmailNotificationCheckbox">
+                Recibir recordatorio por email
+              </label>
             </div>
             <StatusSelector 
               value={editingStatus} 

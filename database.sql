@@ -106,6 +106,7 @@ CREATE TABLE reminders (
     description TEXT,
     date_time TIMESTAMP NOT NULL,
     has_time BOOLEAN DEFAULT false,
+    email_notification BOOLEAN DEFAULT false,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -188,6 +189,7 @@ SELECT
     r.has_time,
     r.user_id,
     r.status_id,
+    r.email_notification,
     r.created_at,
     r.updated_at,
     rs.name as status,
@@ -267,3 +269,28 @@ CREATE TRIGGER update_note_groups_updated_at
     BEFORE UPDATE ON note_groups
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+
+-- Tabla para registrar los emails enviados
+CREATE TABLE IF NOT EXISTS email_logs (
+    id SERIAL PRIMARY KEY,
+    reminder_id UUID REFERENCES reminders(id),
+    user_email VARCHAR(255) NOT NULL,
+    status VARCHAR(20) NOT NULL, -- 'sent', 'error'
+    message_id VARCHAR(255),
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para registrar los trabajos en cola
+CREATE TABLE IF NOT EXISTS email_queue_logs (
+    id SERIAL PRIMARY KEY,
+    reminder_id UUID REFERENCES reminders(id),
+    job_id VARCHAR(50) NOT NULL,
+    scheduled_for TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices para mejorar el rendimiento
+CREATE INDEX IF NOT EXISTS idx_email_logs_reminder_id ON email_logs(reminder_id);
+CREATE INDEX IF NOT EXISTS idx_email_queue_logs_reminder_id ON email_queue_logs(reminder_id);
