@@ -10,10 +10,11 @@ import Header from './components/Layout/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Notes from './pages/Notes';
+import Trash from './pages/Trash';
 import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
 import ChatbotPage from './pages/ChatbotPage';
-import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton'; // Añade esta importación
+import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -82,6 +83,11 @@ function App() {
                 <Route path="/notes" element={
                   <PrivateRoute>
                     <Notes />
+                  </PrivateRoute>
+                } />
+                <Route path="/trash" element={
+                  <PrivateRoute>
+                    <Trash  />
                   </PrivateRoute>
                 } />
                 <Route path="/Reminders" element={

@@ -3,17 +3,20 @@ import ChatbotMessage from './ChatbotMessage';
 import ChatbotInput from './ChatbotInput';
 import chatbotService from '../../services/chatbotService';
 import '../../styles/chatbot.css';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+  action?: string;
+  data?: any;
 }
 
 const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      text: '¡Hola! Soy tu asistente para la app de notas. Puedo ayudarte a crear notas, recordatorios o transcribir imágenes. ¿En qué puedo ayudarte hoy?',
+      text: '¡Hola! Soy tu asistente para la app de notas. Puedo ayudarte a crear, editar o eliminar notas, añadir imágenes, crear recordatorios o transcribir imágenes. ¿En qué puedo ayudarte hoy?',
       sender: 'bot',
       timestamp: new Date()
     }
@@ -21,6 +24,7 @@ const Chatbot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   
   // Scroll al último mensaje
   useEffect(() => {
@@ -41,8 +45,8 @@ const Chatbot: React.FC = () => {
     try {
       // Formatear historial para la API
       const history = messages.slice(-10).map(msg => ({
-        text: msg.text,
-        sender: msg.sender
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text
       }));
       
       // Procesar mensaje con el servicio
@@ -55,20 +59,42 @@ const Chatbot: React.FC = () => {
       const botMessage: Message = {
         text: '',
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
+        action: response.action,
+        data: response.action !== 'reply' ? response : null
       };
       
       // Manejar diferentes tipos de respuestas
       if (response && typeof response === 'object') {
-        if (response.action === 'createNote') {
-          botMessage.text = response.response || 'He creado una nota nueva.';
-        } else if (response.action === 'createReminder') {
-          botMessage.text = response.response || 'He creado un recordatorio nuevo.';
-        } else if (response.action === 'transcribeImage') {
-          botMessage.text = `Transcripción de la imagen:\n\n${response.transcription || 'No se pudo transcribir el texto'}`;
-        } else {
-          // Respuesta normal
-          botMessage.text = response.response || 'No entendí lo que querías decir.';
+        switch (response.action) {
+          case 'createNote':
+            botMessage.text = response.response || 'He creado una nota nueva.';
+            break;
+            
+          case 'updateNote':
+            botMessage.text = response.response || 'He actualizado la nota.';
+            break;
+            
+          case 'deleteNote':
+            botMessage.text = response.response || 'He eliminado la nota.';
+            break;
+            
+          case 'addImageToNote':
+            botMessage.text = response.response || 'He añadido la imagen a la nota.';
+            break;
+            
+          case 'createReminder':
+            botMessage.text = response.response || 'He creado un recordatorio nuevo.';
+            break;
+            
+          case 'transcribeImage':
+            botMessage.text = `Transcripción de la imagen:\n\n\${response.transcription || 'No se pudo transcribir el texto'}`;
+            break;
+            
+          default:
+            // Respuesta normal
+            botMessage.text = response.response || 'No entendí lo que querías decir.';
+            break;
         }
       } else {
         // Fallback si la respuesta no tiene el formato esperado
@@ -89,12 +115,11 @@ const Chatbot: React.FC = () => {
     }
   };
   
-  
   const handleUploadImage = async (file: File) => {
     try {
       // Añadir mensaje indicando que se está procesando la imagen
       setMessages(prev => [...prev, {
-        text: `Subiendo imagen: ${file.name}`,
+        text: `Subiendo imagen: \${file.name}`,
         sender: 'user',
         timestamp: new Date()
       }]);
@@ -106,7 +131,7 @@ const Chatbot: React.FC = () => {
       setImageUrl(imageUrl);
       
       setMessages(prev => [...prev, {
-        text: '¿Qué te gustaría hacer con esta imagen? Puedo transcribir su contenido o crear una nota con ella.',
+        text: '¿Qué te gustaría hacer con esta imagen? Puedo transcribir su contenido, crear una nota con ella o añadirla a una nota existente.',
         sender: 'bot',
         timestamp: new Date()
       }]);

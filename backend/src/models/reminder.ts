@@ -12,6 +12,7 @@ interface ReminderData {
   updatedAt?: Date;
   focused?: boolean;
   hasTime: boolean;
+  sendEmail?: boolean;
 }
 
 interface ReminderConditions {
@@ -68,8 +69,8 @@ export class Reminder {
   }
 
   static async create(data: ReminderData) {
-    console.log('Datos para crear recordatorio:', data); // Debug
-  
+    console.log('Datos para crear recordatorio:', data);
+
     const query = `
       INSERT INTO reminders (
         title, 
@@ -77,8 +78,9 @@ export class Reminder {
         date_time, 
         user_id, 
         status_id,
-        has_time
-      ) VALUES ($1, $2, $3, $4, $5, $6) 
+        has_time,
+        send_email
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7) 
       RETURNING 
         id,
         title,
@@ -87,29 +89,29 @@ export class Reminder {
         user_id as "userId",
         status_id as "statusId",
         has_time as "hasTime",
+        send_email as "sendEmail",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
-  
+
     try {
-      // Crear un solo array de valores y usarlo en la consulta
       const values = [
         data.title,
         data.description || '',
         new Date(data.dateTime),
         data.userId,
         data.statusId || 1,
-        data.hasTime || false
+        data.hasTime || false,
+        data.sendEmail || false // Nuevo valor
       ];
-  
+
       const result = await pool.query(query, values);
-  
-      // Transformar la fecha a formato ISO y mantener el formato camelCase
+
       const reminder = {
         ...result.rows[0],
         dateTime: new Date(result.rows[0].dateTime).toISOString()
       };
-  
+
       return reminder;
     } catch (error) {
       console.error('Error in create:', error);
@@ -119,7 +121,7 @@ export class Reminder {
   
 
   static async findOneAndUpdate(conditions: ReminderConditions, data: Partial<ReminderData>) {
-    console.log('Datos recibidos para actualización:', data); // Debug
+    console.log('Datos recibidos para actualización:', data);
 
     const query = `
       UPDATE reminders 
@@ -128,9 +130,10 @@ export class Reminder {
         description = COALESCE($2, description),
         date_time = COALESCE($3::timestamp, date_time),
         status_id = COALESCE($4, status_id),
-        has_time = $5, -- Cambiar COALESCE por asignación directa
+        has_time = $5,
+        send_email = COALESCE($6, send_email),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6 AND user_id = $7
+      WHERE id = $7 AND user_id = $8
       RETURNING 
         id,
         title,
@@ -139,6 +142,7 @@ export class Reminder {
         user_id as "userId",
         status_id as "statusId",
         has_time as "hasTime",
+        send_email as "sendEmail",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
@@ -156,7 +160,8 @@ export class Reminder {
             description: data.description,
             dateTime: dateTimeValue,
             statusId: data.statusId,
-            hasTime: data.hasTime, // Asegurarse de que este valor llegue correctamente
+            hasTime: data.hasTime,
+            sendEmail: data.sendEmail,
             id: conditions.id,
             userId: conditions.userId
         });
@@ -166,7 +171,8 @@ export class Reminder {
             data.description,
             dateTimeValue,
             data.statusId,
-            data.hasTime, // Asegurarse de que este valor se pase
+            data.hasTime,
+            data.sendEmail,
             conditions.id,
             conditions.userId
         ]);
@@ -179,7 +185,7 @@ export class Reminder {
         const updatedReminder = {
             ...result.rows[0],
             dateTime: new Date(result.rows[0].dateTime).toISOString(),
-            hasTime: result.rows[0].hasTime // Asegurarse de que se incluya en la respuesta
+            hasTime: result.rows[0].hasTime
         };
 
         console.log('Recordatorio actualizado:', updatedReminder);
@@ -248,6 +254,7 @@ export class Reminder {
           r.has_time as "hasTime",
           r.user_id as "userId",
           r.status_id as "statusId",
+          r.send_email as "sendEmail",
           r.created_at as "createdAt",
           r.updated_at as "updatedAt",
           rs.name as "statusName"
@@ -290,6 +297,45 @@ export class Reminder {
     }
   }
   
+  static async findRemindersForEmailNotification(): Promise<any[]> {
+    try {
+      const query = `
+        SELECT 
+          r.id,
+          r.title,
+          r.description,
+          r.date_time as "dateTime",
+          r.has_time as "hasTime",
+          r.user_id as "userId",
+          u.email as "userEmail",
+          u.username
+        FROM reminders r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.send_email = true
+          AND r.status_id = 1
+          AND (
+            -- Para recordatorios sin hora específica (enviar a las 00:00 del día anterior)
+            (r.has_time = false AND 
+            r.date_time::date - INTERVAL '1 day' = CURRENT_DATE AND 
+            EXTRACT(HOUR FROM CURRENT_TIME) = 0 AND
+            EXTRACT(MINUTE FROM CURRENT_TIME) BETWEEN 0 AND 59)
+            OR
+            -- Para recordatorios con hora específica (enviar una hora antes)
+            (r.has_time = true AND 
+            r.date_time BETWEEN NOW() + INTERVAL '1 hour' AND NOW() + INTERVAL '2 hours')
+          )
+      `;
+      
+      const result = await pool.query(query);
+      
+      return result.rows.map(row => ({
+        ...row,
+        dateTime: new Date(row.dateTime)
+      }));
+    } catch (error) {
+      console.error('Error al buscar recordatorios para notificación por correo:', error);
+      throw error;
+    }
+  }
   
-    
 }
