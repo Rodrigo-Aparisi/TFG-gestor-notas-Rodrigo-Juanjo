@@ -7,7 +7,7 @@ import multer from 'multer';
 import { Pool } from 'pg';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
-import groupRoutes from './routes/groupRoutes';
+import groupRoutes from './routes/noteGroupRoutes';
 import userGroupRoutes from './routes/userGroupsRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
