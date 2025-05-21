@@ -18,6 +18,9 @@ export interface Note {
   color: string | null;
   created_at: string;
   updated_at: string;
+  images: string[];
+  is_deleted?: boolean;
+  deleted_at?: string | null; 
 }
 
 export interface SharedNote extends Note {
@@ -70,6 +73,7 @@ export interface Reminder {
   updatedAt: Date;
   focused?: boolean;
   hasTime: boolean;
+  sendEmail?: boolean;
 }
 
 export interface NewReminder {
@@ -79,6 +83,7 @@ export interface NewReminder {
   time: string;
   statusId?: number;
   hasTime: boolean;
+  sendEmail?: boolean;
 }
 
 export interface ReminderStatus {
@@ -112,6 +117,7 @@ export interface CreateReminderData {
   dateTime: Date;
   statusId?: number;
   hasTime: boolean;
+  sendEmail?: boolean;
 }
 
 // Interface para la actualización de recordatorios
@@ -121,6 +127,7 @@ export interface UpdateReminderData {
   date_time: string;
   status_id: number;
   has_time: boolean;
+  send_email?: boolean;
 }
 
 export interface EditingReminder {
@@ -128,6 +135,7 @@ export interface EditingReminder {
   description: string;
   dateTime: Date;
   hasTime: boolean;
+  sendEmail?: boolean;
 }
 
 export interface Group {

@@ -46,7 +46,9 @@ CREATE TABLE notes (
     images TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
+    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$'),
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Crear tabla de grupos de notas
@@ -55,7 +57,9 @@ CREATE TABLE note_groups (
     name VARCHAR(255) NOT NULL,
     color VARCHAR(50) DEFAULT '#f1c40f',
     user_id UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    position INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE note_group_items (
@@ -102,6 +106,7 @@ CREATE TABLE reminders (
     description TEXT,
     date_time TIMESTAMP NOT NULL,
     has_time BOOLEAN DEFAULT false,
+    send_email BOOLEAN DEFAULT false,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -255,5 +260,11 @@ CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
 -- Crear trigger para actualizar updated_at
 CREATE TRIGGER update_shared_notes_updated_at
     BEFORE UPDATE ON shared_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear trigger para actualizar updated_at automáticamente
+CREATE TRIGGER update_note_groups_updated_at
+    BEFORE UPDATE ON note_groups
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
