@@ -273,7 +273,6 @@ const handleEditPermissions = async (memberId: string, newRole: string) => {
         ) : (
           <div className="no-group-selected">
             <h2>Selecciona un grupo o crea uno nuevo</h2>
-            <p>Los grupos te permiten compartir notas con otros usuarios</p>
             <button 
               className="create-group-btn large"
               onClick={() => setShowCreateGroupModal(true)}
