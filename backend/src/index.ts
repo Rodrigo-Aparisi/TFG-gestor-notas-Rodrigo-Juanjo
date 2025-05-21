@@ -11,9 +11,7 @@ import groupRoutes from './routes/noteGroupRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
-import emailRoutes from './routes/email';
 import { setupTrashCleanup } from './utils/cleanupTasks';
-import { emailService } from './services/emailService';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -125,7 +123,6 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/chatbot', chatbotRoutes);
-app.use('/api/emails', emailRoutes);
 
 // Añadir un middleware de logging para depuración
 app.use((req, res, next) => {
@@ -172,9 +169,6 @@ app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
   console.log(`Directorio de uploads: ${uploadsDir}`);
 });
-
-// Inicializar el servicio de email
-console.log('Inicializando servicio de notificaciones por email...');
 
 // Exportar pool para uso en otros archivos
 export { pool };

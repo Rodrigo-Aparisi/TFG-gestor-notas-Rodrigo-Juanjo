@@ -16,6 +16,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "../backend/src/services/emailService.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

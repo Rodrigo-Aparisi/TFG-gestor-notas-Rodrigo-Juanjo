@@ -73,22 +73,6 @@ const ReminderForm: React.FC<ReminderFormProps> = ({
         </div>
       </div>
       
-      {/* Checkbox para notificación por email */}
-      <div className="form-check email-notification-check">
-        <input
-          type="checkbox"
-          id="emailNotificationCheckbox"
-          checked={newReminder.emailNotification || false}
-          onChange={e => setNewReminder(prev => ({ 
-            ...prev, 
-            emailNotification: e.target.checked 
-          }))}
-        />
-        <label htmlFor="emailNotificationCheckbox">
-          Recibir recordatorio por email
-        </label>
-      </div>
-      
       <StatusSelector value={selectedStatus} onChange={setSelectedStatus} />
       <button onClick={handleCreateReminder}>Crear Recordatorio</button>
     </div>
