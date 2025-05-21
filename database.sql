@@ -118,7 +118,9 @@ CREATE TABLE notes (
     images TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}\$')
+    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$'),
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Crear tabla de grupos de notas
@@ -127,7 +129,9 @@ CREATE TABLE note_groups (
     name VARCHAR(255) NOT NULL,
     color VARCHAR(50) DEFAULT '#f1c40f',
     user_id UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    position INTEGER DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE note_group_items (
@@ -174,6 +178,7 @@ CREATE TABLE reminders (
     description TEXT,
     date_time TIMESTAMP NOT NULL,
     has_time BOOLEAN DEFAULT false,
+    send_email BOOLEAN DEFAULT false,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -332,3 +337,50 @@ FROM shared_notes sn
 JOIN notes n ON sn.note_id = n.id
 JOIN users owner ON sn.owner_id = owner.id
 JOIN users shared_with ON sn.shared_with_id = shared_with.id;
+
+-- Script para actualizar una base de datos existente
+DO $$ 
+BEGIN
+    -- Añadir columna images si no existe
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'notes' AND column_name = 'images'
+    ) THEN
+        ALTER TABLE notes ADD COLUMN images TEXT[] DEFAULT ARRAY[]::TEXT[];
+    END IF;
+END $$;
+
+-- Inicializar la columna images con array vacío donde sea NULL
+UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
+
+-- Inicializar la columna images con array vacío donde sea NULL
+UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
+
+-- Crear tabla para notas compartidas
+CREATE TABLE shared_notes (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
+    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    shared_with_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
+);
+
+-- Crear índices para mejorar el rendimiento
+CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
+CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
+CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
+
+-- Crear trigger para actualizar updated_at
+CREATE TRIGGER update_shared_notes_updated_at
+    BEFORE UPDATE ON shared_notes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Crear trigger para actualizar updated_at automáticamente
+CREATE TRIGGER update_note_groups_updated_at
+    BEFORE UPDATE ON note_groups
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

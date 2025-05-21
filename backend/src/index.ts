@@ -1,4 +1,4 @@
-// Importaciones
+// Importaciones existentes
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
@@ -12,6 +12,8 @@ import userGroupRoutes from './routes/userGroupsRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
+import { setupTrashCleanup } from './utils/cleanupTasks';
+import { setupEmailScheduler } from './utils/emailTasks'; // Importa el programador de correos
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -169,6 +171,10 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
   console.log(`Directorio de uploads: ${uploadsDir}`);
+  
+  // Iniciar tareas programadas
+  setupTrashCleanup();
+  setupEmailScheduler();
 });
 
 // Exportar pool para uso en otros archivos

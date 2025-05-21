@@ -67,6 +67,37 @@ export const noteService = {
     }
   },
 
+  // Obtener notas de la papelera
+  getTrashNotes: async () => {
+    try {
+      const response = await api.get('notes/trash');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trash notes:', error);
+      throw error;
+    }
+  },
+  
+  restoreNote: async (id: string) => {
+    try {
+      const response = await api.post(`notes/trash/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      throw error;
+    }
+  },
+  
+  emptyTrash: async () => {
+    try {
+      const response = await api.delete('/trash/empty');
+      return response.data;
+    } catch (error) {
+      console.error('Error emptying trash:', error);
+      throw error;
+    }
+  },
+
   createNote: async (noteData: { title: string; content: string; images?: string[] }) => {
     try {
       const response = await api.post('/notes', noteData);
@@ -236,6 +267,46 @@ export const noteService = {
     }
   },
 
+  updateGroup: async (groupId: string, groupData: { name: string; color: string }) => {
+    try {
+      const response = await api.put(`/groups/${groupId}`, groupData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating group:', error);
+      throw error;
+    }
+  },
+
+  reorderGroups: async (groupIds: string[]) => {
+    try {
+      const response = await api.put('/groups/reorder', { groupIds });
+      return response.data;
+    } catch (error) {
+      console.error('Error reordering groups:', error);
+      throw error;
+    }
+  },
+
+  addNoteToGroup: async (groupId: string, noteId: string) => {
+    try {
+      const response = await api.post('/groups/add-note', { groupId, noteId });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding note to group:', error);
+      throw error;
+    }
+  },
+
+  removeNoteFromGroup: async (groupId: string, noteId: string) => {
+    try {
+      const response = await api.delete(`/groups/${groupId}/notes/${noteId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing note from group:', error);
+      throw error;
+    }
+  },
+
   deleteGroup: async (groupId: string) => {
     try {
       const response = await api.delete(`/groups/${groupId}`);
@@ -304,7 +375,8 @@ export const calendarService = {
       const reminderData = {
         ...data,
         dateTime: data.dateTime.toISOString(),
-        hasTime: data.hasTime
+        hasTime: data.hasTime,
+        sendEmail: data.sendEmail
       };
       
       const response = await api.post('/reminders', reminderData);
@@ -332,7 +404,8 @@ export const calendarService = {
         description: data.description,
         date_time: data.date_time,
         status_id: data.status_id,
-        has_time: data.has_time
+        has_time: data.has_time,
+        send_email: data.send_email 
       });
       
       if (response.data?.reminder) {
@@ -341,7 +414,8 @@ export const calendarService = {
             ...response.data.reminder,
             dateTime: new Date(response.data.reminder.date_time),
             statusId: response.data.reminder.status_id,
-            hasTime: response.data.reminder.has_time
+            hasTime: response.data.reminder.has_time,
+            sendEmail: response.data.reminder.send_email
           }
         };
       }

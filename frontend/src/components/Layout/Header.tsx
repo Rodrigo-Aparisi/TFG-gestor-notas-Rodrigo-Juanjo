@@ -6,6 +6,8 @@ import { logout } from "../../store/slices/authSlice";
 import { FaCalendar, FaRobot, FaUsers } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
+import { IoCalendarOutline } from "react-icons/io5";
+import WeekViewPopup from "../Reminders/WeekViewPopup";
 
 interface User {
   id: string;
@@ -23,6 +25,7 @@ const Header: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showWeekView, setShowWeekView] = useState(false);
 
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
@@ -76,58 +79,53 @@ const Header: React.FC = () => {
     }
   };
 
-  if (!isLoaded) {
-    return (
+  const handleWeekViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowWeekView(!showWeekView);
+  };
+
+  return (
+    <>
       <header className="header" role="banner">
         <nav aria-label="Navegación principal">
           <div className="nav-left">
-            <span className="logo">Gestor de Notas</span>
-          </div>
-          <div className="auth-container" style={{ visibility: "hidden" }}>
-            <div className="user-menu-container">
-              <div className="user-menu-icon">
-                <AiOutlineUser size={24} />
-              </div>
-            </div>
-          </div>
-        </nav>
-      </header>
-    );
-  }
-
-  return (
-    <header className="header" role="banner">
-      <nav aria-label="Navegación principal">
-        <div className="nav-left">
-          <Link to="/" className="logo" aria-label="Ir a la página principal">
-            Gestor de Notas
-          </Link>
-          {isAuthenticated && (
-            <div className="nav-icons">
-              <button
-                className="icon-button"
-                onClick={() => navigate("/notes")}
-                aria-label="Ir a notas"
-              >
-                <BsStickyFill size={20} />
-                <span className="icon-label">Notas</span>
-              </button>
-              <button
-                className="icon-button"
-                onClick={() => navigate("/groups")}
-                aria-label="Ir a grupos"
-              >
-                <FaUsers size={20} />
-                <span className="icon-label">Grupos</span>
-              </button>
-              <button
-                className="icon-button"
-                onClick={() => navigate("/Reminders")}
-                aria-label="Ir a recordatorios"
-              >
-                <FaCalendar />
-                <span className="icon-label">Recordatorios</span>
-              </button>
+            <Link to="/" className="logo" aria-label="Ir a la página principal">
+              Gestor de Notas
+            </Link>
+            {isAuthenticated && (
+              <div className="nav-icons">
+                <button
+                  className="icon-button"
+                  onClick={() => navigate("/notes")}
+                  aria-label="Ir a notas"
+                >
+                  <BsStickyFill size={20} />
+                  <span className="icon-label">Notas</span>
+                </button>
+                <button
+                  className="icon-button"
+                  onClick={() => navigate("/groups")}
+                  aria-label="Ir a grupos"
+                >
+                  <FaUsers size={20} />
+                  <span className="icon-label">Grupos</span>
+                </button>
+                <button
+                  className="icon-button week-view-button"
+                  onClick={handleWeekViewClick}
+                  aria-label="Vista semanal"
+                >
+                  <IoCalendarOutline size={20} />
+                  <span className="icon-label">Vista Semanal</span>
+                </button>
+                <button
+                  className="icon-button"
+                  onClick={() => navigate("/Reminders")}
+                  aria-label="Ir a recordatorios"
+                >
+                  <FaCalendar />
+                  <span className="icon-label">Recordatorios</span>
+                </button>
                 <button
                   className="icon-button"
                   onClick={() => navigate("/chatbot")}
@@ -137,8 +135,8 @@ const Header: React.FC = () => {
                   <span className="icon-label">Asistente IA</span>
                 </button>
               </div>
-          )}
-        </div>
+            )}
+          </div>
         <div className="auth-container">
           {isAuthenticated && user ? (
             <div
@@ -200,7 +198,15 @@ const Header: React.FC = () => {
           )}
         </div>
       </nav>
-    </header>
+      </header>
+
+      {/* Popup de vista semanal fuera del header pero justo debajo de él */}
+      {showWeekView && (
+        <div className="week-view-popup-container">
+          <WeekViewPopup onClose={() => setShowWeekView(false)} />
+        </div>
+      )}
+    </>
   );
 };
 

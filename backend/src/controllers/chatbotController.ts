@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { hybridService } from '../utils/hybridService';
 import { pool } from '../config/database';
 import path from 'path';
+import { NoteController } from '../controllers/noteController';
+
+const noteController = new NoteController();
 
 export const chatbotController = {
   async processMessage(req: Request, res: Response) {
@@ -42,15 +45,8 @@ export const chatbotController = {
               
               console.log('Datos de la nota:', noteData);
               
-              // Insertar nota en la base de datos
-              const noteResult = await pool.query(
-                `INSERT INTO notes (title, content, user_id, color, images) 
-                 VALUES ($1, $2, $3, $4, $5) 
-                 RETURNING *`,
-                [noteData.title, noteData.content, noteData.user_id, noteData.color, noteData.images]
-              );
-              
-              const note = noteResult.rows[0];
+              // Insertar nota en la base de datos usando el controlador
+              const note = await noteController.createNoteInternal(noteData);
               console.log('Nota creada:', note);
               
               return res.status(200).json({
@@ -59,12 +55,135 @@ export const chatbotController = {
                   id: note.id,
                   title: note.title
                 },
-                response: `He creado una nota titulada "${note.title}".`
+                response: `He creado una nota titulada "\${note.title}".`
               });
             } catch (error) {
               console.error('Error al crear nota:', error);
               return res.status(500).json({
                 error: 'Error al crear la nota'
+              });
+            }
+            
+          case 'updateNote':
+            try {
+              console.log('Actualizando nota');
+              const noteId = intentData.data?.id;
+              
+              if (!noteId) {
+                return res.status(400).json({
+                  error: 'ID de nota no proporcionado'
+                });
+              }
+              
+              // Verificar si la nota existe y pertenece al usuario
+              const noteExists = await pool.query(
+                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
+                [noteId, userId]
+              );
+              
+              if (noteExists.rows.length === 0) {
+                return res.status(404).json({
+                  error: 'Nota no encontrada'
+                });
+              }
+              
+              const updateData = {
+                title: intentData.data?.title,
+                content: intentData.data?.content,
+                images: intentData.data?.images
+              };
+              
+              // Construir la consulta dinámica
+              const updateFields = [];
+              const values = [];
+              let paramCount = 1;
+              
+              if (updateData.title !== undefined) {
+                updateFields.push(`title = $${paramCount}`);
+                values.push(updateData.title);
+                paramCount++;
+              }
+              
+              if (updateData.content !== undefined) {
+                updateFields.push(`content = $${paramCount}`);
+                values.push(updateData.content);
+                paramCount++;
+              }
+              
+              if (updateData.images !== undefined) {
+                updateFields.push(`images = $${paramCount}`);
+                values.push(updateData.images);
+                paramCount++;
+              }
+              
+              updateFields.push(`updated_at = NOW()`);
+              values.push(noteId, userId);
+              
+              const query = `
+                UPDATE notes 
+                SET ${updateFields.join(', ')} 
+                WHERE id = $${paramCount} AND user_id = \$\${paramCount + 1}
+                RETURNING *
+              `;
+              
+              const result = await pool.query(query, values);
+              const updatedNote = result.rows[0];
+              
+              return res.status(200).json({
+                action: 'updateNote',
+                noteData: {
+                  id: updatedNote.id,
+                  title: updatedNote.title
+                },
+                response: `He actualizado la nota "\${updatedNote.title}".`
+              });
+            } catch (error) {
+              console.error('Error al actualizar nota:', error);
+              return res.status(500).json({
+                error: 'Error al actualizar la nota'
+              });
+            }
+            
+          case 'deleteNote':
+            try {
+              console.log('Eliminando nota');
+              const noteId = intentData.data?.id;
+              
+              if (!noteId) {
+                return res.status(400).json({
+                  error: 'ID de nota no proporcionado'
+                });
+              }
+              
+              // Verificar si la nota existe y pertenece al usuario
+              const noteExists = await pool.query(
+                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
+                [noteId, userId]
+              );
+              
+              if (noteExists.rows.length === 0) {
+                return res.status(404).json({
+                  error: 'Nota no encontrada'
+                });
+              }
+              
+              const noteTitleToDelete = noteExists.rows[0].title;
+              
+              // Eliminar la nota
+              await pool.query(
+                'DELETE FROM notes WHERE id = $1 AND user_id = $2',
+                [noteId, userId]
+              );
+              
+              return res.status(200).json({
+                action: 'deleteNote',
+                noteId: noteId,
+                response: `He eliminado la nota "\${noteTitleToDelete}".`
+              });
+            } catch (error) {
+              console.error('Error al eliminar nota:', error);
+              return res.status(500).json({
+                error: 'Error al eliminar la nota'
               });
             }
             
@@ -84,7 +203,7 @@ export const chatbotController = {
               // Insertar recordatorio en la base de datos
               const reminderResult = await pool.query(
                 `INSERT INTO reminders (title, description, date_time, has_time, user_id) 
-                 VALUES ($1, $2, $3, $4, $5) 
+                 VALUES ($1, $2, $3, $4, \$5) 
                  RETURNING *`,
                 [
                   reminderData.title, 
@@ -121,6 +240,59 @@ export const chatbotController = {
               transcription: intentData.data?.text,
               response: `He transcrito el texto de la imagen.`
             });
+            
+          case 'addImageToNote':
+            try {
+              console.log('Añadiendo imagen a nota');
+              const noteId = intentData.data?.id;
+              const imageUrl = intentData.data?.imageUrl;
+              
+              if (!noteId || !imageUrl) {
+                return res.status(400).json({
+                  error: 'ID de nota o URL de imagen no proporcionados'
+                });
+              }
+              
+              // Verificar si la nota existe y pertenece al usuario
+              const noteResult = await pool.query(
+                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
+                [noteId, userId]
+              );
+              
+              if (noteResult.rows.length === 0) {
+                return res.status(404).json({
+                  error: 'Nota no encontrada'
+                });
+              }
+              
+              const note = noteResult.rows[0];
+              const currentImages = note.images || [];
+              
+              // Añadir la nueva imagen al array
+              const updatedImages = [...currentImages, imageUrl];
+              
+              // Actualizar la nota con la nueva imagen
+              const updateResult = await pool.query(
+                "UPDATE notes SET images = $1, updated_at = NOW() WHERE id = $2 AND user_id = \$3 RETURNING *",
+                [updatedImages, noteId, userId]
+              );
+              
+              const updatedNote = updateResult.rows[0];
+              
+              return res.status(200).json({
+                action: 'addImageToNote',
+                noteData: {
+                  id: updatedNote.id,
+                  title: updatedNote.title
+                },
+                response: `He añadido la imagen a la nota "\${updatedNote.title}".`
+              });
+            } catch (error) {
+              console.error('Error al añadir imagen a nota:', error);
+              return res.status(500).json({
+                error: 'Error al añadir imagen a la nota'
+              });
+            }
         }
       }
       
