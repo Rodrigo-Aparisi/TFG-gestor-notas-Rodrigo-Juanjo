@@ -12,7 +12,6 @@ interface ReminderData {
   updatedAt?: Date;
   focused?: boolean;
   hasTime: boolean;
-  emailNotification?: boolean;
 }
 
 interface ReminderConditions {
@@ -69,6 +68,8 @@ export class Reminder {
   }
 
   static async create(data: ReminderData) {
+    console.log('Datos para crear recordatorio:', data); // Debug
+  
     const query = `
       INSERT INTO reminders (
         title, 
@@ -76,9 +77,8 @@ export class Reminder {
         date_time, 
         user_id, 
         status_id,
-        has_time,
-        email_notification
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7) 
+        has_time
+      ) VALUES ($1, $2, $3, $4, $5, $6) 
       RETURNING 
         id,
         title,
@@ -87,24 +87,30 @@ export class Reminder {
         user_id as "userId",
         status_id as "statusId",
         has_time as "hasTime",
-        email_notification as "emailNotification",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
-    
+  
     try {
+      // Crear un solo array de valores y usarlo en la consulta
       const values = [
         data.title,
         data.description || '',
         new Date(data.dateTime),
         data.userId,
         data.statusId || 1,
-        data.hasTime || false,
-        data.emailNotification || false
+        data.hasTime || false
       ];
-      
+  
       const result = await pool.query(query, values);
-      return result.rows[0];
+  
+      // Transformar la fecha a formato ISO y mantener el formato camelCase
+      const reminder = {
+        ...result.rows[0],
+        dateTime: new Date(result.rows[0].dateTime).toISOString()
+      };
+  
+      return reminder;
     } catch (error) {
       console.error('Error in create:', error);
       throw error;
@@ -122,10 +128,9 @@ export class Reminder {
         description = COALESCE($2, description),
         date_time = COALESCE($3::timestamp, date_time),
         status_id = COALESCE($4, status_id),
-        has_time = $5,
-        email_notification = COALESCE($6, email_notification),
+        has_time = $5, -- Cambiar COALESCE por asignación directa
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7 AND user_id = $8
+      WHERE id = $6 AND user_id = $7
       RETURNING 
         id,
         title,
@@ -134,7 +139,6 @@ export class Reminder {
         user_id as "userId",
         status_id as "statusId",
         has_time as "hasTime",
-        email_notification as "emailNotification",
         created_at as "createdAt",
         updated_at as "updatedAt"
     `;
@@ -152,8 +156,7 @@ export class Reminder {
             description: data.description,
             dateTime: dateTimeValue,
             statusId: data.statusId,
-            hasTime: data.hasTime,
-            emailNotification: data.emailNotification,
+            hasTime: data.hasTime, // Asegurarse de que este valor llegue correctamente
             id: conditions.id,
             userId: conditions.userId
         });
@@ -163,8 +166,7 @@ export class Reminder {
             data.description,
             dateTimeValue,
             data.statusId,
-            data.hasTime,
-            data.emailNotification,
+            data.hasTime, // Asegurarse de que este valor se pase
             conditions.id,
             conditions.userId
         ]);
@@ -176,7 +178,8 @@ export class Reminder {
         
         const updatedReminder = {
             ...result.rows[0],
-            dateTime: new Date(result.rows[0].dateTime).toISOString()
+            dateTime: new Date(result.rows[0].dateTime).toISOString(),
+            hasTime: result.rows[0].hasTime // Asegurarse de que se incluya en la respuesta
         };
 
         console.log('Recordatorio actualizado:', updatedReminder);
@@ -187,6 +190,8 @@ export class Reminder {
         throw error;
     }
   }
+
+
 
 
   static async findOneAndDelete(conditions: ReminderConditions) {
@@ -223,18 +228,17 @@ export class Reminder {
       if (!conditions.dateTime?.$gte || !conditions.dateTime?.$lt) {
         throw new Error('Se requieren fechas de inicio y fin');
       }
-
+  
       // Asegurarse de que las fechas sean válidas
       const startDate = new Date(conditions.dateTime.$gte);
       const endDate = new Date(conditions.dateTime.$lt);
-
+  
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         throw new Error('Invalid time value');
       }
-
+  
       console.log('Fechas de búsqueda:', { startDate, endDate }); // Debug
-
-      // Modificar la consulta para asegurarse de que email_notification se incluye correctamente
+  
       const query = `
         SELECT 
           r.id,
@@ -246,7 +250,6 @@ export class Reminder {
           r.status_id as "statusId",
           r.created_at as "createdAt",
           r.updated_at as "updatedAt",
-          r.email_notification as "emailNotification",
           rs.name as "statusName"
         FROM reminders r
         LEFT JOIN reminder_status rs ON r.status_id = rs.id
@@ -255,34 +258,28 @@ export class Reminder {
         AND r.date_time < $3
         ORDER BY r.date_time ASC
       `;
-
+  
       const values = [
         conditions.userId,
         startDate.toISOString(),
         endDate.toISOString()
       ];
-
+  
       console.log('Ejecutando query con valores:', values); // Debug
-
+  
       const result = await pool.query(query, values);
-
-      // Transformar los resultados con cuidado
-      const reminders = result.rows.map(row => {
-        // Asegurarse de que todos los campos se mapean correctamente
-        return {
-          ...row,
-          dateTime: new Date(row.dateTime).toISOString(),
-          hasTime: row.hasTime || false,
-          // Usar un valor por defecto para emailNotification si es null o undefined
-          emailNotification: row.emailNotification !== null && row.emailNotification !== undefined 
-            ? row.emailNotification 
-            : false
-        };
-      });
-
-      console.log('Recordatorios encontrados:', reminders.length); // Debug
-
+  
+      // Transformar los resultados
+      const reminders = result.rows.map(row => ({
+        ...row,
+        dateTime: new Date(row.dateTime).toISOString(),
+        hasTime: row.hasTime || false
+      }));
+  
+      console.log('Recordatorios encontrados:', reminders); // Debug
+  
       return reminders;
+  
     } catch (error) {
       console.error('Error en findWithStatus:', error);
       if (error instanceof Error) {

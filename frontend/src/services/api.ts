@@ -292,19 +292,6 @@ export const calendarService = {
           endDate: endDate.toISOString()
         }
       });
-      
-      // Asegurarnos de que los recordatorios se mapean correctamente
-      if (response.data && response.data.reminders) {
-        response.data.reminders = response.data.reminders.map((reminder: any) => ({
-          ...reminder,
-          // Manejar ambos nombres de campo posibles
-          emailNotification: reminder.emailNotification !== undefined 
-            ? reminder.emailNotification 
-            : (reminder.email_notification !== undefined ? reminder.email_notification : false)
-        }));
-      }
-      
-      console.log("Recordatorios transformados:", response.data.reminders);
       return response.data;
     } catch (error) {
       console.error('Error en getReminders:', error);
@@ -317,8 +304,7 @@ export const calendarService = {
       const reminderData = {
         ...data,
         dateTime: data.dateTime.toISOString(),
-        hasTime: data.hasTime,
-        emailNotification: data.emailNotification || false
+        hasTime: data.hasTime
       };
       
       const response = await api.post('/reminders', reminderData);
@@ -346,8 +332,7 @@ export const calendarService = {
         description: data.description,
         date_time: data.date_time,
         status_id: data.status_id,
-        has_time: data.has_time,
-        email_notification: data.email_notification
+        has_time: data.has_time
       });
       
       if (response.data?.reminder) {
@@ -356,8 +341,7 @@ export const calendarService = {
             ...response.data.reminder,
             dateTime: new Date(response.data.reminder.date_time),
             statusId: response.data.reminder.status_id,
-            hasTime: response.data.reminder.has_time,
-            emailNotification: response.data.reminder.email_notification // Añadido el nuevo campo
+            hasTime: response.data.reminder.has_time
           }
         };
       }

@@ -65,15 +65,14 @@ export interface Reminder {
   id: string;
   title: string;
   description?: string;
-  dateTime: Date | string;
-  userId: string;
+  dateTime: Date;
+  userId: string; 
   statusId: number;
   statusName?: string;
-  hasTime: boolean;
-  emailNotification: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   focused?: boolean;
+  hasTime: boolean;
 }
 
 export interface NewReminder {
@@ -81,9 +80,8 @@ export interface NewReminder {
   description: string;
   date: Date;
   time: string;
-  statusId: number;
+  statusId?: number;
   hasTime: boolean;
-  emailNotification?: boolean;
 }
 
 export interface ReminderStatus {
@@ -111,29 +109,21 @@ export interface ReminderConditions {
 }
 
 // Interface para la creación de recordatorios
-interface ReminderData {
-  id?: string;
+export interface CreateReminderData {
   title: string;
   description?: string;
-  dateTime: Date | string;
-  userId: string;
+  dateTime: Date;
   statusId?: number;
-  statusName?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  focused?: boolean;
   hasTime: boolean;
-  emailNotification?: boolean;
 }
 
 // Interface para la actualización de recordatorios
 export interface UpdateReminderData {
-  title?: string;
-  description?: string;
-  date_time?: string;
-  status_id?: number;
-  has_time?: boolean;
-  email_notification?: boolean;
+  title: string;
+  description: string;
+  date_time: string;
+  status_id: number;
+  has_time: boolean;
 }
 
 export interface EditingReminder {
@@ -141,7 +131,6 @@ export interface EditingReminder {
   description: string;
   dateTime: Date;
   hasTime: boolean;
-  emailNotification?: boolean;
 }
 
 export interface Group {
