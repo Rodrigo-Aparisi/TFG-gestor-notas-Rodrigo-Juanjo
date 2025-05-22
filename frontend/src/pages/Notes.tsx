@@ -94,6 +94,13 @@ const Notes: React.FC = () => {
     handleTabChangeBase(tabId, loadNotes);
   };
 
+  const handleOverlayClick = (event: React.MouseEvent) => {
+    if (focusedNoteId) {
+      if (event.target === event.currentTarget) {
+        handleBlur();
+      }
+    }
+  };
 
   const getNotesForActiveGroup = () => {
     // Si estamos en "Todas las notas"
@@ -449,6 +456,11 @@ const Notes: React.FC = () => {
         onDeleteGroup={handleDeleteGroup}
         onMoveGroup={handleMoveGroup}
         onEditGroup={handleEditGroup}
+      />
+
+      <div 
+        className={`overlay ${focusedNoteId ? 'active' : ''}`} 
+        onClick={handleOverlayClick}
       />
 
       {/* Contenido principal */}
