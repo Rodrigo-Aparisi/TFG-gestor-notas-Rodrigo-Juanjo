@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Note, SortType, SortDirection } from '../../types';
 import { noteService } from '../../services/api';
 import '../../styles/noteSort.css';
+import DateFilter from './DateFilter';
 
 interface NoteSortProps {
   notes: Note[];
@@ -9,13 +10,16 @@ interface NoteSortProps {
 }
 
 const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
-  // Estados iniciales (se actualizarán desde el servidor)
+  // Estados existentes
   const [sortType, setSortType] = useState<SortType>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchText, setSearchText] = useState<string>('');
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Nuevo estado para filtrado por fecha
+  const [dateFilteredNotes, setDateFilteredNotes] = useState<Note[] | null>(null);
   
   // Referencia al menú desplegable
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,9 +66,9 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
   // Ordenar notas cuando cambien las preferencias o las notas
   useEffect(() => {
     if (!isLoading && notes.length > 0) {
-      sortAndFilterNotes(sortType, sortDirection, searchText);
+      sortAndFilterNotes(sortType, sortDirection, searchText, dateFilteredNotes);
     }
-  }, [notes, sortType, sortDirection, searchText, isLoading]);
+  }, [notes, sortType, sortDirection, searchText, dateFilteredNotes, isLoading]);
 
   // Guardar preferencias de búsqueda en localStorage
   useEffect(() => {
@@ -120,14 +124,32 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
     setIsMenuOpen(false);
   };
 
+  // Función para manejar el filtrado por fecha
+  const handleDateFilter = (filteredNotes: Note[]) => {
+    setDateFilteredNotes(filteredNotes);
+    sortAndFilterNotes(sortType, sortDirection, searchText, filteredNotes);
+  };
+
+  // Función para limpiar el filtro de fecha
+  const handleClearDateFilter = () => {
+    setDateFilteredNotes(null);
+    sortAndFilterNotes(sortType, sortDirection, searchText);
+  };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     setSearchText(text);
     sortAndFilterNotes(sortType, sortDirection, text);
   };
 
-  const sortAndFilterNotes = (type: SortType, direction: SortDirection, search: string) => {
-    let filtered = [...notes];
+    const sortAndFilterNotes = (
+    type: SortType, 
+    direction: SortDirection, 
+    search: string,
+    dateFiltered: Note[] | null = null
+  ) => {
+    // Comenzar con las notas filtradas por fecha o todas las notas
+    let filtered = dateFiltered ? [...dateFiltered] : [...notes];
     
     // Filtrar por texto de búsqueda si existe
     if (search && search.trim()) {
@@ -195,7 +217,7 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
               className="clear-search"
               onClick={() => {
                 setSearchText('');
-                sortAndFilterNotes(sortType, sortDirection, '');
+                sortAndFilterNotes(sortType, sortDirection, '', dateFilteredNotes);
               }}
             >
               <i className="fas fa-times"></i>
@@ -204,58 +226,69 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
         </div>
       )}
       
-      <div className="sort-buttons">
-        <div className="sort-dropdown" ref={dropdownRef}>
-          <button 
-            className="sort-button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            title={`Ordenar por ${sortType === 'title' ? 'título' : sortType === 'date' ? 'fecha' : 'fijadas'}`}
-          >
-            {getSortTypeText()}
-            <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
-          </button>
-          <div className={`sort-dropdown-content ${isMenuOpen ? 'show' : ''}`}>
-            <div 
-              className={`sort-item ${sortType === 'title' ? 'active' : ''}`} 
-              onClick={() => handleSort('title')}
+      {/* Añadir el título "Filtrar:" y el contenedor de los botones */}
+      <div className="filter-section">
+        <div className="filter-label">Filtrar:</div>
+        <div className="sort-buttons">
+          <div className="sort-dropdown" ref={dropdownRef}>
+            <button 
+              className="sort-button"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              title={`Ordenar por ${sortType === 'title' ? 'título' : sortType === 'date' ? 'fecha' : 'fijadas'}`}
             >
-              Por título
-              {sortType === 'title' && (
-                <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
-              )}
-            </div>
-            <div 
-              className={`sort-item ${sortType === 'date' ? 'active' : ''}`} 
-              onClick={() => handleSort('date')}
-            >
-              Por fecha
-              {sortType === 'date' && (
-                <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
-              )}
-            </div>
-            <div 
-              className={`sort-item ${sortType === 'pinned' ? 'active' : ''}`} 
-              onClick={() => handleSort('pinned')}
-            >
-              Por fijadas
-              {sortType === 'pinned' && (
-                <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
-              )}
+              {getSortTypeText()}
+              <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+            </button>
+            <div className={`sort-dropdown-content ${isMenuOpen ? 'show' : ''}`}>
+              <div 
+                className={`sort-item ${sortType === 'title' ? 'active' : ''}`} 
+                onClick={() => handleSort('title')}
+              >
+                Por título
+                {sortType === 'title' && (
+                  <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                )}
+              </div>
+              <div 
+                className={`sort-item ${sortType === 'date' ? 'active' : ''}`} 
+                onClick={() => handleSort('date')}
+              >
+                Por fecha
+                {sortType === 'date' && (
+                  <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                )}
+              </div>
+              <div 
+                className={`sort-item ${sortType === 'pinned' ? 'active' : ''}`} 
+                onClick={() => handleSort('pinned')}
+              >
+                Por fijadas
+                {sortType === 'pinned' && (
+                  <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
+                )}
+              </div>
             </div>
           </div>
+          
+          {/* Componente DateFilter */}
+          <DateFilter 
+            notes={notes}
+            onDateFilter={handleDateFilter}
+            onClearFilter={handleClearDateFilter}
+          />
+          
+          <button 
+            className="search-button"
+            onClick={() => {
+              const newShowSearch = !showSearch;
+              setShowSearch(newShowSearch);
+              localStorage.setItem('notesShowSearch', newShowSearch.toString());
+            }}
+            title={showSearch ? "Ocultar búsqueda" : "Buscar en notas"}
+          >
+            <i className="fas fa-search"></i>
+          </button>
         </div>
-        
-        <button 
-          className="search-button"
-          onClick={() => {
-            const newShowSearch = !showSearch;
-            setShowSearch(newShowSearch);
-            localStorage.setItem('notesShowSearch', newShowSearch.toString());
-          }}
-          title={showSearch ? "Ocultar búsqueda" : "Buscar en notas"}
-        >
-          <i className="fas fa-search"></i>
-        </button>
       </div>
     </div>
   );
