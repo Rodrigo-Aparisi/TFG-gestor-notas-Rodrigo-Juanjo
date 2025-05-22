@@ -1,7 +1,8 @@
 // frontend/src/components/Chatbot/ChatbotFloatingButton.tsx
 import React, { useState } from 'react';
 import Chatbot from './Chatbot';
-import { FaRobot, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
+import { GiCaduceus } from "react-icons/gi";
 import '../../styles/chatbot-floating.css';
 
 const ChatbotFloatingButton: React.FC = () => {
@@ -28,7 +29,7 @@ const ChatbotFloatingButton: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Abrir asistente IA"
       >
-        {isOpen ? <FaTimes /> : <FaRobot />}
+        {isOpen ? <FaTimes /> : <GiCaduceus />}
       </button>
     </>
   );

@@ -128,30 +128,6 @@ html, body {
   width: 100%;
   outline: none;
 }
-
- 
-  
-  /* Estilos del scrollbar para el textarea de crear nota */
-  .create-note textarea::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .create-note textarea::-webkit-scrollbar-track {
-    background: rgba(54, 54, 54, 0.8);
-    border-radius: 4px;
-  }
-  
-  .create-note textarea::-webkit-scrollbar-thumb {
-    background: var(--dorado);
-    border-radius: 4px;
-  }
-  
- 
-  
-  .create-note:hover textarea::placeholder {
-    opacity: 1;
-  }
-  
   .create-note textarea:focus::placeholder {
     opacity: 1;
   }
@@ -168,6 +144,23 @@ html, body {
   
   .note-card:hover .note-actions {
     opacity: 1;
+  }
+
+  /* Estilo para la fecha de creación */
+  .note-date {
+    font-size: 12px;
+    color: #999;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    padding-left: 2px;
+    font-style: italic;
+  }
+
+  /* Ajuste para la fecha en notas enfocadas */
+  .note-card.focused .note-date {
+    text-align: center;
+    font-size: 13px;
+    margin-top: -8px;
   }
   
   /* Focus Indicator */
@@ -306,6 +299,29 @@ html, body {
     padding: 40px;
     background: #fff;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    will-change: transform;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Modificar las animaciones para evitar el movimiento con el cursor */
+  @keyframes expandFromLeft {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    50% { transform: translate(10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+  }
+
+  @keyframes expandFromRight {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    50% { transform: translate(-10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(1); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+  }
+
+  /* Añadir esta regla para prevenir que el foco se mueva con el cursor */
+  .note-card.focused:hover {
+    transform: translate(-50%, -50%);
   }
   
   .note-card.focused .note-content {
@@ -317,6 +333,8 @@ html, body {
     gap: 20px;
     overflow: visible;
     flex: 1;
+    position: relative;
+    z-index: 1;
   }
   
   .note-card.focused input {
@@ -630,12 +648,12 @@ html, body {
     color: #f1c40f;
   }
   
-  .note-card.focused .note-image {
+  .note-card.focused .note-image,
+  .note-card.focused .note-image-container:only-child .note-image {
     width: 100%;
     height: 100%;
     max-height: 300px;
     object-fit: contain;
-    background: #f0f0f0;
   }
   
   .note-image.loaded {
@@ -707,30 +725,6 @@ html, body {
     animation: fadeIn 0.3s ease-in;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
-  
-  /* === SCROLLBAR PERSONALIZADO === */
-  .note-card textarea::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .note-card textarea::-webkit-scrollbar-track {
-    background: rgba(54, 54, 54, 0.8);
-    border-radius: 4px;
-    margin: 2px;
-  }
-  
-  .note-card textarea::-webkit-scrollbar-thumb {
-    background: var(--dorado);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-  
-  .note-card textarea::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
-  
-  
   
   /* === MENU SUPERIOR === */
   .bulk-actions-menu {
@@ -900,6 +894,7 @@ html, body {
     border-radius: 8px;
     width: 400px;
     max-width: 90%;
+    color: #333;
   }
   
   .form-group {
@@ -983,14 +978,32 @@ html, body {
   
   /* === ANIMACIONES === */
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes expandFromLeft {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    50% { transform: translate(10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+  }
+
+  @keyframes expandFromRight {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    50% { transform: translate(-10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+  }
+
+  @keyframes collapseToLeft {
+    0% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+    50% { transform: translate(10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  }
+
+  @keyframes collapseToRight {
+    0% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
+    50% { transform: translate(-10%, -25%) scale(1.1); opacity: 0.9; }
+    100% { transform: translate(0, 0) scale(1); opacity: 1; }
   }
   
   /* === ANIMACIONES FOCUS === */
@@ -1492,66 +1505,6 @@ html, body {
   width: 100%;
 }
 
-/* === ANIMACIONES === */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Animaciones para la entrada/salida */
-@keyframes expandFromLeft {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; }
-  50% { transform: translate(10%, -25%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
-}
-
-@keyframes expandFromRight {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; }
-  50% { transform: translate(-10%, -25%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
-}
-
-@keyframes collapseToLeft {
-  0% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
-  50% { transform: translate(10%, -25%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(0, 0) scale(1); opacity: 1; }
-}
-
-@keyframes collapseToRight {
-  0% { transform: translate(-50%, -50%); top: 50%; left: 50%; width: min(800px, 90vw); opacity: 1; }
-  50% { transform: translate(-10%, -25%) scale(1.1); opacity: 0.9; }
-  100% { transform: translate(0, 0) scale(1); opacity: 1; }
-}
-
-/* === RESPONSIVE === */
-@media (max-width: 1200px) {
-  .note-card {
-    flex: 0 0 calc(50% - 10px);
-  }
-}
-
-@media (max-width: 768px) {
-  .notes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-  
-  .note-tools-container {
-    flex-direction: column;
-  }
-  
-  .note-sort-tools {
-    width: 100%;
-    margin-top: 10px;
-  }
-}
-
-
 /* Estilos para el menú desplegable */
 .note-format-menu {
   display: flex;
@@ -1895,4 +1848,154 @@ button.px-4.py-2.bg-red-500:hover {
   width: 100%;
   height: 10px;
   background: transparent;
+}
+
+/* Estilos para el filtro de fecha */
+/* Mini calendario */
+.mini-calendar-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 240px;
+  background-color: var(----background-dark);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 1000;
+  margin-top: 5px;
+  padding: 12px;
+}
+
+.mini-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mini-calendar-header span {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.nav-button:hover {
+  color: #000;
+}
+
+.mini-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 5px;
+}
+
+.mini-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  padding: 2px 0;
+}
+
+.mini-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mini-day {
+  text-align: center;
+  padding: 6px 0;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-day:hover {
+  background-color: #f1f1f1;
+}
+
+.mini-day.other-month {
+  color: #ccc;
+}
+
+.mini-day.today {
+  font-weight: bold;
+  color: #f1c40f;
+}
+
+.mini-day.start-date,
+.mini-day.end-date {
+  background-color: #f1c40f;
+  color: white;
+}
+
+.mini-day.in-range {
+  background-color: rgba(241, 196, 15, 0.2);
+}
+
+.date-range-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  font-size: 12px;
+}
+
+.clear-filter-btn {
+  background: none;
+  border: none;
+  color: #ff4757;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.clear-filter-btn:hover {
+  background-color: rgba(255, 71, 87, 0.1);
+}
+
+
+/* Estilos para la sección de filtrado */
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.filter-label {
+  font-size: 17px;
+  font-weight: 600;
+  color: #f1c40f;
+  margin-bottom: 8px;
+  align-self: flex-end;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  margin-right: 5px;
+}
+
+.filter-label::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #f1c40f;
+  border-radius: 1px;
 }

@@ -510,7 +510,6 @@ html, body {
   text-overflow: ellipsis;
   white-space: pre-wrap;
   font-size: 0.9rem;
-  margin-bottom: 15px;
   word-break: break-word;
   color: #555;
 }
