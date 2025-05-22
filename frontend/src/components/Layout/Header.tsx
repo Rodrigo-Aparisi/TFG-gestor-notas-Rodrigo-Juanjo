@@ -3,10 +3,11 @@ import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { FaCalendar, FaRobot, FaUsers } from "react-icons/fa";
+import { FaCalendar, FaUsers } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
+import { GiCaduceus } from "react-icons/gi";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
 
 interface User {
@@ -84,13 +85,21 @@ const Header: React.FC = () => {
     setShowWeekView(!showWeekView);
   };
 
+  const sandalias_aladas = "/sandalias_aladas.png";
+
   return (
     <>
       <header className="header" role="banner">
         <nav aria-label="Navegación principal">
           <div className="nav-left">
             <Link to="/" className="logo" aria-label="Ir a la página principal">
-              Gestor de Notas
+              {/* Usar el SVG como imagen */}
+              <img 
+                src="/sandalias_aladas.svg" 
+                alt="Sandalias aladas" 
+                className="logo-image"
+              />
+              <span className="logo-text">Olympus Scribe</span>
             </Link>
             {isAuthenticated && (
               <div className="nav-icons">
@@ -129,10 +138,10 @@ const Header: React.FC = () => {
                 <button
                   className="icon-button"
                   onClick={() => navigate("/chatbot")}
-                  aria-label="Asistente IA"
+                  aria-label="Olymp.ia"
                 >
-                  <FaRobot size={20} />
-                  <span className="icon-label">Asistente IA</span>
+                  <GiCaduceus size={20} />
+                  <span className="icon-label">Olymp.IA</span>
                 </button>
               </div>
             )}

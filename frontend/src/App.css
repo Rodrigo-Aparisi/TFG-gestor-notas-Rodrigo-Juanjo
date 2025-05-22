@@ -112,6 +112,9 @@ body {
   text-decoration: none;
   cursor: pointer;
   transition: color 0.3s ease;
+  align-items: center;
+  gap: 8px;
+  display: flex;
 }
 
 .logo:hover,
@@ -120,6 +123,19 @@ body {
   color: var(--dorado);
   text-decoration: none;
 }
+
+.logo-image {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  color: var(--dorado);
+}
+
+.logo-text {
+  font-weight: bold;
+  font-size: 18px;
+}
+
 
 /* Botones generales */
 button {
