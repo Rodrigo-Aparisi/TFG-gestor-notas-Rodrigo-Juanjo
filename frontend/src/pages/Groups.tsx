@@ -48,6 +48,12 @@ const Groups: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'notes' | 'members'>('notes');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [forceRender, setForceRender] = useState(0);
+  
+  // Estados para los modales y campos de edición
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
 
   // Determinar si el usuario actual es propietario o administrador del grupo seleccionado
   const isOwnerOrAdmin = React.useMemo(() => {
@@ -81,6 +87,10 @@ const Groups: React.FC = () => {
   // Forzar re-renderizado cuando cambia el grupo seleccionado
   useEffect(() => {
     setForceRender(prev => prev + 1);
+    if (selectedGroup) {
+      setNewGroupName(selectedGroup.name);
+      setNewGroupDescription(selectedGroup.description || '');
+    }
   }, [selectedGroup]);
 
   const handleEditNote = (note: GroupNote) => {
@@ -153,46 +163,144 @@ const Groups: React.FC = () => {
     }
   };
 
-const handleEditPermissions = async (memberId: string, newRole: string) => {
-  if (!selectedGroup) return;
-  
-  try {
-    // Obtener el user_id del miembro que se está editando
-    const memberToEdit = selectedGroup.members.find(m => m.id === memberId);
-    if (!memberToEdit) return;
+  const handleEditPermissions = async (memberId: string, newRole: string) => {
+    if (!selectedGroup) return;
     
-    // Verificar si el usuario está intentando editar sus propios permisos
-    if (memberToEdit.user_id === user?.id) {
-      showFeedback('No puedes editar tus propios permisos');
-      return;
-    }
-    
-    const response = await api.put(`/user-groups/${selectedGroup.id}/members/${memberToEdit.user_id}/role`, { role: newRole });
-    
-    if (response.status === 200 || response.data.success) {
-      // Actualizar el grupo seleccionado con el nuevo rol
-      const updatedMembers = selectedGroup.members.map(member => 
-        member.id === memberId ? { ...member, role: newRole } : member
-      );
+    try {
+      // Obtener el user_id del miembro que se está editando
+      const memberToEdit = selectedGroup.members.find(m => m.id === memberId);
+      if (!memberToEdit) return;
       
-      // Actualizar el grupo en useUserGroups
-      const updatedGroup = { ...selectedGroup, members: updatedMembers };
-      selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
+      // Verificar si el usuario está intentando editar sus propios permisos
+      if (memberToEdit.user_id === user?.id) {
+        showFeedback('No puedes editar tus propios permisos');
+        return;
+      }
       
-      showFeedback('Permisos actualizados correctamente');
+      const response = await api.put(`/user-groups/${selectedGroup.id}/members/${memberToEdit.user_id}/role`, { role: newRole });
+      
+      if (response.status === 200 || response.data.success) {
+        // Actualizar el grupo seleccionado con el nuevo rol
+        const updatedMembers = selectedGroup.members.map(member => 
+          member.id === memberId ? { ...member, role: newRole } : member
+        );
+        
+        // Actualizar el grupo en useUserGroups
+        const updatedGroup = { ...selectedGroup, members: updatedMembers };
+        selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
+        
+        showFeedback('Permisos actualizados correctamente');
+      }
+    } catch (error: any) {
+      console.error('Error al actualizar permisos:', error);
+      
+      // Verificar si el error es específicamente por intentar editar los propios permisos
+      if (error.response?.data?.message?.includes('own permissions') || 
+          error.response?.data?.error?.includes('own permissions')) {
+        showFeedback('No puedes editar tus propios permisos');
+      } else {
+        showFeedback('Error al actualizar permisos');
+      }
     }
-  } catch (error: any) {
-    console.error('Error al actualizar permisos:', error);
+  };
+
+  // Función para manejar la edición del nombre del grupo
+  const handleEditGroupName = (groupId: string) => {
+    if (!selectedGroup) return;
     
-    // Verificar si el error es específicamente por intentar editar los propios permisos
-    if (error.response?.data?.message?.includes('own permissions') || 
-        error.response?.data?.error?.includes('own permissions')) {
-      showFeedback('No puedes editar tus propios permisos');
+    // Verificar si el usuario tiene permisos
+    if (isOwnerOrAdmin) {
+      setNewGroupName(selectedGroup.name);
+      setShowRenameModal(true);
     } else {
-      showFeedback('Error al actualizar permisos');
+      showFeedback('No tienes permisos para editar este grupo');
     }
-  }
-};
+  };
+
+  // Función para manejar la edición de la descripción del grupo
+  const handleEditGroupDescription = (groupId: string) => {
+    if (!selectedGroup) return;
+    
+    // Verificar si el usuario tiene permisos
+    if (isOwnerOrAdmin) {
+      setNewGroupDescription(selectedGroup.description || '');
+      setShowDescriptionModal(true);
+    } else {
+      showFeedback('No tienes permisos para editar este grupo');
+    }
+  };
+
+  // Función para cambiar el nombre del grupo
+  const handleRenameGroup = async () => {
+    if (!selectedGroup) return;
+    
+    try {
+      // Validar que el nuevo nombre no esté vacío
+      if (!newGroupName || newGroupName.trim() === '') {
+        showFeedback('El nombre del grupo no puede estar vacío');
+        return false;
+      }
+      
+      // Llamada a la API para actualizar el nombre del grupo
+      const response = await api.put(`/user-groups/${selectedGroup.id}/rename`, { 
+        name: newGroupName 
+      });
+      
+      if (response.status === 200 || response.data.success) {
+        // Recargar el grupo para obtener los datos actualizados
+        selectGroup(selectedGroup.id);
+        
+        showFeedback('Nombre del grupo actualizado correctamente');
+        setShowRenameModal(false);
+        return true;
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('Error al cambiar el nombre del grupo:', error);
+      
+      if (error.response?.status === 403) {
+        showFeedback('No tienes permisos para cambiar el nombre del grupo');
+      } else {
+        showFeedback('Error al cambiar el nombre del grupo');
+      }
+      
+      return false;
+    }
+  };
+
+  // Función para cambiar la descripción del grupo
+  const handleUpdateGroupDescription = async () => {
+    if (!selectedGroup) return;
+    
+    try {
+      // Llamada a la API para actualizar la descripción del grupo
+      const response = await api.put(`/user-groups/${selectedGroup.id}/description`, { 
+        description: newGroupDescription 
+      });
+      
+      if (response.status === 200 || response.data.success) {
+        // Recargar el grupo para obtener los datos actualizados
+        selectGroup(selectedGroup.id);
+        
+        showFeedback('Descripción del grupo actualizada correctamente');
+        setShowDescriptionModal(false);
+        return true;
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('Error al cambiar la descripción del grupo:', error);
+      
+      if (error.response?.status === 403) {
+        showFeedback('No tienes permisos para cambiar la descripción del grupo');
+      } else {
+        showFeedback('Error al cambiar la descripción del grupo');
+      }
+      
+      return false;
+    }
+  };
 
   // Añadir un log para depuración antes de renderizar
   console.log("Antes de renderizar componentes:", {
@@ -205,9 +313,10 @@ const handleEditPermissions = async (memberId: string, newRole: string) => {
     <div className="groups-container">
       <UserGroupSidebar
         groups={userGroups || []}
-        selectedGroup={selectedGroup}
+        activeGroup={selectedGroup?.id || ''}
         onGroupSelect={selectGroup}
-        onCreateGroup={() => setShowCreateGroupModal(true)}
+        onEditGroupName={handleEditGroupName}
+        onEditGroupDescription={handleEditGroupDescription}
       />
 
       <div className="group-content">
@@ -307,6 +416,66 @@ const handleEditPermissions = async (memberId: string, newRole: string) => {
           onUpdateNote={handleUpdateNoteSubmit}
           onNoteChange={(field, value) => handleNoteChange(editingNoteId, field, value)}
         />
+      )}
+
+      {/* Modal para cambiar el nombre del grupo */}
+      {showRenameModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Cambiar nombre del grupo</h2>
+            <input 
+              type="text" 
+              value={newGroupName} 
+              onChange={(e) => setNewGroupName(e.target.value)} 
+              placeholder="Nuevo nombre del grupo"
+              className="form-control"
+            />
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn" 
+                onClick={() => setShowRenameModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleRenameGroup}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para cambiar la descripción del grupo */}
+      {showDescriptionModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Cambiar descripción del grupo</h2>
+            <textarea 
+              value={newGroupDescription} 
+              onChange={(e) => setNewGroupDescription(e.target.value)} 
+              placeholder="Nueva descripción del grupo"
+              className="form-control"
+              rows={4}
+            />
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn" 
+                onClick={() => setShowDescriptionModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="confirm-btn" 
+                onClick={handleUpdateGroupDescription}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -328,6 +328,133 @@ export class UserGroupController {
     }
   }
 
+  // Función para renombrar un grupo
+async renameUserGroup(req: Request, res: Response): Promise<void> {
+  try {
+    const groupId = req.params.id;
+    const userId = req.user.id;
+    const { name } = req.body;
+
+    // Validar que el nuevo nombre no esté vacío
+    if (!name || name.trim() === '') {
+      res.status(400).json({ error: "El nombre del grupo no puede estar vacío" });
+      return;
+    }
+
+    // Verificar que el usuario es propietario o administrador del grupo
+    const roleCheckResult = await pool.query(
+      `
+      SELECT role FROM group_members 
+      WHERE group_id = $1 AND user_id = $2
+    `,
+      [groupId, userId]
+    );
+
+    if (roleCheckResult.rows.length === 0) {
+      res.status(403).json({ error: "No tienes acceso a este grupo" });
+      return;
+    }
+
+    const role = roleCheckResult.rows[0].role;
+    if (role !== "owner" && role !== "admin") {
+      res
+        .status(403)
+        .json({ error: "No tienes permisos para cambiar el nombre de este grupo" });
+      return;
+    }
+
+    // Actualizar el nombre del grupo
+    const updateResult = await pool.query(
+      `
+      UPDATE user_groups
+      SET name = $1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING *
+    `,
+      [name, groupId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      res.status(404).json({ error: "Grupo no encontrado" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Nombre del grupo actualizado correctamente",
+      group: updateResult.rows[0]
+    });
+  } catch (error) {
+    console.error("Error al cambiar el nombre del grupo:", error);
+    res.status(500).json({ error: "Error al cambiar el nombre del grupo" });
+  }
+}
+
+// Función para actualizar la descripción de un grupo
+async updateGroupDescription(req: Request, res: Response): Promise<void> {
+  try {
+    const groupId = req.params.id;
+    const userId = req.user.id;
+    const { description } = req.body;
+
+    // Verificar que la descripción está definida (puede ser vacía, pero debe estar definida)
+    if (description === undefined) {
+      res.status(400).json({ error: "La descripción es obligatoria" });
+      return;
+    }
+
+    // Verificar que el usuario es propietario o administrador del grupo
+    const roleCheckResult = await pool.query(
+      `
+      SELECT role FROM group_members 
+      WHERE group_id = $1 AND user_id = $2
+    `,
+      [groupId, userId]
+    );
+
+    if (roleCheckResult.rows.length === 0) {
+      res.status(403).json({ error: "No tienes acceso a este grupo" });
+      return;
+    }
+
+    const role = roleCheckResult.rows[0].role;
+    if (role !== "owner" && role !== "admin") {
+      res
+        .status(403)
+        .json({ error: "No tienes permisos para cambiar la descripción de este grupo" });
+      return;
+    }
+
+    // Actualizar la descripción del grupo
+    const updateResult = await pool.query(
+      `
+      UPDATE user_groups
+      SET description = $1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING *
+    `,
+      [description, groupId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      res.status(404).json({ error: "Grupo no encontrado" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Descripción del grupo actualizada correctamente",
+      group: updateResult.rows[0]
+    });
+  } catch (error) {
+    console.error("Error al cambiar la descripción del grupo:", error);
+    res.status(500).json({ error: "Error al cambiar la descripción del grupo" });
+  }
+}
+  
+
   // Obtener miembros de un grupo
   async getGroupMembers(req: Request, res: Response): Promise<void> {
     try {
