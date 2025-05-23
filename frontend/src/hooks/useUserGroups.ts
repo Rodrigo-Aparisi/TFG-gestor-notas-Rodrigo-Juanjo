@@ -187,8 +187,8 @@ export const useUserGroups = () => {
   // Crear una nota en un grupo
   const createGroupNote = useCallback(async () => {
     if (!selectedGroup) return false;
-    if (!newNote.title.trim() || !newNote.content.trim()) {
-      showFeedback('El título y contenido son obligatorios');
+    if (!newNote.title.trim()) {
+      showFeedback('El título es obligatorios');
       return false;
     }
     

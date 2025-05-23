@@ -112,7 +112,7 @@ const CreateGroupNoteForm: React.FC<CreateGroupNoteFormProps> = ({
           <button 
             className="create-button"
             onClick={handleCreate}
-            disabled={isLoading || !newNote.title.trim() || !newNote.content.trim()}
+            disabled={isLoading || !newNote.title.trim()}
           >
             Crear Nota
           </button>

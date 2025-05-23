@@ -64,7 +64,6 @@ const EditNoteModal: React.FC<EditNoteModalProps> = ({
               id="edit-note-content"
               value={note.content}
               onChange={e => onNoteChange('content', e.target.value)}
-              required
               disabled={isSubmitting}
             />
           </div>

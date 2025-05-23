@@ -66,7 +66,6 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
               value={newNote.content}
               onChange={e => setNewNote(prev => ({...prev, content: e.target.value}))}
               placeholder="Contenido de la nota"
-              required
               disabled={isSubmitting}
             />
           </div>
