@@ -1857,7 +1857,7 @@ button.px-4.py-2.bg-red-500:hover {
   top: 100%;
   right: 0;
   width: 240px;
-  background-color: var(----background-dark);
+  background-color: var(--background-dark);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
