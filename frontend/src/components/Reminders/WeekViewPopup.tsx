@@ -271,26 +271,6 @@ const WeekViewPopup: React.FC<WeekViewPopupProps> = ({ onClose }) => {
                         {reminderDetails.statusId === 1 ? 'Pendiente' : 
                          reminderDetails.statusId === 2 ? 'Completado' : 'Cancelado'}
                       </span>
-                      <div className="reminder-actions">
-                        <button 
-                          className="edit-reminder-button"
-                          onClick={() => {
-                            window.location.href = `/Reminders?edit=${reminderDetails.id}`;
-                            onClose();
-                          }}
-                        >
-                          <i className="fas fa-edit"></i> Editar
-                        </button>
-                        <button 
-                          className="view-details-button"
-                          onClick={() => {
-                            window.location.href = `/Reminders?reminder=${reminderDetails.id}`;
-                            onClose();
-                          }}
-                        >
-                          Ver detalles
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>

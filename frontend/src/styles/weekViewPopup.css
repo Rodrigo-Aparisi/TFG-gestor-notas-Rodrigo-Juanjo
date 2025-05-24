@@ -645,3 +645,26 @@
   background: #ffd700;
   border-radius: 2px;
 }
+
+.reminder-quick-view-body::-webkit-scrollbar {
+  width: 1px;
+  height: 8px;
+}
+
+.reminder-quick-view-body::-webkit-scrollbar-track {
+  background: #363636;
+}
+
+.reminder-quick-view-body::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 2px;
+}
+
+.reminder-quick-view-body p {
+  margin: 0;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
