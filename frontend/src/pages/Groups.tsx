@@ -296,7 +296,7 @@ const Groups: React.FC = () => {
     try {
       // Llamada a la API para actualizar la descripción del grupo
       const response = await api.put(
-        `/user-groups/${selectedGroup.id}/description`,
+        `/user-groups/\${selectedGroup.id}/description`,
         {
           description: newGroupDescription,
         }
@@ -335,7 +335,7 @@ const Groups: React.FC = () => {
   });
 
   return (
-    <div className="groups-container">
+    <div className="groups-layout">
       <UserGroupSidebar
         groups={userGroups || []}
         activeGroup={selectedGroup?.id || ""}
@@ -343,7 +343,10 @@ const Groups: React.FC = () => {
         onEditGroupName={handleEditGroupName}
         onEditGroupDescription={handleEditGroupDescription}
       />
-      <div className="group-content">
+      
+      <div className="overlay"></div>
+      
+      <div className="groups-main">
         {loading && <div className="loading-indicator">Cargando...</div>}
         {feedback && <div className="feedback-message">{feedback}</div>}
 
@@ -414,6 +417,7 @@ const Groups: React.FC = () => {
           </div>
         )}
       </div>
+      
       {/* Modales */}
       {showCreateGroupModal && (
         <CreateGroupModal
@@ -466,7 +470,6 @@ const Groups: React.FC = () => {
                 placeholder="Descripción del grupo"
                 className="form-control"
                 rows={4}
-
               />
             </div>
             <div className="modal-actions">
@@ -499,4 +502,4 @@ const Groups: React.FC = () => {
   );
 };
 
-export default Groups;
+export default Groups

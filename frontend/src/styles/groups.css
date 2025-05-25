@@ -16,24 +16,10 @@ html, body {
 }
 
 /* === CONTENEDOR PRINCIPAL === */
-.groups-container {
+.groups-layout {
   display: flex;
   width: 100%;
   height: calc(100vh - 60px);
-  overflow: hidden;
-}
-
-/* === SIDEBAR === */
-.groups-sidebar {
-  width: 250px;
-  min-height: 100vh;
-  background: #1e1e1e;
-  padding: 20px;
-  color: #fff;
-  flex-shrink: 0;
-  border-right: 1px solid #333;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
@@ -127,7 +113,7 @@ html, body {
 }
 
 /* === CONTENIDO PRINCIPAL === */
-.group-content {
+.groups-main {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
@@ -212,6 +198,7 @@ html, body {
   outline: none;
   font-size: 16px;
   padding: 8px;
+  background: transparent;
 }
 
 .create-note input {
@@ -224,15 +211,10 @@ html, body {
 }
 
 .create-note textarea {
-  width: 100%;
-  border: none;
-  outline: none;
-  padding: 8px;
   font-size: 14px;
   resize: none;
   min-height: 60px;
   max-height: 200px;
-  background: transparent;
   overflow: auto;
 }
 
@@ -817,20 +799,12 @@ html, body {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
-  .groups-container {
+  .groups-layout {
     flex-direction: column;
     height: auto;
   }
 
-  .groups-sidebar {
-    width: 100%;
-    height: auto;
-    max-height: 300px;
-    border-right: none;
-    border-bottom: 1px solid #333;
-  }
-
-  .group-content {
+  .groups-main {
     padding: 15px;
   }
 
