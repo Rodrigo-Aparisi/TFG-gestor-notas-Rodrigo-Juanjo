@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ChatbotMessage from './ChatbotMessage';
 import ChatbotInput from './ChatbotInput';
 import chatbotService from '../../services/chatbotService';
@@ -13,25 +13,127 @@ interface Message {
   data?: any;
 }
 
+const WELCOME_MESSAGE = `¡Hola! Soy Olymp.IA, tu asistente para la app de notas. Puedo ayudarte con:
+
+
+\u00A0
+
+📝 NOTAS:
+
+• Crear notas con título, contenido, imágenes
+
+• Destacar notas como importantes o fijadas
+
+• Editar notas existentes
+
+• Eliminar notas
+
+• Añadir imágenes a tus notas
+
+
+\u00A0
+
+⏰ RECORDATORIOS:
+
+• Crear recordatorios con fecha y hora
+
+• Añadir descripciones detalladas
+
+• Configurar notificaciones por email
+
+• Cambiar estados (pendiente, completado, cancelado)
+
+• Editar o eliminar recordatorios
+
+
+\u00A0
+
+🔍 OTRAS FUNCIONES:
+
+• Transcribir texto de imágenes
+
+• Buscar entre tus notas y recordatorios
+
+• Proporcionar información sobre tus datos
+
+
+\u00A0
+
+¿En qué puedo ayudarte hoy?`;
+
 const Chatbot: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      text: '¡Hola! Soy tu asistente para la app de notas. Puedo ayudarte a crear, editar o eliminar notas, añadir imágenes, crear recordatorios o transcribir imágenes. ¿En qué puedo ayudarte hoy?',
+  // Cargar mensajes de sessionStorage o usar mensaje de bienvenida
+  const [messages, setMessages] = useState<Message[]>(() => {
+    // Intentar cargar mensajes de sessionStorage
+    const savedMessages = sessionStorage.getItem('chatMessages');
+    if (savedMessages) {
+      try {
+        // Convertir las fechas de string a objetos Date
+        const parsedMessages = JSON.parse(savedMessages).map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        return parsedMessages;
+      } catch (error) {
+        console.error('Error al cargar mensajes guardados:', error);
+      }
+    }
+    
+    // Mensaje de bienvenida por defecto
+    return [{
+      text: WELCOME_MESSAGE,
       sender: 'bot',
       timestamp: new Date()
-    }
-  ]);
+    }];
+  });
+  
   const [isLoading, setIsLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  
+  // Guardar mensajes en sessionStorage cuando cambien
+  useEffect(() => {
+    // Necesitamos convertir las fechas a string antes de guardarlas
+    const messagesToSave = messages.map(msg => ({
+      ...msg,
+      timestamp: msg.timestamp.toISOString()
+    }));
+    sessionStorage.setItem('chatMessages', JSON.stringify(messagesToSave));
+  }, [messages]);
   
   // Scroll al último mensaje
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
+  // Función para limpiar el historial usando useCallback para evitar recreaciones innecesarias
+  const clearHistory = useCallback(() => {
+    const welcomeMessage = {
+      text: WELCOME_MESSAGE,
+      sender: 'bot' as const,
+      timestamp: new Date()
+    };
+    
+    setMessages([welcomeMessage]);
+    // sessionStorage se actualizará automáticamente gracias al useEffect
+  }, []);
+  
+  // Exponer la función clearHistory para que pueda ser llamada desde el componente padre
+  useEffect(() => {
+    // @ts-ignore
+    window.clearChatHistory = clearHistory;
+    
+    return () => {
+      // @ts-ignore
+      delete window.clearChatHistory;
+    };
+  }, [clearHistory]);
+  
   const handleSendMessage = async (text: string) => {
+    // No procesar mensajes vacíos
+    if (!text.trim()) return;
+    
     // Añadir mensaje del usuario
     const newUserMessage = {
       text,
@@ -43,10 +145,13 @@ const Chatbot: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Formatear historial para la API
+      // Formatear historial para la API - usar userId si está disponible
+      const userId = localStorage.getItem('userId');
+      
       const history = messages.slice(-10).map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text
+        content: msg.text,
+        userId: userId || undefined
       }));
       
       // Procesar mensaje con el servicio
@@ -88,7 +193,19 @@ const Chatbot: React.FC = () => {
             break;
             
           case 'transcribeImage':
-            botMessage.text = `Transcripción de la imagen:\n\n\${response.transcription || 'No se pudo transcribir el texto'}`;
+            botMessage.text = response.response || `Transcripción de la imagen:\n\n${response.transcription || 'No se pudo transcribir el texto'}`;
+            break;
+
+          case 'updateReminder':
+            botMessage.text = response.response || 'He actualizado el recordatorio.';
+            break;
+            
+          case 'deleteReminder':
+            botMessage.text = response.response || 'He eliminado el recordatorio.';
+            break;
+            
+          case 'updateReminderStatus':
+            botMessage.text = response.response || 'He actualizado el estado del recordatorio.';
             break;
             
           default:
@@ -116,10 +233,12 @@ const Chatbot: React.FC = () => {
   };
   
   const handleUploadImage = async (file: File) => {
+    if (!file) return;
+    
     try {
       // Añadir mensaje indicando que se está procesando la imagen
       setMessages(prev => [...prev, {
-        text: `Subiendo imagen: \${file.name}`,
+        text: `Subiendo imagen: ${file.name}`,
         sender: 'user',
         timestamp: new Date()
       }]);
@@ -149,9 +268,20 @@ const Chatbot: React.FC = () => {
   
   return (
     <div className="chatbot-container">
+      <div className="chatbot-header">
+        <h3>Olymp.IA</h3>
+        <button 
+          className="clear-history" 
+          onClick={clearHistory} 
+          title="Limpiar conversación"
+        >
+          <i className="fas fa-trash-alt"></i>
+        </button>
+      </div>
+      
       <div className="chatbot-messages">
         {messages.map((message, index) => (
-          <ChatbotMessage key={index} message={message} />
+          <ChatbotMessage key={`msg-${index}-${message.timestamp.getTime()}`} message={message} />
         ))}
         {isLoading && (
           <div className="chatbot-loading">

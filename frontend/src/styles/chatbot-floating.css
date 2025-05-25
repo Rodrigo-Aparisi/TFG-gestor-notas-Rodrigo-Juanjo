@@ -1,10 +1,10 @@
 /* Estilos para el botón flotante y contenedor */
 .chatbot-floating-button {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 55px !important;
-  height: 55px;
+  bottom: 25px;
+  right: 30px;
+  width: 65px !important;
+  height: 65px;
   border-radius: 50%;
   background-color: var(--dorado, #ffc600);
   color: var(--background-dark, #282c34);
@@ -123,4 +123,37 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Añadir a chatbot-floating.css */
+.chatbot-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clear-history-button {
+  background: none;
+  border: none;
+  color: var(--dorado, #ffc600);
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-history-button:hover {
+  background-color: rgba(255, 198, 0, 0.1);
+  transform: scale(1.1);
+}
+
+/* Asegúrate de que el componente Chatbot dentro del contenedor flotante ocupe todo el espacio disponible */
+.chatbot-floating-content .chatbot-container {
+  height: 100%;
+  border: none;
+  box-shadow: none;
 }
