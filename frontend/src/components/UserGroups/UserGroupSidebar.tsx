@@ -1,6 +1,7 @@
-import React from 'react';
-import { Group } from '../../types';
-import { FaEdit, FaInfoCircle } from 'react-icons/fa';
+import React from "react";
+import { Group } from "../../types";
+import { FaEdit, FaInfoCircle } from "react-icons/fa";
+import { on } from "events";
 
 interface UserGroupSidebarProps {
   groups: Group[];
@@ -10,12 +11,12 @@ interface UserGroupSidebarProps {
   onEditGroupDescription: (groupId: string) => void;
 }
 
-const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({ 
-  groups, 
-  activeGroup, 
+const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
+  groups,
+  activeGroup,
   onGroupSelect,
   onEditGroupName,
-  onEditGroupDescription
+  onEditGroupDescription,
 }) => {
   return (
     <div className="notes-sidebar">
@@ -26,44 +27,33 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
         </div>
         {/* Grupos */}
         {groups
-          .filter(group => !group.isDefault && group.id !== 'trash') // Filtramos grupos predeterminados
+          .filter((group) => !group.isDefault && group.id !== "trash")
           .map((group) => (
-            <div 
+            <div
               key={`group-${group.id}`}
-              className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+              className={`group-item ${
+                activeGroup === group.id ? "active" : ""
+              }`}
               onClick={() => onGroupSelect(group.id)}
             >
               <div className="group-actions-left">
-                <button 
+                <button
                   className="action-button edit-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEditGroupName(group.id);
                   }}
-                  title="Editar nombre del grupo"
+                  title="Editar grupo"
                 >
                   <FaEdit />
                 </button>
               </div>
-              
-              <div 
-                className="group-color" 
-                style={{ backgroundColor: group.color || '#3498db' }}
+
+              <div
+                className="group-color"
+                style={{ backgroundColor: group.color || "#3498db" }}
               />
               <span className="group-name">{group.name}</span>
-              
-              <div className="group-actions-right">
-                <button 
-                  className="action-button info-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditGroupDescription(group.id);
-                  }}
-                  title="Editar descripción"
-                >
-                  <FaInfoCircle />
-                </button>
-              </div>
             </div>
           ))}
       </div>
