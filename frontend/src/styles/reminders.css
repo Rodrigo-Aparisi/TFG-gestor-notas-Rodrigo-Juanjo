@@ -1515,3 +1515,351 @@
   display: inline-block;
   vertical-align: middle;
 }
+
+.reminder-description::-webkit-scrollbar {
+  width: 3px;
+  height: 6px;
+}
+
+.reminder-description::-webkit-scrollbar-track {
+  background: #363636;
+}
+
+.reminder-description::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 2px;
+}
+
+/* Estilos para el dashboard de recordatorios */
+.reminder-dashboard-container {
+  width: 100%;
+  background: #ffffff1a;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.reminder-dashboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.dashboard-header h3 {
+  color: var(--dorado);
+  font-size: 1.4em;
+  margin: 0;
+}
+
+.dashboard-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dashboard-search {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+  width: 250px;
+}
+
+.dashboard-filter {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+}
+
+.dashboard-table-container {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table th {
+  background: rgba(54, 54, 54, 0.9);
+  color: var(--dorado);
+  font-weight: 600;
+  padding: 12px 15px;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 2px solid var(--dorado);
+}
+
+.dashboard-table th:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.dashboard-table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+  color: #ffffff;
+}
+
+.dashboard-row {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dashboard-row:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.dashboard-row.status-1 {
+  border-left: 3px solid #ffd700;
+}
+
+.dashboard-row.status-2 {
+  border-left: 3px solid #4CAF50;
+  opacity: 0.7;
+}
+
+.dashboard-row.status-3 {
+  border-left: 3px solid #f44336;
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+.dashboard-time {
+  display: block;
+  font-size: 0.85em;
+  color: var(--dorado);
+  opacity: 0.8;
+  margin-top: 3px;
+}
+
+.dashboard-title {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: inline-block;
+}
+
+.dashboard-status.status-1 {
+  background: rgba(255, 215, 0, 0.1);
+  color: #ffd700;
+}
+
+.dashboard-status.status-2 {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.dashboard-status.status-3 {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.no-reminders {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ajustes a la estructura existente para acomodar el dashboard */
+/* Scrollbars para el dashboard */
+.dashboard-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dashboard-table-container::-webkit-scrollbar-track {
+  background: #363636;
+  border-radius: 4px;
+}
+
+.dashboard-table-container::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (min-width: 1200px) {
+  .calendar-and-form {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .calendar-mini-grid {
+    width: 28%;
+  }
+  
+  .reminder-dashboard-container {
+    width: 38%;
+    margin: 0;
+  }
+  
+  .reminder-form {
+    width: 28%;
+  }
+}
+
+/* Estilos para el encabezado fijo */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #363636;
+  border-left: 3px solid var(--dorado);
+}
+
+.sticky-header th {
+  position: sticky;
+  top: 0;
+  background-color: rgba(54, 54, 54, 0.9);
+  box-shadow: 0 1px 0 0 var(--dorado);
+}
+
+/* Estilos para el filtro de fecha con el prefijo rd- */
+.rd-date-filter-container {
+  position: relative;
+  display: inline-block;
+}
+
+.rd-date-filter-button {
+  background-color: transparent;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  position: relative;
+  color: var(--dorado);
+}
+
+.rd-date-filter-button.rd-active {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.rd-filter-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff5555;
+  border-radius: 50%;
+}
+
+.rd-mini-calendar-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 270px;
+  background-color: #363636;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  padding: 10px;
+  margin-top: 5px;
+}
+
+.rd-mini-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--dorado);
+}
+
+.rd-nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--dorado);
+}
+
+.rd-mini-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.rd-mini-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.rd-mini-day {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.rd-mini-day:hover {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+.rd-mini-day.rd-other-month {
+  color: #666;
+}
+
+.rd-mini-day.rd-today {
+  font-weight: bold;
+  border: 1px solid var(--dorado);
+}
+
+.rd-mini-day.rd-start-date,
+.rd-mini-day.rd-end-date {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+}
+
+.rd-mini-day.rd-in-range {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+.rd-date-range-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dorado);
+  color: var(--dorado);
+}
+
+.rd-clear-filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ff5555;
+}
+
+.rd-mini-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--dorado);
+}

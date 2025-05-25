@@ -233,5 +233,56 @@ export const reminderController = {
         details: apiError.message
       });
     }
+  },
+
+  async searchReminders(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+
+      const { query, status } = req.query;
+      
+      // Construir filtro base
+      const filter: any = {
+        userId: req.user.id
+      };
+      
+      // Añadir filtro de búsqueda si existe
+      if (query) {
+        filter.$or = [
+          { title: { "$regex": query, "$options": 'i' } },
+          { description: { "$regex": query, "$options": 'i' } }
+        ];
+      }
+      
+      // Añadir filtro de estado si existe
+      if (status) {
+        filter.statusId = parseInt(status as string);
+      }
+      
+      const reminders = await Reminder.findWithStatus(filter);
+      
+      // Transformar los recordatorios antes de enviarlos
+      const transformedReminders = reminders.map(reminder => ({
+        ...reminder,
+        hasTime: reminder.hasTime === true
+      }));
+      
+      res.json({ reminders: transformedReminders });
+    } catch (error) {
+      console.error('Error completo:', error);
+      const apiError: ApiError = {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        status: 500
+      };
+      console.error('Error al buscar recordatorios:', apiError);
+      res.status(apiError.status).json({
+        error: 'Error al buscar recordatorios',
+        details: apiError.message
+      });
+    }
   }
 };
