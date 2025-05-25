@@ -10,6 +10,7 @@ import ReminderPopup from '../components/Reminders/ReminderPopup';
 import MiniCalendar from '../components/Reminders/MiniCalendar';
 import CalendarGrid from '../components/Reminders/CalendarGrid';
 import WeekView from '../components/Reminders/WeekView';
+import ReminderDashboard from '../components/Reminders/ReminderDashboard';
 import { formatDateForInput, getWeekStart } from '../components/Reminders/ReminderUtils';
 
 
@@ -324,7 +325,7 @@ const Reminders: React.FC = () => {
                   .toLocaleDateString('es-ES', { month: 'long' })}
               </button>
           </div>
-  
+
           <div className="main">
             <WeekView
               selectedDate={selectedDate}
@@ -346,6 +347,16 @@ const Reminders: React.FC = () => {
                   onMonthChange={setCurrentMonth}
                 />
               </div>
+              
+              {/* Nuevo componente Dashboard */}
+              <div className="reminder-dashboard-container">
+                <ReminderDashboard 
+                  reminders={reminders}
+                  onReminderClick={handleReminderClick}
+                  selectedDate={selectedDate}
+                />
+              </div>
+              
               <ReminderForm
                 newReminder={newReminder}
                 selectedDate={selectedDate}

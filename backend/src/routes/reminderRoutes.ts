@@ -68,6 +68,13 @@ router.use((error: any, req: express.Request, res: express.Response, next: expre
   });
 });
 
+router.get('/search', async (req, res, next) => {
+  try {
+    await reminderController.searchReminders(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post('/test-email', async (req, res, next) => {
   try {
