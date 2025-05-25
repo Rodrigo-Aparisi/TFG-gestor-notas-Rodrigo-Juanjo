@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
 import { GroupNote } from "../types";
 import UserGroupSidebar from "../components/UserGroups/UserGroupSidebar";
-import NotesGroups from "../components/UserGroups/GroupNotes";
+import GroupNoteCard from "../components/UserGroups/GroupNotes";
 import GroupOfMembersList from "../components/UserGroups/GroupOfMembersList";
 import CreateGroupModal from "../components/UserGroups/CreateGroupModal";
 import AddMemberModal from "../components/UserGroups/AddMemberModal";
@@ -386,7 +386,7 @@ const Groups: React.FC = () => {
                   />
                 </div>
 
-                <NotesGroups
+                <GroupNoteCard
                   notes={groupNotes || []}
                   currentUserId={user?.id || ""}
                   isOwnerOrAdmin={isOwnerOrAdmin}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GroupNote } from '../../types';
 
 interface NotesGroupsProps {
@@ -10,7 +10,49 @@ interface NotesGroupsProps {
   handleTogglePin?: (noteId: string) => void;
 }
 
-const NotesGroups: React.FC<NotesGroupsProps> = ({
+// Función para formatear la fecha
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  
+  // Verificar si es una fecha válida
+  if (isNaN(date.getTime())) return '';
+  
+  return date.toLocaleDateString();
+};
+
+// Función para mostrar tiempo relativo (hace X tiempo)
+const getTimeAgo = (dateString: string) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  
+  // Verificar si es una fecha válida
+  if (isNaN(date.getTime())) return '';
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+  
+  if (diffSec < 60) {
+    return 'hace un momento';
+  } else if (diffMin < 60) {
+    return `hace ${diffMin} minuto${diffMin === 1 ? '' : 's'}`;
+  } else if (diffHour < 24) {
+    return `hace ${diffHour} hora${diffHour === 1 ? '' : 's'}`;
+  } else if (diffDay < 30) {
+    return `hace ${diffDay} día${diffDay === 1 ? '' : 's'}`;
+  } else {
+    // Para fechas más antiguas, mostrar la fecha completa
+    return formatDate(dateString);
+  }
+};
+
+const GroupNoteCard: React.FC<NotesGroupsProps> = ({
   notes,
   currentUserId,
   isOwnerOrAdmin,
@@ -36,6 +78,7 @@ const NotesGroups: React.FC<NotesGroupsProps> = ({
           key={note.id}
           className="note-card"
           style={{ backgroundColor: note.color || '#ffffff' }}
+          data-note-id={note.id}
         >
           <div className="note-header">
             <h3>{note.title}</h3>
@@ -58,6 +101,7 @@ const NotesGroups: React.FC<NotesGroupsProps> = ({
                     <button
                       className={`action-button ${note.is_pinned ? 'pinned' : ''}`}
                       onClick={() => handleTogglePin(note.id)}
+                      title={note.is_pinned ? 'Desfijar nota' : 'Fijar nota'}
                     >
                       <i className={`fas fa-thumbtack ${note.is_pinned ? 'pinned' : ''}`}></i>
                     </button>
@@ -66,19 +110,23 @@ const NotesGroups: React.FC<NotesGroupsProps> = ({
               )}
             </div>
           </div>
+          
           <div className="note-content">{note.content}</div>
+          
+          {/* Sección de imágenes */}
           {note.images && note.images.length > 0 && (
             <div className="note-images">
               {note.images.map((image, index) => (
                 <div key={index} className="note-image-container">
-                  <img src={image} alt={`Imagen ${index + 1}`} className="note-image" />
+                  <img src={image} alt={`Imagen \${index + 1}`} className="note-image" />
                 </div>
               ))}
             </div>
           )}
+          
           <div className="note-footer">
             <span>Por: {note.created_by_username}</span>
-            <span>{new Date(note.updated_at).toLocaleDateString()}</span>
+            <span>{getTimeAgo(note.updated_at)}</span>
           </div>
         </div>
       ))}
@@ -86,4 +134,4 @@ const NotesGroups: React.FC<NotesGroupsProps> = ({
   );
 };
 
-export default NotesGroups;
+export default GroupNoteCard;

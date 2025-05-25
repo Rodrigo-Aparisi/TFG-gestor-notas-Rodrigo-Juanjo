@@ -14,11 +14,10 @@ const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
   onEditNote,
   onDeleteNote,
   currentUserId,
-  isOwnerOrAdmin
+  isOwnerOrAdmin,
 }) => {
-  // Asegúrate de que notes sea siempre un array
   const safeNotes = Array.isArray(notes) ? notes : [];
-  
+
   if (safeNotes.length === 0) {
     return (
       <div className="empty-notes">
@@ -29,14 +28,14 @@ const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
 
   return (
     <div className="notes-grid">
-      {safeNotes.map(note => (
-        <div 
+      {safeNotes.map((note) => (
+        <div
           key={note.id}
           className="note-card"
           style={{ backgroundColor: note.color || '#ffffff' }}
         >
           <div className="note-header">
-            <h3>{note.title}</h3>
+            <h3>{note.title || "Sin título"}</h3>
             <div className="note-actions">
               {(note.user_id === currentUserId || isOwnerOrAdmin) && (
                 <>
@@ -56,7 +55,8 @@ const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
               )}
             </div>
           </div>
-          <div className="note-content">{note.content}</div>
+          {/* Proporcionar un valor predeterminado para content */}
+          <div className="note-content">{note.content || "Sin contenido disponible"}</div>
           <div className="note-footer">
             <span>Por: {note.created_by_username}</span>
             <span>{new Date(note.updated_at).toLocaleDateString()}</span>
