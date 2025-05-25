@@ -65,6 +65,46 @@ const ChatbotMessage: React.FC<ChatbotMessageProps> = ({ message }) => {
           );
         }
         return null;
+      
+      case 'updateReminder':
+        if (message.data?.reminderData) {
+          return (
+            <div className="reminder-action-container">
+              <div className="reminder-action-info">
+                <i className="fas fa-edit"></i>
+                <span>{message.data.reminderData.title}</span>
+                <small>Actualizado: {new Date(message.data.reminderData.date_time).toLocaleString()}</small>
+              </div>
+            </div>
+          );
+        }
+        return null;
+        
+      case 'deleteReminder':
+        return (
+          <div className="reminder-action-container delete">
+            <div className="reminder-action-info">
+              <i className="fas fa-trash-alt"></i>
+              <span>Recordatorio eliminado</span>
+            </div>
+          </div>
+        );
+        
+      case 'updateReminderStatus':
+        if (message.data?.reminderData) {
+          const statusText = message.data.reminderData.status_id === 1 ? "pendiente" : 
+                            message.data.reminderData.status_id === 2 ? "completado" : "cancelado";
+          return (
+            <div className="reminder-action-container">
+              <div className="reminder-action-info">
+                <i className="fas fa-check-circle"></i>
+                <span>{message.data.reminderData.title}</span>
+                <small>Estado: {statusText}</small>
+              </div>
+            </div>
+          );
+        }
+        return null;
         
       default:
         return null;
@@ -72,13 +112,20 @@ const ChatbotMessage: React.FC<ChatbotMessageProps> = ({ message }) => {
   };
   
   return (
-    <div className={`chatbot-message \${message.sender}`}>
-      <div className="message-content">
-        <ReactMarkdown>{message.text}</ReactMarkdown>
-        {renderActionContent()}
-      </div>
-      <div className="message-timestamp">
-        {new Date(message.timestamp).toLocaleTimeString()}
+    <div className={`chatbot-message ${message.sender}`}>
+      {message.sender === 'bot' && (
+        <div className="avatar-container">
+          <div className="bot-avatar">AI</div>
+        </div>
+      )}
+      <div className="message-bubble">
+        <div className="message-content">
+          <ReactMarkdown>{message.text}</ReactMarkdown>
+          {renderActionContent()}
+        </div>
+        <div className="message-timestamp">
+          {new Date(message.timestamp).toLocaleTimeString()}
+        </div>
       </div>
     </div>
   );
