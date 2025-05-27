@@ -1,3 +1,81 @@
+/* Asegurar que los estilos de settings tengan mayor prioridad */
+.settings-page {
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+/* Estilos iniciales y de carga */
+.settings-page .settings-container {
+  display: flex;
+  background-color: var(--background-black);
+  border: 1px solid var(--dorado);
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 2rem auto;
+  color: var(--white);
+  max-height: 80vh;
+  overflow: hidden;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: opacity 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.settings-page .settings-container.loaded {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.settings-page .settings-sidebar {
+  width: 250px;
+  background-color: var(--background-darker);
+  border-right: 1px solid var(--dorado);
+  padding: 1rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  z-index: 11;
+}
+
+.settings-page .settings-sections {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  height: 100%;
+  max-height: 80vh;
+  z-index: 11;
+  background-color: var(--background-black);
+  position: relative;
+}
+
+/* Eliminar cualquier fondo o efecto que pueda estar viniendo de home.css */
+.settings-page::before {
+  display: none !important;
+}
+
+.settings-page .home-container::before {
+  display: none !important;
+}
+
+/* Asegurar que el z-index para la sección de cuenta sea mayor */
+.settings-page #cuenta-section {
+  z-index: 15 !important;
+  position: relative;
+}
+
+/* Sobrescribir cualquier animación que pueda estar afectando a los elementos */
+.settings-page section {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  padding: 0px !important;
+}
+
 /* Estilos iniciales y de carga */
 .settings-container {
   display: flex;
