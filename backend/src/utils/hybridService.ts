@@ -1,3 +1,4 @@
+// hybridService.ts - VERSIÓN COMPLETA ACTUALIZADA
 import axios from 'axios';
 import { createWorker } from 'tesseract.js';
 import path from 'path';
@@ -12,11 +13,6 @@ export const hybridService = {
   async processMessage(message: string, history: any[] = [], image?: string) {
     try {
       console.log('Procesando mensaje:', { message, historyLength: history?.length, hasImage: !!image });
-      
-      // Si hay una imagen, procesarla con OCR
-      if (image) {
-        return this.processImageWithOCR(image, message);
-      }
       
       // Formatear el historial para el modelo
       const formattedHistory = history.map(msg => ({
@@ -33,22 +29,13 @@ export const hybridService = {
       - Varía la longitud de tus respuestas. A veces sé breve y directo, otras veces elabora más.
       - Personaliza tus respuestas basándote en el contexto de la conversación.
       - Muestra empatía y comprensión cuando sea apropiado.
-      - Evita estructuras repetitivas en tus respuestas.
 
-      FUNCIONES DISPONIBLES:
+      FUNCIONES DISPONIBLES (LIMITADAS):
 
       1. NOTAS:
         - Crear notas con los siguientes campos:
           * title (obligatorio): Título de la nota
           * content: Contenido de la nota
-          * color: Color en formato hexadecimal (ej: #f1c40f)
-          * is_pinned: true/false para destacar la nota
-          * is_marked: true/false para marcar la nota como importante
-          * images: Array de URLs de imágenes
-
-        - Editar notas existentes (cualquiera de los campos anteriores)
-        - Eliminar notas
-        - Añadir imágenes a notas existentes
 
       2. RECORDATORIOS:
         - Crear recordatorios con los siguientes campos:
@@ -57,60 +44,21 @@ export const hybridService = {
           * date_time (obligatorio): Fecha y hora en formato ISO
           * has_time: true/false para indicar si incluye hora específica
           * send_email: true/false para recibir notificación por email
-          * status_id: Estado del recordatorio (1=pendiente, 2=completado, 3=cancelado)
+          * status_id: Estado del recordatorio (1=pendiente)
 
-        - Editar recordatorios existentes (cualquiera de los campos anteriores)
-        - Eliminar recordatorios
-        - Cambiar estado de recordatorios
+      3. BÚSQUEDA:
+        - Buscar entre notas y recordatorios
 
-      3. TRANSCRIPCIÓN DE IMÁGENES:
-        - Transcribir texto de imágenes
+      4. INFORMACIÓN:
+        - Proporcionar información sobre datos guardados
 
-      Cuando el usuario te pida crear o modificar una nota, responde en el siguiente formato:
+      Cuando el usuario te pida crear una nota, responde en el siguiente formato:
 
       ACTION: {
         "action": "createNote",
         "data": {
           "title": "Título de la nota",
-          "content": "Contenido de la nota",
-          "color": "#hexcolor",
-          "is_pinned": false,
-          "is_marked": false,
-          "images": []
-        }
-      }
-
-      Para editar una nota existente:
-
-      ACTION: {
-        "action": "updateNote",
-        "data": {
-          "id": "id-de-la-nota",
-          "title": "Nuevo título",
-          "content": "Nuevo contenido",
-          "color": "#hexcolor",
-          "is_pinned": false,
-          "is_marked": false,
-          "images": []
-        }
-      }
-
-      Para eliminar una nota:
-
-      ACTION: {
-        "action": "deleteNote",
-        "data": {
-          "id": "id-de-la-nota"
-        }
-      }
-
-      Para añadir una imagen a una nota existente:
-
-      ACTION: {
-        "action": "addImageToNote",
-        "data": {
-          "id": "id-de-la-nota",
-          "imageUrl": "url-de-la-imagen"
+          "content": "Contenido de la nota"
         }
       }
 
@@ -128,45 +76,48 @@ export const hybridService = {
         }
       }
 
-      Para actualizar un recordatorio existente:
+      Para buscar entre notas y recordatorios:
 
       ACTION: {
-        "action": "updateReminder",
+        "action": "searchNotes",
         "data": {
-          "id": "id-del-recordatorio",
-          "title": "Nuevo título",
-          "description": "Nueva descripción",
-          "date_time": "FECHA-ISO-8601",
-          "has_time": true,
-          "send_email": false,
-          "status_id": 1
+          "searchTerm": "término de búsqueda"
         }
       }
 
-      Para eliminar un recordatorio:
+      Para proporcionar información:
 
       ACTION: {
-        "action": "deleteReminder",
+        "action": "getInfo",
         "data": {
-          "id": "id-del-recordatorio"
+          "infoType": "notes" o "reminders" o "general"
         }
       }
 
-      Para cambiar el estado de un recordatorio:
+      IMPORTANTE: Solo puedes realizar estas funciones. No incluyas comentarios en el formato JSON de las acciones. El formato date_time debe ser una fecha real en formato ISO 8601.
 
-      ACTION: {
-        "action": "updateReminderStatus",
-        "data": {
-          "id": "id-del-recordatorio",
-          "status_id": 2
-        }
+      Para cualquier otra solicitud, responde de manera conversacional y amigable sin el formato ACTION.`;
+      
+      let reminderPrompt = "";
+      if (message.toLowerCase().includes('recordatorio') || 
+          message.toLowerCase().includes('recordar') || 
+          message.toLowerCase().includes('reunión') || 
+          message.toLowerCase().includes('cita')) {
+          
+        reminderPrompt = `
+        INSTRUCCIONES ESPECÍFICAS PARA RECORDATORIOS:
+        
+        Si el usuario está pidiendo crear un recordatorio:
+        1. Identifica claramente la fecha y hora mencionadas
+        2. Determina un título apropiado basado en el contenido
+        3. Si se menciona "enviar por email" o similar, activa send_email
+        
+        IMPORTANTE: Si el usuario menciona "llamado X" o "llamada X", ese X DEBE ser el título del recordatorio.
+        Por ejemplo, si el mensaje dice "recordatorio para mañana a las 12:00 llamado Cena familia", 
+        el título debe ser exactamente "Cena familia".
+        `;
       }
 
-      IMPORTANTE: No incluyas comentarios en el formato JSON de las acciones. El formato date_time debe ser una fecha real en formato ISO 8601.
-
-      Para cualquier otra solicitud, responde de manera conversacional y amigable sin el formato ACTION.
-      Recuerda que eres parte de una aplicación de notas, así que siempre orienta tus respuestas en ese contexto.`;
-              
       // Crear el prompt completo para enviar a Ollama
       const prompt = `${systemPrompt}\n\n`;
       
@@ -182,12 +133,7 @@ export const hybridService = {
       
       // Intentar añadir contexto de notas si el mensaje lo requiere
       let notesContext = "";
-      if (message.toLowerCase().includes('nota') || 
-          message.toLowerCase().includes('editar') || 
-          message.toLowerCase().includes('modificar') || 
-          message.toLowerCase().includes('eliminar') || 
-          message.toLowerCase().includes('borrar')) {
-        
+      if (message.toLowerCase().includes('nota')) {
         try {
           const userId = history[0]?.userId;
           if (userId) {
@@ -234,13 +180,26 @@ export const hybridService = {
       let dateTimeContext = "";
       if (message.toLowerCase().includes('recordatorio')) {
         const dateTimeInfo = dateUtils.extractDateTimeFromMessage(message);
+        
+        // Extraer título del mensaje para recordatorios
+        let title = "";
+        const llamadoPattern = /llamado\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
+        const llamadoMatch = message.match(llamadoPattern);
+        if (llamadoMatch && llamadoMatch[1]) {
+          title = llamadoMatch[1].trim();
+        }
+        
         dateTimeContext = `\n\nPara crear recordatorios, usa esta fecha exacta: ${dateTimeInfo.dateTime}\n`;
         dateTimeContext += `Esta fecha corresponde a "${dateTimeInfo.originalText.date}" ${dateTimeInfo.originalText.time ? `a las ${dateTimeInfo.originalText.time}` : ""}\n`;
         dateTimeContext += `has_time debe ser: ${dateTimeInfo.hasTime}\n`;
+        
+        if (title) {
+          dateTimeContext += `Título exacto del recordatorio: "${title}"\n`;
+        }
       }
       
       // Añadir el mensaje actual
-      const fullPrompt = `${prompt}${conversationHistory}${notesContext}${remindersContext}${dateTimeContext}Usuario: \${message}\nAsistente:`;
+      const fullPrompt = `${prompt}${conversationHistory}${notesContext}${remindersContext}${dateTimeContext}${reminderPrompt}Usuario: ${message}\nAsistente:`;
       
       console.log('Enviando solicitud a Ollama...');
       
@@ -275,81 +234,18 @@ export const hybridService = {
     }
   },
   
-  async processImageWithOCR(imagePath: string, userPrompt: string) {
-    try {
-      console.log('Procesando imagen con OCR:', imagePath);
-      
-      // Verificar que la ruta de la imagen sea válida
-      if (!fs.existsSync(imagePath)) {
-        console.error('La imagen no existe en la ruta:', imagePath);
-        return `ACTION: {"action":"transcribeImage","data":{"text":"Error: No se pudo encontrar la imagen"}}`;
-      }
-      
-      // Configurar Tesseract - método actualizado para la versión actual
-      console.log('Creando worker de Tesseract...');
-      
-      // Crear el worker con la configuración adecuada para la versión actual
-      const worker = await createWorker('spa+eng');
-      
-      // Procesar la imagen
-      console.log('Iniciando reconocimiento OCR...');
-      const result = await worker.recognize(imagePath);
-      const extractedText = result.data.text;
-      
-      // Liberar recursos
-      await worker.terminate();
-      
-      console.log('Texto extraído de la imagen:', extractedText.substring(0, 100) + '...');
-      
-      // Formatear la respuesta según el prompt del usuario
-      if (userPrompt.toLowerCase().includes('transcribe') || 
-          userPrompt.toLowerCase().includes('transcribir') ||
-          userPrompt.toLowerCase().includes('texto') ||
-          userPrompt.toLowerCase().includes('extraer')) {
-        
-        return `ACTION: {"action":"transcribeImage","data":{"text":"\${extractedText.replace(/"/g, '\\"')}"}}`;
-      } 
-      else if (userPrompt.toLowerCase().includes('nota') || 
-               userPrompt.toLowerCase().includes('guardar')) {
-        
-        const title = extractedText.split('\n')[0].substring(0, 50) || 'Nota de imagen';
-        
-        // Si se menciona alguna nota existente para añadir la imagen
-        if (userPrompt.toLowerCase().includes('añadir a') || 
-            userPrompt.toLowerCase().includes('agregar a') ||
-            userPrompt.toLowerCase().includes('adjuntar a')) {
-          
-          // Intentar extraer un ID de nota del prompt
-          const idMatch = userPrompt.match(/\b([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\b/);
-          
-          if (idMatch && idMatch[1]) {
-            return `ACTION: {"action":"addImageToNote","data":{"id":"${idMatch[1]}","imageUrl":"${imagePath.replace(/"/g, '\\"')}"}}`;
-          }
-        }
-        
-        // Por defecto, crear una nueva nota con la imagen
-        return `ACTION: {"action":"createNote","data":{"title":"${title.replace(/"/g, '\\"')}","content":"${extractedText.replace(/"/g, '\\"')}","images":["\${imagePath.replace(/"/g, '\\"')}"]}}`; 
-      } 
-      else {
-        return `He extraído el siguiente texto de la imagen:\n\n\${extractedText}\n\n¿Qué te gustaría hacer con este texto? Puedo crear una nota o un recordatorio con él.`;
-      }
-    } catch (error) {
-      console.error('Error en OCR:', error);
-      return `ACTION: {"action":"transcribeImage","data":{"text":"Error al procesar la imagen"}}`;
-    }
-  },
-  
-  async detectIntent(aiResponse: string) {
+  async detectIntent(aiResponse: string, originalMessage: string = '') {
     try {
       console.log('Detectando intención en respuesta:', aiResponse);
       
       if (!aiResponse) {
         return { action: null };
       }
-      
+
+      // Caso 1: Primero intentar extraer datos del JSON de la IA
       let jsonString = null;
       
-      // Caso 1: Buscar formato ACTION: {}
+      // Buscar formato ACTION: {}
       if (aiResponse.includes('ACTION:')) {
         const parts = aiResponse.split('ACTION:');
         if (parts.length >= 2) {
@@ -357,15 +253,92 @@ export const hybridService = {
           const jsonMatch = actionPart.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             jsonString = jsonMatch[0];
+            
+            try {
+              // Limpiar comentarios del JSON antes de parsearlo
+              jsonString = jsonString.replace(/\/\/.*$/gm, '');
+              
+              // Si es un recordatorio y el formato de fecha es incorrecto
+              if (jsonString.includes('"action":"createReminder"') || 
+                  jsonString.includes('"action": "createReminder"')) {
+                
+                // Si la fecha está en formato incorrecto, reemplazarla
+                if (jsonString.includes('"date_time": "YYYY-MM-DDTHH:MM:SS"') || 
+                    jsonString.includes('"date_time":"YYYY-MM-DDTHH:MM:SS"') ||
+                    jsonString.includes('"date_time": "FECHA-ISO-8601"') ||
+                    jsonString.includes('"date_time":"FECHA-ISO-8601"')) {
+                  
+                  // Extraer información de fecha/hora del mensaje original
+                  const dateTimeInfo = dateUtils.extractDateTimeFromMessage(originalMessage);
+                  
+                  // Construir la fecha ISO manualmente para evitar conversión de zona horaria
+                  const dateObj = new Date(dateTimeInfo.dateTime);
+                  const year = dateObj.getFullYear();
+                  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                  const day = String(dateObj.getDate()).padStart(2, '0');
+                  
+                  // Usar la hora exacta especificada en el mensaje
+                  let hour, minutes;
+                  const timeAtMatch = originalMessage.match(/a\s+las\s+(\d{1,2})(?::(\d{2}))?/i);
+                  if (timeAtMatch) {
+                    hour = parseInt(timeAtMatch[1]);
+                    minutes = timeAtMatch[2] ? parseInt(timeAtMatch[2]) : 0;
+                  } else {
+                    hour = 12;
+                    minutes = 0;
+                  }
+                  
+                  const hourStr = String(hour).padStart(2, '0');
+                  const minutesStr = String(minutes).padStart(2, '0');
+                  const exactDateTime = `${year}-${month}-${day}T${hourStr}:${minutesStr}:00`;
+                  
+                  // Reemplazar el placeholder con la fecha exacta
+                  jsonString = jsonString.replace(/"date_time"\s*:\s*"[^"]*"/, `"date_time":"${exactDateTime}"`);
+                  jsonString = jsonString.replace(/"has_time"\s*:\s*(true|false)/, `"has_time":true`);
+                  
+                  // También actualizar send_email si está disponible
+                  if (dateTimeInfo.sendEmail !== undefined) {
+                    jsonString = jsonString.replace(
+                      /"send_email"\s*:\s*(true|false)/, 
+                      `"send_email":${dateTimeInfo.sendEmail}`
+                    );
+                  }
+                }
+                
+                // Extraer título más específicamente para "llamado" o "llamada"
+                const llamadoPattern = /llamado\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
+                const llamadoMatch = originalMessage.match(llamadoPattern);
+                if (llamadoMatch && llamadoMatch[1]) {
+                  const title = llamadoMatch[1].trim();
+                  // Reemplazar el título en el JSON
+                  jsonString = jsonString.replace(/"title"\s*:\s*"[^"]*"/, `"title":"${title}"`);
+                }
+              }
+              
+              const actionData = JSON.parse(jsonString);
+              console.log('Intención detectada desde JSON:', actionData);
+              return actionData;
+            } catch (parseError) {
+              console.error('Error al parsear JSON de la acción:', parseError, 'JSON string:', jsonString);
+            }
           }
         }
       }
       
-      // Caso 2: Buscar bloques de código markdown con JSON
+      // Caso 2: Si no se pudo extraer del JSON, buscar otros formatos
+      
+      // Buscar bloques de código markdown con JSON
       if (!jsonString) {
         const codeBlockMatch = aiResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
         if (codeBlockMatch && codeBlockMatch[1]) {
           jsonString = codeBlockMatch[1];
+          try {
+            const actionData = JSON.parse(jsonString);
+            console.log('Intención detectada desde bloque de código:', actionData);
+            return actionData;
+          } catch (parseError) {
+            console.error('Error al parsear JSON del bloque de código:', parseError);
+          }
         }
       }
       
@@ -374,70 +347,106 @@ export const hybridService = {
         const directJsonMatch = aiResponse.match(/\{[\s\S]*"action"\s*:\s*"[^"]+[\s\S]*\}/);
         if (directJsonMatch) {
           jsonString = directJsonMatch[0];
+          try {
+            const actionData = JSON.parse(jsonString);
+            console.log('Intención detectada desde JSON directo:', actionData);
+            return actionData;
+          } catch (parseError) {
+            console.error('Error al parsear JSON directo:', parseError);
+          }
         }
       }
       
-      // Si encontramos un JSON, procesarlo
-      if (jsonString) {
-        try {
-          // Limpiar comentarios del JSON antes de parsearlo
-          jsonString = jsonString.replace(/\/\/.*\$/gm, '');
-          
-          // Verificar si es una acción de recordatorio y tiene un formato de fecha incorrecto
-          if (jsonString.includes('"action":"createReminder"') || 
-              jsonString.includes('"action": "createReminder"')) {
-            
-            // Si la fecha está en formato incorrecto, reemplazarla
-            if (jsonString.includes('"date_time": "YYYY-MM-DDTHH:MM:SS"') || 
-                jsonString.includes('"date_time":"YYYY-MM-DDTHH:MM:SS"') ||
-                jsonString.includes('"date_time": "FECHA-ISO-8601"') ||
-                jsonString.includes('"date_time":"FECHA-ISO-8601"')) {
-              
-              // Extraer mensaje del usuario o usar mensaje directo
-              const userMessage = aiResponse.includes("Usuario:") ? 
-                this.extractUserMessageFromResponse(aiResponse) : 
-                "recordatorio mañana a las 12";
-              
-              // Usar la utilidad de fechas para extraer la fecha y hora
-              const dateTimeInfo = dateUtils.extractDateTimeFromMessage(userMessage);
-              
-              // Reemplazar el placeholder con la fecha real
-              jsonString = jsonString.replace(/"date_time"\s*:\s*"[^"]*"/, `"date_time":"${dateTimeInfo.dateTime}"`);
-              jsonString = jsonString.replace(/"has_time"\s*:\s*(true|false)/, `"has_time":${dateTimeInfo.hasTime}`);
-            }
-          }
-          
-          const actionData = JSON.parse(jsonString);
-          console.log('Intención detectada:', actionData);
-          return actionData;
-        } catch (parseError) {
-          console.error('Error al parsear JSON de la acción:', parseError, 'JSON string:', jsonString);
-          
-          // Intento de recuperación manual para recordatorios
-          if (aiResponse.toLowerCase().includes('recordatorio')) {
-            const userMessage = aiResponse.includes("Usuario:") ? 
-              this.extractUserMessageFromResponse(aiResponse) : 
-              "recordatorio mañana a las 12";
-              
-            const dateTimeInfo = dateUtils.extractDateTimeFromMessage(userMessage);
-            
-            // Extraer título entre comillas si existe
-            const titleMatch = aiResponse.match(/"([^"]+)"/);
-            const title = titleMatch ? titleMatch[1] : "Recordatorio";
-            
-            return {
-              action: "createReminder",
-              data: {
-                title: title,
-                description: "",
-                date_time: dateTimeInfo.dateTime,
-                has_time: dateTimeInfo.hasTime
-              }
-            };
-          }
-          
-          return { action: null };
+      // Caso 4: Si todo falla, crear un recordatorio manualmente si el mensaje lo sugiere
+      if (originalMessage && (
+        originalMessage.toLowerCase().includes('recordatorio') || 
+        originalMessage.toLowerCase().includes('recordar')
+      )) {
+        // Extraer título del mensaje
+        let title = "Recordatorio";
+        const llamadoPattern = /llamado\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
+        const llamadoMatch = originalMessage.match(llamadoPattern);
+        if (llamadoMatch && llamadoMatch[1]) {
+          title = llamadoMatch[1].trim();
         }
+        
+        // Extraer fecha y hora
+        const dateTimeInfo = dateUtils.extractDateTimeFromMessage(originalMessage);
+        
+        // Construir la fecha ISO manualmente para evitar conversión de zona horaria
+        const dateObj = new Date(dateTimeInfo.dateTime);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        
+        // Usar la hora exacta especificada en el mensaje
+        let hour, minutes;
+        const timeAtMatch = originalMessage.match(/a\s+las\s+(\d{1,2})(?::(\d{2}))?/i);
+        if (timeAtMatch) {
+          hour = parseInt(timeAtMatch[1]);
+          minutes = timeAtMatch[2] ? parseInt(timeAtMatch[2]) : 0;
+        } else {
+          hour = 12;
+          minutes = 0;
+        }
+        
+        const hourStr = String(hour).padStart(2, '0');
+        const minutesStr = String(minutes).padStart(2, '0');
+        const exactDateTime = `${year}-${month}-${day}T${hourStr}:${minutesStr}:00`;
+        
+        return {
+          action: "createReminder",
+          data: {
+            title: title,
+            description: originalMessage,
+            date_time: exactDateTime,
+            has_time: true,
+            send_email: dateTimeInfo.sendEmail || false,
+            status_id: 1
+          }
+        };
+      }
+      
+      // Si el mensaje original contiene palabras clave de búsqueda
+      if (originalMessage && (
+        originalMessage.toLowerCase().includes('busca') || 
+        originalMessage.toLowerCase().includes('encuentra') || 
+        originalMessage.toLowerCase().includes('buscar') ||
+        originalMessage.toLowerCase().includes('encontrar')
+      )) {
+        // Extraer término de búsqueda
+        const searchTerm = originalMessage.replace(/busca|encuentra|buscar|encontrar|por favor|me puedes|podrías|entre mis notas|en mis notas|entre mis recordatorios|en mis recordatorios/gi, '').trim();
+        
+        if (searchTerm) {
+          return {
+            action: "searchNotes",
+            data: {
+              searchTerm: searchTerm
+            }
+          };
+        }
+      }
+
+      // Si el mensaje original pide información
+      if (originalMessage && (
+        originalMessage.toLowerCase().includes('información sobre') || 
+        originalMessage.toLowerCase().includes('datos de') || 
+        originalMessage.toLowerCase().includes('estadísticas')
+      )) {
+        let infoType = 'general';
+        
+        if (originalMessage.toLowerCase().includes('nota')) {
+          infoType = 'notes';
+        } else if (originalMessage.toLowerCase().includes('recordatorio')) {
+          infoType = 'reminders';
+        }
+        
+        return {
+          action: "getInfo",
+          data: {
+            infoType: infoType
+          }
+        };
       }
       
       console.log('No se detectó ninguna intención específica');
@@ -464,7 +473,7 @@ export const hybridService = {
     try {
       const result = await pool.query(
         `SELECT id, title, updated_at FROM notes 
-         WHERE user_id = \$1 
+         WHERE user_id = $1 
          ORDER BY updated_at DESC 
          LIMIT 5`,
         [userId]
@@ -477,127 +486,6 @@ export const hybridService = {
     }
   },
   
-  async getNoteById(noteId: string, userId: string) {
-    try {
-      const result = await pool.query(
-        `SELECT * FROM notes 
-         WHERE id = $1 AND user_id = $2`,
-        [noteId, userId]
-      );
-      
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error al obtener nota por ID:', error);
-      return null;
-    }
-  },
-  
-  async updateNote(noteId: string, userId: string, updateData: any) {
-    try {
-      // Construir la consulta dinámica
-      const updateFields = [];
-      const values = [];
-      let paramCount = 1;
-      
-      if (updateData.title !== undefined) {
-        updateFields.push(`title = $${paramCount}`);
-        values.push(updateData.title);
-        paramCount++;
-      }
-      
-      if (updateData.content !== undefined) {
-        updateFields.push(`content = $${paramCount}`);
-        values.push(updateData.content);
-        paramCount++;
-      }
-      
-      if (updateData.images !== undefined) {
-        updateFields.push(`images = $${paramCount}`);
-        values.push(updateData.images);
-        paramCount++;
-      }
-      
-      if (updateFields.length === 0) {
-        return null; // No hay nada que actualizar
-      }
-      
-      // Añadir campo updated_at
-      updateFields.push(`updated_at = NOW()`);
-      
-      // Añadir parámetros de where
-      values.push(noteId, userId);
-      
-      const query = `
-        UPDATE notes 
-        SET ${updateFields.join(', ')} 
-        WHERE id = $${paramCount} AND user_id = \$\${paramCount + 1}
-        RETURNING *
-      `;
-      
-      const result = await pool.query(query, values);
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error al actualizar nota:', error);
-      throw error;
-    }
-  },
-  
-  async addImageToNote(noteId: string, userId: string, imageUrl: string) {
-    try {
-      // Primero obtener la nota actual para ver sus imágenes
-      const noteResult = await pool.query(
-        `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
-        [noteId, userId]
-      );
-      
-      if (noteResult.rows.length === 0) {
-        throw new Error('Nota no encontrada');
-      }
-      
-      const note = noteResult.rows[0];
-      const currentImages = note.images || [];
-      
-      // Añadir la nueva imagen al array
-      const updatedImages = [...currentImages, imageUrl];
-      
-      // Actualizar la nota con la nueva imagen
-      const updateResult = await pool.query(
-        `UPDATE notes SET images = $1, updated_at = NOW() WHERE id = $2 AND user_id = \$3 RETURNING *`,
-        [updatedImages, noteId, userId]
-      );
-      
-      return updateResult.rows[0];
-    } catch (error) {
-      console.error('Error al añadir imagen a nota:', error);
-      throw error;
-    }
-  },
-  
-  async deleteNote(noteId: string, userId: string) {
-    try {
-      // Verificar que la nota existe y pertenece al usuario
-      const noteExists = await pool.query(
-        `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
-        [noteId, userId]
-      );
-      
-      if (noteExists.rows.length === 0) {
-        throw new Error('Nota no encontrada');
-      }
-      
-      // Eliminar la nota
-      await pool.query(
-        `DELETE FROM notes WHERE id = $1 AND user_id = $2`,
-        [noteId, userId]
-      );
-      
-      return noteExists.rows[0]; // Devolver la nota eliminada
-    } catch (error) {
-      console.error('Error al eliminar nota:', error);
-      throw error;
-    }
-  },
-
   async getRecentReminders(userId: string) {
     try {
       const result = await pool.query(
@@ -614,6 +502,60 @@ export const hybridService = {
       console.error('Error al obtener recordatorios recientes:', error);
       return [];
     }
+  },
+
+  // Método auxiliar para extraer un mejor título del mensaje del usuario
+  extractBetterTitle(message: string): string {
+    // Patrón específico para "llamado X" o "llamada X"
+    const llamadoPattern = /llamado\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
+    const llamadaPattern = /llamada\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
+    
+    const llamadoMatch = message.match(llamadoPattern);
+    const llamadaMatch = message.match(llamadaPattern);
+    
+    if (llamadoMatch && llamadoMatch[1]) {
+      return llamadoMatch[1].trim();
+    } else if (llamadaMatch && llamadaMatch[1]) {
+      return llamadaMatch[1].trim();
+    }
+    
+    // Patrón 2: "se llame [título]"
+    const seLlamePattern = /se\s+llame\s+(?:"|')?([^"',.]+)(?:"|')?/i;
+    const seLlameMatch = message.match(seLlamePattern);
+    if (seLlameMatch && seLlameMatch[1]) {
+      return seLlameMatch[1].trim();
+    }
+    
+    // Patrón 3: "título [título]"
+    const tituloPattern = /título\s+(?:"|')?([^"',.]+)(?:"|')?/i;
+    const tituloMatch = message.match(tituloPattern);
+    if (tituloMatch && tituloMatch[1]) {
+      return tituloMatch[1].trim();
+    }
+    
+    // Reuniones específicas
+    if (message.toLowerCase().includes('reunión') || message.toLowerCase().includes('reunion')) {
+      if (message.toLowerCase().includes('comsa')) {
+        return "Reunión Comsa";
+      }
+      
+      const reunionPattern = /reuni[óo]n\s+(?:con|de|sobre)\s+([^,.]+)/i;
+      const reunionMatch = message.match(reunionPattern);
+      if (reunionMatch && reunionMatch[1]) {
+        return `Reunión con ${reunionMatch[1].trim()}`;
+      }
+    }
+    
+    // Citas específicas
+    if (message.toLowerCase().includes('cita')) {
+      const citaMatch = message.match(/cita\s+(?:con|para)\s+([^,.]+)/i);
+      if (citaMatch && citaMatch[1]) {
+        return `Cita con ${citaMatch[1].trim()}`;
+      }
+    }
+    
+    // Si no se encontró un título específico
+    return "";
   },
 
   async enhanceResponse(response: string) {
@@ -647,5 +589,4 @@ export const hybridService = {
 
     return enhancedResponse;
   }
-
 };

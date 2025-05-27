@@ -1,3 +1,4 @@
+// chatbotController.ts
 import { Request, Response } from 'express';
 import { hybridService } from '../utils/hybridService';
 import { pool } from '../config/database';
@@ -16,53 +17,23 @@ function getRandomResponse(action: string, itemName: string): string {
       `He guardado una nueva nota con el título "${itemName}"`,
       `¡Perfecto! Tu nota "${itemName}" ha sido creada correctamente`
     ],
-    updateNote: [
-      `¡Actualizado! Los cambios en "${itemName}" están guardados`,
-      `He modificado la nota "${itemName}" como me pediste`,
-      `¡Listo! La nota "${itemName}" ha sido actualizada`,
-      `¡Cambios guardados en "${itemName}"! ¿Algo más que necesites?`
-    ],
-    deleteNote: [
-      `He eliminado la nota "${itemName}"`,
-      `La nota "${itemName}" ha sido borrada correctamente`,
-      `¡Listo! La nota "${itemName}" ya no existe`,
-      `"${itemName}" ha sido eliminada de tus notas`
-    ],
     createReminder: [
       `¡Recordatorio creado! Te avisaré sobre "${itemName}" a tiempo`,
       `No te preocupes, te recordaré "${itemName}" cuando llegue el momento`,
       `He programado un recordatorio para "${itemName}" 📅`,
       `¡Perfecto! No olvidarás "${itemName}" gracias a este recordatorio`
     ],
-    addImageToNote: [
-      `¡Imagen añadida a "${itemName}"! Queda genial`,
-      `He actualizado tu nota "${itemName}" con la imagen`,
-      `¡Listo! La imagen ya está en tu nota "${itemName}"`,
-      `La nota "${itemName}" ahora incluye la imagen que me enviaste`
+    searchResults: [
+      `He encontrado esto sobre "${itemName}"`,
+      `Aquí tienes los resultados para "${itemName}"`,
+      `Esto es lo que encontré sobre "${itemName}"`,
+      `He buscado información sobre "${itemName}"`
     ],
-    transcribeImage: [
-      `¡He transcrito el texto de la imagen! Aquí tienes el resultado`,
-      `Esto es lo que he podido extraer de la imagen`,
-      `He convertido el texto de la imagen en palabras. ¿Es lo que necesitabas?`,
-      `Aquí tienes la transcripción de la imagen`
-    ],
-    updateReminder: [
-      `¡Recordatorio actualizado! He modificado "${itemName}" como me pediste 📝`,
-      `He actualizado la información del recordatorio "${itemName}" 🔄`,
-      `¡Listo! El recordatorio "${itemName}" ha sido actualizado con éxito ✅`,
-      `Cambios guardados en el recordatorio "${itemName}" 📅`
-    ],
-    deleteReminder: [
-      `He eliminado el recordatorio "${itemName}" 🗑️`,
-      `El recordatorio "${itemName}" ha sido borrado correctamente ✓`,
-      `¡Listo! El recordatorio "${itemName}" ya no existe 👌`,
-      `"${itemName}" ha sido eliminado de tus recordatorios 🧹`
-    ],
-    updateReminderStatus: [
-      `¡Estado actualizado! El recordatorio "${itemName}" ha cambiado de estado ✅`,
-      `He modificado el estado del recordatorio "${itemName}" 🔄`,
-      `El recordatorio "${itemName}" ahora tiene un nuevo estado 📝`,
-      `¡Listo! Estado del recordatorio "${itemName}" actualizado correctamente 👍`
+    infoProvided: [
+      `Aquí tienes la información sobre "${itemName}"`,
+      `Esta es la información que tengo sobre "${itemName}"`,
+      `Estos son los datos que encontré sobre "${itemName}"`,
+      `Aquí está la información que solicitaste sobre "${itemName}"`
     ]
   };
 
@@ -98,7 +69,7 @@ export const chatbotController = {
       console.log('Respuesta recibida del servicio híbrido');
       
       // Detectar intenciones
-      const intentData = await hybridService.detectIntent(aiResponse);
+      const intentData = await hybridService.detectIntent(aiResponse, message);
       
       // Procesar según la intención detectada
       if (intentData && intentData.action) {
@@ -129,7 +100,7 @@ export const chatbotController = {
                   id: note.id,
                   title: note.title
                 },
-                response: getRandomResponse('createNote', note.title) // Cambiado aquí
+                response: getRandomResponse('createNote', note.title)
               });
             } catch (error) {
               console.error('Error al crear nota:', error);
@@ -138,174 +109,74 @@ export const chatbotController = {
               });
             }
             
-          case 'updateNote':
-            try {
-              console.log('Actualizando nota');
-              const noteId = intentData.data?.id;
-              
-              if (!noteId) {
-                return res.status(400).json({
-                  error: 'ID de nota no proporcionado'
-                });
-              }
-              
-              // Verificar si la nota existe y pertenece al usuario
-              const noteExists = await pool.query(
-                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
-                [noteId, userId]
-              );
-              
-              if (noteExists.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Nota no encontrada'
-                });
-              }
-              
-              const updateData = {
-                title: intentData.data?.title,
-                content: intentData.data?.content,
-                color: intentData.data?.color,
-                is_pinned: intentData.data?.is_pinned,
-                is_marked: intentData.data?.is_marked,
-                images: intentData.data?.images
-              };
-              
-              // Construir la consulta dinámica
-              const updateFields = [];
-              const values = [];
-              let paramCount = 1;
-              
-              if (updateData.title !== undefined) {
-                updateFields.push(`title = $${paramCount}`);
-                values.push(updateData.title);
-                paramCount++;
-              }
-              
-              if (updateData.content !== undefined) {
-                updateFields.push(`content = $${paramCount}`);
-                values.push(updateData.content);
-                paramCount++;
-              }
-              
-              if (updateData.images !== undefined) {
-                updateFields.push(`images = $${paramCount}`);
-                values.push(updateData.images);
-                paramCount++;
-              }
-
-              if (updateData.color !== undefined) {
-                updateFields.push(`color = $${paramCount}`);
-                values.push(updateData.color);
-                paramCount++;
-              }
-
-              if (updateData.is_pinned !== undefined) {
-                updateFields.push(`is_pinned = $${paramCount}`);
-                values.push(updateData.is_pinned);
-                paramCount++;
-              }
-
-              if (updateData.is_marked !== undefined) {
-                updateFields.push(`is_marked = $${paramCount}`);
-                values.push(updateData.is_marked);
-                paramCount++;
-              }
-              
-              updateFields.push(`updated_at = NOW()`);
-              values.push(noteId, userId);
-              
-              const query = `
-                UPDATE notes 
-                SET ${updateFields.join(', ')} 
-                WHERE id = $${paramCount} AND user_id = \$\${paramCount + 1}
-                RETURNING *
-              `;
-              
-              const result = await pool.query(query, values);
-              const updatedNote = result.rows[0];
-              
-              return res.status(200).json({
-                action: 'updateNote',
-                noteData: {
-                  id: updatedNote.id,
-                  title: updatedNote.title
-                },
-                response: getRandomResponse('updateNote', updatedNote.title) // Cambiado aquí
-              });
-            } catch (error) {
-              console.error('Error al actualizar nota:', error);
-              return res.status(500).json({
-                error: 'Error al actualizar la nota'
-              });
-            }
-            
-          case 'deleteNote':
-            try {
-              console.log('Eliminando nota');
-              const noteId = intentData.data?.id;
-              
-              if (!noteId) {
-                return res.status(400).json({
-                  error: 'ID de nota no proporcionado'
-                });
-              }
-              
-              // Verificar si la nota existe y pertenece al usuario
-              const noteExists = await pool.query(
-                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
-                [noteId, userId]
-              );
-              
-              if (noteExists.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Nota no encontrada'
-                });
-              }
-              
-              const noteTitleToDelete = noteExists.rows[0].title;
-              
-              // Eliminar la nota
-              await pool.query(
-                'DELETE FROM notes WHERE id = $1 AND user_id = $2',
-                [noteId, userId]
-              );
-              
-              return res.status(200).json({
-                action: 'deleteNote',
-                noteId: noteId,
-                response: getRandomResponse('deleteNote', noteTitleToDelete) // Cambiado aquí
-              });
-            } catch (error) {
-              console.error('Error al eliminar nota:', error);
-              return res.status(500).json({
-                error: 'Error al eliminar la nota'
-              });
-            }
-            
           case 'createReminder':
             try {
               console.log('Creando recordatorio');
               
-              // Verificar si la fecha proporcionada es válida
-              let reminderDateTime;
-              try {
-                reminderDateTime = new Date(intentData.data?.date_time);
-                if (isNaN(reminderDateTime.getTime())) {
-                  throw new Error('Fecha inválida');
-                }
-              } catch (dateError) {
-                // Si la fecha es inválida, extraerla del mensaje del usuario
-                const userMessage = req.body.message;
-                const dateTimeInfo = dateUtils.extractDateTimeFromMessage(userMessage);
-                reminderDateTime = new Date(dateTimeInfo.dateTime);
+              // Usar directamente los datos de intentData para mayor prioridad
+              const userMessage = req.body.message;
+              const messageIntent = req.body.messageIntent || {};
+              
+              // Determinar el título con prioridad clara
+              let title = intentData.data?.title; // Usar el título de la IA primero
+              
+              // Si no hay título de la IA, usar el título del messageIntent
+              if (!title && messageIntent?.details?.title) {
+                title = messageIntent.details.title;
               }
               
+              // Si aún no hay título, intentar extraer "llamado X" del mensaje
+              if (!title) {
+                const llamadoMatch = userMessage.match(/llamado\s+([^,.]+)(?:\s*$|\s+(?:para|el|mañana|hoy))/i);
+                if (llamadoMatch && llamadoMatch[1]) {
+                  title = llamadoMatch[1].trim();
+                }
+              }
+              
+              // Si todavía no hay título, usar uno genérico
+              if (!title) {
+                title = 'Recordatorio';
+              }
+              
+              // Determinar fecha y hora
+              // IMPORTANTE: Usar directamente la fecha y hora de intentData si está disponible
+              let dateTime = intentData.data?.date_time;
+              let hasTime = intentData.data?.has_time !== undefined ? intentData.data.has_time : true;
+              
+              // Si no hay fecha/hora en intentData, intentar usar messageIntent
+              if (!dateTime && messageIntent.details?.hour !== undefined) {
+                // Crear fecha para mañana con la hora especificada
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(
+                  messageIntent.details.hour,
+                  messageIntent.details.minutes || 0,
+                  0,
+                  0
+                );
+                dateTime = tomorrow.toISOString().split('.')[0];
+              }
+              
+              // Si todavía no hay fecha/hora, usar dateUtils como último recurso
+              if (!dateTime) {
+                const dateTimeInfo = dateUtils.extractDateTimeFromMessage(userMessage);
+                dateTime = dateTimeInfo.dateTime;
+                hasTime = dateTimeInfo.hasTime;
+              }
+              
+              // Verificar si quiere email
+              const wantsEmail = messageIntent.wantsEmail || 
+                                userMessage.toLowerCase().includes('email') || 
+                                userMessage.toLowerCase().includes('correo') || 
+                                userMessage.toLowerCase().includes('mandes');
+              
+              // Construir los datos del recordatorio
               const reminderData = {
-                title: intentData.data?.title || 'Recordatorio sin título',
-                description: intentData.data?.description || '',
-                date_time: reminderDateTime,
-                has_time: intentData.data?.has_time !== undefined ? intentData.data.has_time : true,
-                send_email: intentData.data?.send_email !== undefined ? intentData.data.send_email : false,
+                title: title,
+                description: intentData.data?.description || userMessage,
+                date_time: dateTime,
+                has_time: hasTime,
+                send_email: intentData.data?.send_email !== undefined ? intentData.data.send_email : wantsEmail,
                 status_id: intentData.data?.status_id !== undefined ? intentData.data.status_id : 1,
                 user_id: userId
               };
@@ -339,7 +210,7 @@ export const chatbotController = {
                     title: reminder.title,
                     date_time: reminder.date_time
                   },
-                  response: getRandomResponse('createReminder', reminder.title) // Cambiado aquí
+                  response: getRandomResponse('createReminder', reminder.title)
                 });
               } catch (dbError) {
                 console.error('Error en la base de datos:', dbError);
@@ -356,254 +227,113 @@ export const chatbotController = {
               });
             }
             
-          case 'transcribeImage':
-            console.log('Transcribiendo imagen');
-            return res.status(200).json({
-              action: 'transcribeImage',
-              transcription: intentData.data?.text,
-              response: getRandomResponse('transcribeImage', '') // Cambiado aquí
-            });
+          case 'searchNotes':
+            try {
+              console.log('Buscando entre notas y recordatorios');
+              const searchTerm = intentData.data?.searchTerm || '';
+              
+              // Buscar en notas
+              const notesResult = await pool.query(
+                `SELECT * FROM notes 
+                WHERE user_id = $1 AND (
+                  title ILIKE $2 OR 
+                  content ILIKE $2
+                )
+                ORDER BY updated_at DESC
+                LIMIT 5`,
+                [userId, `%${searchTerm}%`]
+              );
+              
+              // Buscar en recordatorios
+              const remindersResult = await pool.query(
+                `SELECT * FROM reminders 
+                WHERE user_id = $1 AND (
+                  title ILIKE $2 OR 
+                  description ILIKE $2
+                )
+                ORDER BY date_time DESC
+                LIMIT 5`,
+                [userId, `%${searchTerm}%`]
+              );
+              
+              return res.status(200).json({
+                action: 'searchResults',
+                results: {
+                  notes: notesResult.rows,
+                  reminders: remindersResult.rows
+                },
+                response: getRandomResponse('searchResults', searchTerm)
+              });
+            } catch (error) {
+              console.error('Error al buscar:', error);
+              return res.status(500).json({
+                error: 'Error al buscar entre notas y recordatorios'
+              });
+            }
             
-          case 'addImageToNote':
+          case 'getInfo':
             try {
-              console.log('Añadiendo imagen a nota');
-              const noteId = intentData.data?.id;
-              const imageUrl = intentData.data?.imageUrl;
+              console.log('Proporcionando información');
+              const infoType = intentData.data?.infoType || 'general';
               
-              if (!noteId || !imageUrl) {
-                return res.status(400).json({
-                  error: 'ID de nota o URL de imagen no proporcionados'
-                });
+              let infoData = {};
+              
+              if (infoType === 'notes') {
+                // Obtener estadísticas de notas
+                const notesStats = await pool.query(
+                  `SELECT COUNT(*) as total, 
+                  COUNT(*) FILTER (WHERE is_pinned = true) as pinned,
+                  COUNT(*) FILTER (WHERE is_marked = true) as marked
+                  FROM notes WHERE user_id = $1`,
+                  [userId]
+                );
+                
+                infoData = {
+                  ...notesStats.rows[0]
+                };
+              } 
+              else if (infoType === 'reminders') {
+                // Obtener estadísticas de recordatorios
+                const remindersStats = await pool.query(
+                  `SELECT COUNT(*) as total, 
+                  COUNT(*) FILTER (WHERE status_id = 1) as pending,
+                  COUNT(*) FILTER (WHERE status_id = 2) as completed,
+                  COUNT(*) FILTER (WHERE status_id = 3) as cancelled
+                  FROM reminders WHERE user_id = $1`,
+                  [userId]
+                );
+                
+                infoData = {
+                  ...remindersStats.rows[0]
+                };
               }
-              
-              // Verificar si la nota existe y pertenece al usuario
-              const noteResult = await pool.query(
-                "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
-                [noteId, userId]
-              );
-              
-              if (noteResult.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Nota no encontrada'
-                });
+              else {
+                // Información general
+                const notesCount = await pool.query(
+                  `SELECT COUNT(*) FROM notes WHERE user_id = $1`,
+                  [userId]
+                );
+                
+                const remindersCount = await pool.query(
+                  `SELECT COUNT(*) FROM reminders WHERE user_id = $1`,
+                  [userId]
+                );
+                
+                infoData = {
+                  notesCount: notesCount.rows[0].count,
+                  remindersCount: remindersCount.rows[0].count
+                };
               }
-              
-              const note = noteResult.rows[0];
-              const currentImages = note.images || [];
-              
-              // Añadir la nueva imagen al array
-              const updatedImages = [...currentImages, imageUrl];
-              
-              // Actualizar la nota con la nueva imagen
-              const updateResult = await pool.query(
-                "UPDATE notes SET images = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING *",
-                [updatedImages, noteId, userId]
-              );
-              
-              const updatedNote = updateResult.rows[0];
-              
-             return res.status(200).json({
-                action: 'addImageToNote',
-                noteData: {
-                  id: updatedNote.id,
-                  title: updatedNote.title
-                },
-                response: getRandomResponse('addImageToNote', updatedNote.title) // Cambiado aquí
-              });
-            } catch (error) {
-              console.error('Error al añadir imagen a nota:', error);
-              return res.status(500).json({
-                error: 'Error al añadir imagen a la nota'
-              });
-            }
-
-          // Para actualizar un recordatorio:
-          case 'updateReminder':
-            try {
-              console.log('Actualizando recordatorio');
-              const reminderId = intentData.data?.id;
-              
-              if (!reminderId) {
-                return res.status(400).json({
-                  error: 'ID de recordatorio no proporcionado'
-                });
-              }
-              
-              // Verificar si el recordatorio existe y pertenece al usuario
-              const reminderExists = await pool.query(
-                "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
-                [reminderId, userId]
-              );
-              
-              if (reminderExists.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Recordatorio no encontrado'
-                });
-              }
-              
-              // Preparar datos para actualización
-              const updateData: any = {};
-              if (intentData.data?.title !== undefined) updateData.title = intentData.data.title;
-              if (intentData.data?.description !== undefined) updateData.description = intentData.data.description;
-              if (intentData.data?.date_time !== undefined) {
-                try {
-                  const dateTime = new Date(intentData.data.date_time);
-                  if (!isNaN(dateTime.getTime())) {
-                    updateData.date_time = dateTime;
-                  }
-                } catch (e) {
-                  console.error('Fecha inválida:', e);
-                }
-              }
-              if (intentData.data?.has_time !== undefined) updateData.has_time = intentData.data.has_time;
-              if (intentData.data?.send_email !== undefined) updateData.send_email = intentData.data.send_email;
-              if (intentData.data?.status_id !== undefined) updateData.status_id = intentData.data.status_id;
-              
-              // Construir la consulta dinámica
-              const updateFields = [];
-              const values = [];
-              let paramCount = 1;
-              
-              for (const [key, value] of Object.entries(updateData)) {
-                updateFields.push(`${key} = $${paramCount}`);
-                values.push(value);
-                paramCount++;
-              }
-              
-              if (updateFields.length === 0) {
-                return res.status(400).json({
-                  error: 'No se proporcionaron campos para actualizar'
-                });
-              }
-              
-              updateFields.push(`updated_at = NOW()`);
-              values.push(reminderId, userId);
-              
-              const query = `
-                UPDATE reminders 
-                SET ${updateFields.join(', ')} 
-                WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
-                RETURNING *
-              `;
-              
-              const result = await pool.query(query, values);
-              const updatedReminder = result.rows[0];
               
               return res.status(200).json({
-                action: 'updateReminder',
-                reminderData: {
-                  id: updatedReminder.id,
-                  title: updatedReminder.title,
-                  date_time: updatedReminder.date_time
-                },
-                response: getRandomResponse('updateReminder', updatedReminder.title)
+                action: 'infoProvided',
+                infoData: infoData,
+                response: getRandomResponse('infoProvided', infoType)
               });
             } catch (error) {
-              console.error('Error al actualizar recordatorio:', error);
+              console.error('Error al proporcionar información:', error);
               return res.status(500).json({
-                error: 'Error al actualizar el recordatorio'
-              });
-            }
-
-          // Para eliminar un recordatorio:
-          case 'deleteReminder':
-            try {
-              console.log('Eliminando recordatorio');
-              const reminderId = intentData.data?.id;
-              
-              if (!reminderId) {
-                return res.status(400).json({
-                  error: 'ID de recordatorio no proporcionado'
-                });
-              }
-              
-              // Verificar si el recordatorio existe y pertenece al usuario
-              const reminderExists = await pool.query(
-                "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
-                [reminderId, userId]
-              );
-              
-              if (reminderExists.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Recordatorio no encontrado'
-                });
-              }
-              
-              const reminderTitleToDelete = reminderExists.rows[0].title;
-              
-              // Eliminar el recordatorio
-              await pool.query(
-                'DELETE FROM reminders WHERE id = $1 AND user_id = $2',
-                [reminderId, userId]
-              );
-              
-              return res.status(200).json({
-                action: 'deleteReminder',
-                reminderId: reminderId,
-                response: getRandomResponse('deleteReminder', reminderTitleToDelete)
-              });
-            } catch (error) {
-              console.error('Error al eliminar recordatorio:', error);
-              return res.status(500).json({
-                error: 'Error al eliminar el recordatorio'
-              });
-            }
-
-          // Para actualizar el estado de un recordatorio:
-          case 'updateReminderStatus':
-            try {
-              console.log('Actualizando estado de recordatorio');
-              const reminderId = intentData.data?.id;
-              const statusId = intentData.data?.status_id;
-              
-              if (!reminderId) {
-                return res.status(400).json({
-                  error: 'ID de recordatorio no proporcionado'
-                });
-              }
-              
-              if (!statusId || ![1, 2, 3].includes(statusId)) {
-                return res.status(400).json({
-                  error: 'Estado de recordatorio inválido'
-                });
-              }
-              
-              // Verificar si el recordatorio existe y pertenece al usuario
-              const reminderExists = await pool.query(
-                "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
-                [reminderId, userId]
-              );
-              
-              if (reminderExists.rows.length === 0) {
-                return res.status(404).json({
-                  error: 'Recordatorio no encontrado'
-                });
-              }
-              
-              const reminderTitle = reminderExists.rows[0].title;
-              
-              // Actualizar el estado del recordatorio
-              const result = await pool.query(
-                'UPDATE reminders SET status_id = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 RETURNING *',
-                [statusId, reminderId, userId]
-              );
-              
-              const updatedReminder = result.rows[0];
-              const statusText = statusId === 1 ? "pendiente" : statusId === 2 ? "completado" : "cancelado";
-              
-              return res.status(200).json({
-                action: 'updateReminderStatus',
-                reminderData: {
-                  id: updatedReminder.id,
-                  title: updatedReminder.title,
-                  status_id: updatedReminder.status_id
-                },
-                response: `He marcado el recordatorio "${reminderTitle}" como ${statusText}.`
-              });
-            } catch (error) {
-              console.error('Error al actualizar estado de recordatorio:', error);
-              return res.status(500).json({
-                error: 'Error al actualizar el estado del recordatorio'
+                error: 'Error al proporcionar información'
               });
             }
         }
@@ -623,34 +353,5 @@ export const chatbotController = {
         details: error instanceof Error ? error.message : 'Error desconocido'
       });
     }
-  },
-  
-  async uploadImage(req: Request, res: Response) {
-    try {
-      console.log('Subiendo imagen');
-      // Si usas multer u otro middleware para subir archivos
-      if (!req.file) {
-        return res.status(400).json({ error: 'No se ha subido ninguna imagen' });
-      }
-      
-      const imageUrl = req.file.path || '';
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const fullImageUrl = `${baseUrl}/${imageUrl}`;
-      
-      // Obtener la ruta absoluta del archivo para OCR
-      const absolutePath = path.resolve(process.cwd(), imageUrl);
-      console.log('Ruta absoluta de la imagen:', absolutePath);
-      
-      console.log('Imagen subida:', fullImageUrl);
-      res.status(200).json({ 
-        imageUrl: fullImageUrl,
-        localPath: absolutePath // Esta es la ruta que usaremos para OCR
-      });
-    } catch (error) {
-      console.error('Error al subir imagen:', error);
-      res.status(500).json({ error: 'Error al subir la imagen' });
-    }
-  },
-
-  getRandomResponse
+  }
 };

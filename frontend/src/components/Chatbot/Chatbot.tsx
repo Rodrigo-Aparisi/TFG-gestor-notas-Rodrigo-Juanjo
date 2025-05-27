@@ -1,3 +1,4 @@
+// Chatbot.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ChatbotMessage from './ChatbotMessage';
 import ChatbotInput from './ChatbotInput';
@@ -15,21 +16,11 @@ interface Message {
 
 const WELCOME_MESSAGE = `¡Hola! Soy Olymp.IA, tu asistente para la app de notas. Puedo ayudarte con:
 
-
 \u00A0
 
 📝 NOTAS:
 
-• Crear notas con título, contenido, imágenes
-
-• Destacar notas como importantes o fijadas
-
-• Editar notas existentes
-
-• Eliminar notas
-
-• Añadir imágenes a tus notas
-
+• Crear notas con título y contenido
 
 \u00A0
 
@@ -41,21 +32,13 @@ const WELCOME_MESSAGE = `¡Hola! Soy Olymp.IA, tu asistente para la app de notas
 
 • Configurar notificaciones por email
 
-• Cambiar estados (pendiente, completado, cancelado)
-
-• Editar o eliminar recordatorios
-
-
 \u00A0
 
 🔍 OTRAS FUNCIONES:
 
-• Transcribir texto de imágenes
-
 • Buscar entre tus notas y recordatorios
 
 • Proporcionar información sobre tus datos
-
 
 \u00A0
 
@@ -88,7 +71,6 @@ const Chatbot: React.FC = () => {
   });
   
   const [isLoading, setIsLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
@@ -155,10 +137,7 @@ const Chatbot: React.FC = () => {
       }));
       
       // Procesar mensaje con el servicio
-      const response = await chatbotService.processMessage(text, history, imageUrl || undefined);
-      
-      // Resetear imagen si había alguna
-      setImageUrl(null);
+      const response = await chatbotService.processMessage(text, history);
       
       // Crear mensaje base
       const botMessage: Message = {
@@ -176,36 +155,16 @@ const Chatbot: React.FC = () => {
             botMessage.text = response.response || 'He creado una nota nueva.';
             break;
             
-          case 'updateNote':
-            botMessage.text = response.response || 'He actualizado la nota.';
-            break;
-            
-          case 'deleteNote':
-            botMessage.text = response.response || 'He eliminado la nota.';
-            break;
-            
-          case 'addImageToNote':
-            botMessage.text = response.response || 'He añadido la imagen a la nota.';
-            break;
-            
           case 'createReminder':
             botMessage.text = response.response || 'He creado un recordatorio nuevo.';
             break;
             
-          case 'transcribeImage':
-            botMessage.text = response.response || `Transcripción de la imagen:\n\n${response.transcription || 'No se pudo transcribir el texto'}`;
-            break;
-
-          case 'updateReminder':
-            botMessage.text = response.response || 'He actualizado el recordatorio.';
+          case 'searchResults':
+            botMessage.text = response.response || 'Aquí están los resultados de tu búsqueda.';
             break;
             
-          case 'deleteReminder':
-            botMessage.text = response.response || 'He eliminado el recordatorio.';
-            break;
-            
-          case 'updateReminderStatus':
-            botMessage.text = response.response || 'He actualizado el estado del recordatorio.';
+          case 'infoProvided':
+            botMessage.text = response.response || 'Aquí tienes la información que solicitaste.';
             break;
             
           default:
@@ -224,40 +183,6 @@ const Chatbot: React.FC = () => {
       console.error('Error al enviar mensaje:', error);
       setMessages(prev => [...prev, {
         text: 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
-        sender: 'bot',
-        timestamp: new Date()
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleUploadImage = async (file: File) => {
-    if (!file) return;
-    
-    try {
-      // Añadir mensaje indicando que se está procesando la imagen
-      setMessages(prev => [...prev, {
-        text: `Subiendo imagen: ${file.name}`,
-        sender: 'user',
-        timestamp: new Date()
-      }]);
-      
-      setIsLoading(true);
-      
-      // Subir imagen
-      const imageUrl = await chatbotService.uploadImage(file);
-      setImageUrl(imageUrl);
-      
-      setMessages(prev => [...prev, {
-        text: '¿Qué te gustaría hacer con esta imagen? Puedo transcribir su contenido, crear una nota con ella o añadirla a una nota existente.',
-        sender: 'bot',
-        timestamp: new Date()
-      }]);
-    } catch (error) {
-      console.error('Error al subir imagen:', error);
-      setMessages(prev => [...prev, {
-        text: 'Lo siento, ha ocurrido un error al subir la imagen. Por favor, inténtalo de nuevo.',
         sender: 'bot',
         timestamp: new Date()
       }]);
@@ -297,7 +222,6 @@ const Chatbot: React.FC = () => {
       
       <ChatbotInput 
         onSendMessage={handleSendMessage} 
-        onUploadImage={handleUploadImage}
         isLoading={isLoading}
       />
     </div>
