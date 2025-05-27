@@ -1,3 +1,4 @@
+// ChatbotMessage.tsx
 import React from 'react';
 import '../../styles/chatbot.css';
 import ReactMarkdown from 'react-markdown';
@@ -18,18 +19,7 @@ const ChatbotMessage: React.FC<ChatbotMessageProps> = ({ message }) => {
     if (!message.action || message.sender !== 'bot') return null;
     
     switch (message.action) {
-      case 'transcribeImage':
-        return (
-          <div className="transcription-container">
-            <div className="transcription-content">
-              {message.data?.transcription}
-            </div>
-          </div>
-        );
-        
       case 'createNote':
-      case 'updateNote':
-      case 'addImageToNote':
         if (message.data?.noteData) {
           return (
             <div className="note-action-container">
@@ -41,16 +31,6 @@ const ChatbotMessage: React.FC<ChatbotMessageProps> = ({ message }) => {
           );
         }
         return null;
-        
-      case 'deleteNote':
-        return (
-          <div className="note-action-container delete">
-            <div className="note-action-info">
-              <i className="fas fa-trash-alt"></i>
-              <span>Nota eliminada</span>
-            </div>
-          </div>
-        );
         
       case 'createReminder':
         if (message.data?.reminderData) {
@@ -65,41 +45,90 @@ const ChatbotMessage: React.FC<ChatbotMessageProps> = ({ message }) => {
           );
         }
         return null;
-      
-      case 'updateReminder':
-        if (message.data?.reminderData) {
+        
+      case 'searchResults':
+        if (message.data?.results) {
           return (
-            <div className="reminder-action-container">
-              <div className="reminder-action-info">
-                <i className="fas fa-edit"></i>
-                <span>{message.data.reminderData.title}</span>
-                <small>Actualizado: {new Date(message.data.reminderData.date_time).toLocaleString()}</small>
+            <div className="search-results-container">
+              <div className="search-results-info">
+                <i className="fas fa-search"></i>
+                <span>Resultados de búsqueda</span>
+              </div>
+              <div className="search-results-content">
+                {message.data.results.notes && message.data.results.notes.length > 0 && (
+                  <div className="search-notes">
+                    <h4>Notas ({message.data.results.notes.length})</h4>
+                    <ul>
+                      {message.data.results.notes.map((note: any) => (
+                        <li key={note.id}>
+                          <i className="fas fa-sticky-note"></i> {note.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {message.data.results.reminders && message.data.results.reminders.length > 0 && (
+                  <div className="search-reminders">
+                    <h4>Recordatorios ({message.data.results.reminders.length})</h4>
+                    <ul>
+                      {message.data.results.reminders.map((reminder: any) => (
+                        <li key={reminder.id}>
+                          <i className="fas fa-bell"></i> {reminder.title}
+                          <small>{new Date(reminder.date_time).toLocaleString()}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(!message.data.results.notes || message.data.results.notes.length === 0) && 
+                 (!message.data.results.reminders || message.data.results.reminders.length === 0) && (
+                  <p>No se encontraron resultados.</p>
+                )}
               </div>
             </div>
           );
         }
         return null;
         
-      case 'deleteReminder':
-        return (
-          <div className="reminder-action-container delete">
-            <div className="reminder-action-info">
-              <i className="fas fa-trash-alt"></i>
-              <span>Recordatorio eliminado</span>
-            </div>
-          </div>
-        );
-        
-      case 'updateReminderStatus':
-        if (message.data?.reminderData) {
-          const statusText = message.data.reminderData.status_id === 1 ? "pendiente" : 
-                            message.data.reminderData.status_id === 2 ? "completado" : "cancelado";
+      case 'infoProvided':
+        if (message.data?.infoData) {
           return (
-            <div className="reminder-action-container">
-              <div className="reminder-action-info">
-                <i className="fas fa-check-circle"></i>
-                <span>{message.data.reminderData.title}</span>
-                <small>Estado: {statusText}</small>
+            <div className="info-container">
+              <div className="info-header">
+                <i className="fas fa-info-circle"></i>
+                <span>Información</span>
+              </div>
+              <div className="info-content">
+                {message.data.infoData.notesCount !== undefined && (
+                  <div className="info-item">
+                    <i className="fas fa-sticky-note"></i>
+                    <span>Notas: {message.data.infoData.notesCount}</span>
+                  </div>
+                )}
+                {message.data.infoData.remindersCount !== undefined && (
+                  <div className="info-item">
+                    <i className="fas fa-bell"></i>
+                    <span>Recordatorios: {message.data.infoData.remindersCount}</span>
+                  </div>
+                )}
+                {message.data.infoData.total !== undefined && (
+                  <div className="info-item">
+                    <i className="fas fa-list"></i>
+                    <span>Total: {message.data.infoData.total}</span>
+                  </div>
+                )}
+                {message.data.infoData.pending !== undefined && (
+                  <div className="info-item">
+                    <i className="fas fa-clock"></i>
+                    <span>Pendientes: {message.data.infoData.pending}</span>
+                  </div>
+                )}
+                {message.data.infoData.completed !== undefined && (
+                  <div className="info-item">
+                    <i className="fas fa-check-circle"></i>
+                    <span>Completados: {message.data.infoData.completed}</span>
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -1,7 +1,7 @@
-// frontend/src/components/Chatbot/ChatbotFloatingButton.tsx
+// ChatbotFloatingButton.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import Chatbot from './Chatbot';
-import { FaTimes, FaTrashAlt } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { GiCaduceus } from "react-icons/gi";
 import '../../styles/chatbot-floating.css';
 
@@ -34,22 +34,17 @@ const ChatbotFloatingButton: React.FC = () => {
         text: `¡Hola! Soy Olymp.IA, tu asistente para la app de notas. Puedo ayudarte con:
 
       📝 NOTAS:
-      • Crear y editar notas
-      • Destacar notas importantes
-      • Añadir imágenes
-
+      • Crear notas con título y contenido
 
       \u00A0
       ⏰ RECORDATORIOS:
       • Crear recordatorios con fecha y hora
       • Configurar notificaciones
-      • Cambiar estados
-
 
       \u00A0
       🔍 OTRAS FUNCIONES:
-      • Transcribir texto de imágenes
       • Buscar en tus notas y recordatorios
+      • Proporcionar información sobre tus datos
 
       ¿En qué puedo ayudarte hoy?`,
         sender: 'bot',
