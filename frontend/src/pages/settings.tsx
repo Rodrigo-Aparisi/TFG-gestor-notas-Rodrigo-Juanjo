@@ -385,7 +385,6 @@ const Settings = () => {
         <div className="settings-sidebar">
           {[
             { key: "cuenta", label: "Cuenta" },
-            { key: "general", label: "General" },
             { key: "privacidad", label: "Privacidad" },
           ].map((item) => (
             <div key={item.key}>
@@ -508,7 +507,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Sección de Contraseña – campos deshabilitados hasta pulsar “Editar datos” */}
+              {/* Sección de Contraseña – campos deshabilitados hasta pulsar "Editar datos" */}
               <div id="cuenta-contrasena" className="account-section">
                 <h3>Contraseña</h3>
                 <div className="password-container">
@@ -650,8 +649,10 @@ const Settings = () => {
             </form>
           </section>
 
-          <section id="general-section">
+          {/* Sección General comentada pero mantenida para futuras implementaciones */}
+           {/* <section id="general-section">
             <h2>General</h2>
+           
             <div id="general-preferencias">
               <h3>Preferencias</h3>
               <div className="theme-selector">
@@ -699,6 +700,7 @@ const Settings = () => {
               <p>Contenido de Notificaciones generales.</p>
             </div>
           </section>
+          */}
 
           <section id="privacidad-section">
             <h2>Privacidad</h2>
