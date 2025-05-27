@@ -14,6 +14,7 @@ import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks'; // Importa el programador de correos
+import contactRoutes from './routes/contact';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -126,6 +127,7 @@ app.use('/api/user-groups', userGroupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Añadir un middleware de logging para depuración
 app.use((req, res, next) => {

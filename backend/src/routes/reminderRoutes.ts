@@ -1,7 +1,6 @@
 import express from 'express';
 import { reminderController } from '../controllers/reminderController';
 import { authenticateToken } from '../middleware/auth';
-import { emailService } from '../services/emailService';
 
 const router = express.Router();
 
@@ -71,34 +70,6 @@ router.use((error: any, req: express.Request, res: express.Response, next: expre
 router.get('/search', async (req, res, next) => {
   try {
     await reminderController.searchReminders(req, res);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/test-email', async (req, res, next) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({
-        error: 'Usuario no autenticado'
-      });
-    }
-
-    const testDate = new Date();
-    testDate.setHours(testDate.getHours() + 1); // Una hora en el futuro
-
-    const result = await emailService.sendReminderEmail(
-      req.user.id,
-      'Recordatorio de prueba',
-      'Este es un correo de prueba para verificar que el sistema funciona correctamente.',
-      testDate
-    );
-
-    if (result) {
-      res.json({ success: true, message: 'Correo de prueba enviado correctamente' });
-    } else {
-      res.status(500).json({ success: false, message: 'Error al enviar correo de prueba' });
-    }
   } catch (error) {
     next(error);
   }
