@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD // Clave de aplicación de Gmail
+    pass: process.env.EMAIL_APP_PASSWORD
   }
 });
 
@@ -24,6 +24,7 @@ const reminderTextTemplate = fs.readFileSync(
 );
 
 export const emailService = {
+  // Función existente para recordatorios
   async sendReminderEmail(userId: string, reminderTitle: string, reminderDescription: string, reminderDateTime: Date): Promise<boolean> {
     try {
       // Obtener información del usuario
@@ -79,6 +80,45 @@ export const emailService = {
       return true;
     } catch (error) {
       console.error('Error al enviar correo de recordatorio:', error);
+      return false;
+    }
+  },
+
+  // Nueva función para enviar correos de contacto sin autenticación
+  async sendContactEmail(name: string, email: string, message: string): Promise<boolean> {
+    try {
+      console.log('Enviando correo de contacto desde:', email);
+      
+      // Construir el asunto y cuerpo del correo
+      const subject = `Mensaje de contacto de ${name}`;
+      const textBody = `
+        Nombre: ${name}
+        Email: ${email}
+        
+        Mensaje:
+        ${message}
+      `;
+      
+      // No necesitamos usar plantillas para este caso simple
+      // Simplemente enviamos un correo de texto plano
+      
+      // Configurar el correo - enviamos al EMAIL_USER configurado en las variables de entorno
+      const mailOptions = {
+        from: `"Formulario de Contacto" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_USER,  // Enviar al correo configurado
+        replyTo: email,  // Para que puedan responder directamente al remitente
+        subject: subject,
+        text: textBody
+      };
+
+      // Enviar el correo
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`Correo de contacto enviado a ${process.env.EMAIL_USER}`);
+      console.log('ID del mensaje:', info.messageId);
+      
+      return true;
+    } catch (error) {
+      console.error('Error al enviar correo de contacto:', error);
       return false;
     }
   }
