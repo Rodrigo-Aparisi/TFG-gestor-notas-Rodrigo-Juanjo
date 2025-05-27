@@ -51,7 +51,6 @@ const CreateGroupNoteForm: React.FC<CreateGroupNoteFormProps> = ({
               setNewNote(prev => ({ ...prev, content: e.target.value }));
               autoResizeTextarea(e.target as HTMLTextAreaElement);
             }}
-            onKeyDown={e => handleKeyDown(e, '', true)}
             onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
           />
 

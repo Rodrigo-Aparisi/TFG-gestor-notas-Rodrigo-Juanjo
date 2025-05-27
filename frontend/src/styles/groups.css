@@ -19,8 +19,7 @@ html, body {
 .groups-layout {
   display: flex;
   width: 100%;
-  height: calc(100vh - 60px);
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 .groups-header {
@@ -201,15 +200,6 @@ html, body {
   background: transparent;
 }
 
-.create-note input {
-  width: 100%;
-  border: none;
-  outline: none;
-  padding: 8px;
-  font-size: 16px;
-  background: transparent;
-}
-
 .create-note textarea {
   font-size: 14px;
   resize: none;
@@ -218,19 +208,25 @@ html, body {
   overflow: auto;
 }
 
-/* Estilos del scrollbar para el textarea de crear nota */
-.create-note textarea::-webkit-scrollbar {
+/* Estilos del scrollbar para el textarea */
+.create-note textarea::-webkit-scrollbar,
+.note-card textarea::-webkit-scrollbar {
   width: 8px;
 }
 
-.create-note textarea::-webkit-scrollbar-track {
+.create-note textarea::-webkit-scrollbar-track,
+.note-card textarea::-webkit-scrollbar-track {
   background: rgba(54, 54, 54, 0.8);
   border-radius: 4px;
+  margin: 2px;
 }
 
-.create-note textarea::-webkit-scrollbar-thumb {
+.create-note textarea::-webkit-scrollbar-thumb,
+.note-card textarea::-webkit-scrollbar-thumb {
   background: var(--dorado);
   border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .create-note textarea::placeholder {
@@ -239,10 +235,7 @@ html, body {
   transition: opacity 0.2s ease;
 }
 
-.create-note:hover textarea::placeholder {
-  opacity: 1;
-}
-
+.create-note:hover textarea::placeholder,
 .create-note textarea:focus::placeholder {
   opacity: 1;
 }
@@ -736,32 +729,12 @@ html, body {
   transition: background-color 0.2s;
 }
 
-.create-btn {
+.create-btn, .add-btn, .update-btn {
   background-color: #f1c40f;
   color: #000;
 }
 
-.create-btn:hover {
-  opacity: 0.9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.add-btn {
-  background-color: #f1c40f;
-  color: #000;
-}
-
-.add-btn:hover {
-  opacity: 0.9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.update-btn {
-  background-color: #f1c40f;
-  color: #000;
-}
-
-.update-btn:hover {
+.create-btn:hover, .add-btn:hover, .update-btn:hover {
   opacity: 0.9;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
