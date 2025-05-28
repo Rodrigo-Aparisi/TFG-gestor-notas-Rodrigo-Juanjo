@@ -9,7 +9,6 @@ import GroupOfMembersList from "../components/UserGroups/GroupOfMembersList";
 import CreateGroupModal from "../components/UserGroups/CreateGroupModal";
 import AddMemberModal from "../components/UserGroups/AddMemberModal";
 import CreateGroupNoteForm from "../components/UserGroups/CreateGroupNoteForm";
-import EditNoteModal from "../components/UserGroups/EditNoteModal";
 import GroupTabs from "../components/UserGroups/GroupTabs";
 import { useTextareaResize } from "../hooks/useTextareaResize";
 import api from "../services/api";
@@ -48,6 +47,7 @@ const Groups: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"notes" | "members">("notes");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [forceRender, setForceRender] = useState(0);
+  const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
 
   // Estados para los modales y campos de edición
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -57,13 +57,7 @@ const Groups: React.FC = () => {
 
   // Determinar si el usuario actual es propietario o administrador del grupo seleccionado
   const isOwnerOrAdmin = React.useMemo(() => {
-    console.log("Evaluando isOwnerOrAdmin:");
-    console.log("selectedGroup:", selectedGroup);
-    console.log("user:", user);
-    console.log("ID de usuario actual:", user?.id);
-
     if (!selectedGroup?.members || !user?.id) {
-      console.log("No hay grupo seleccionado o usuario");
       return false;
     }
 
@@ -71,18 +65,14 @@ const Groups: React.FC = () => {
     const userMember = selectedGroup.members.find(
       (member) => member.user_id === user.id
     );
-    console.log("Usuario miembro encontrado:", userMember);
 
     if (userMember) {
-      console.log(`Usuario es ${userMember.role}`);
       // El usuario es propietario o admin
       if (userMember.role === "owner" || userMember.role === "admin") {
-        console.log("Usuario es propietario o admin - Tiene permisos");
         return true;
       }
     }
 
-    console.log("Usuario no tiene permisos de propietario o admin");
     return false;
   }, [selectedGroup?.members, user?.id, forceRender]);
 
@@ -97,6 +87,7 @@ const Groups: React.FC = () => {
 
   const handleEditNote = (note: GroupNote) => {
     setEditingNoteId(note.id);
+    setFocusedNoteId(note.id);
     setEditingNote({ [note.id]: note });
   };
 
@@ -105,6 +96,7 @@ const Groups: React.FC = () => {
     const success = await updateGroupNote(editingNoteId);
     if (success) {
       setEditingNoteId(null);
+      setFocusedNoteId(null);
     }
   };
 
@@ -136,9 +128,44 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleTogglePinNote = async (noteId: string) => {
+  const handleTogglePinNote = async (noteId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
     if (selectedGroup) {
       await togglePinGroupNote(selectedGroup.id, noteId);
+    }
+  };
+
+  const handleToggleMarkNote = async (noteId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      const note = groupNotes.find(n => n.id === noteId);
+      if (!note) return;
+      
+      const updatedNote = {
+        ...note,
+        is_marked: !note.is_marked
+      };
+      
+      setEditingNote({ ...editingNote, [noteId]: updatedNote });
+      
+      // Aquí iría la llamada a la API para marcar/desmarcar la nota
+      const response = await api.put(`/user-groups/notes/${noteId}/toggle-mark`);
+      
+      if (response.data.success) {
+        // Actualizar la lista de notas
+        const updatedNotes = groupNotes.map(n => 
+          n.id === noteId ? { ...n, is_marked: !n.is_marked } : n
+        );
+        // Aquí necesitarías una función para actualizar las notas en el estado
+        // setGroupNotes(updatedNotes);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error al marcar/desmarcar la nota:", error);
+      return false;
     }
   };
 
@@ -172,6 +199,78 @@ const Groups: React.FC = () => {
     } catch (error) {
       console.error("Error al subir la imagen:", error);
       showFeedback("Error al subir la imagen");
+    }
+  };
+
+  const handleNoteImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    noteId: string
+  ) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await api.post(
+        "/user-groups/notes/upload-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        // Actualizar la nota con la nueva imagen
+        const note = groupNotes.find(n => n.id === noteId);
+        if (note) {
+          const updatedNote = {
+            ...note,
+            images: [...(note.images || []), response.data.data.imageUrl]
+          };
+          
+          setEditingNote({ ...editingNote, [noteId]: updatedNote });
+          
+          // Llamar a updateGroupNote para guardar los cambios
+          await updateGroupNote(noteId);
+          
+          showFeedback("Imagen subida correctamente");
+        }
+      }
+    } catch (error) {
+      console.error("Error al subir la imagen:", error);
+      showFeedback("Error al subir la imagen");
+    }
+  };
+
+  const handleDeleteNoteImage = async (noteId: string, imageIndex: number) => {
+    try {
+      const note = groupNotes.find(n => n.id === noteId);
+      if (!note || !note.images || note.images.length <= imageIndex) return;
+      
+      const updatedImages = [...note.images];
+      updatedImages.splice(imageIndex, 1);
+      
+      const updatedNote = {
+        ...note,
+        images: updatedImages
+      };
+      
+      setEditingNote({ ...editingNote, [noteId]: updatedNote });
+      
+      // Llamar a la API para eliminar la imagen
+      await api.delete(`/user-groups/notes/${noteId}/images/${imageIndex}`);
+      
+      // Actualizar la nota
+      await updateGroupNote(noteId);
+      
+      showFeedback("Imagen eliminada correctamente");
+    } catch (error) {
+      console.error("Error al eliminar la imagen:", error);
+      showFeedback("Error al eliminar la imagen");
     }
   };
 
@@ -296,7 +395,7 @@ const Groups: React.FC = () => {
     try {
       // Llamada a la API para actualizar la descripción del grupo
       const response = await api.put(
-        `/user-groups/\${selectedGroup.id}/description`,
+        `/user-groups/${selectedGroup.id}/description`,
         {
           description: newGroupDescription,
         }
@@ -327,12 +426,105 @@ const Groups: React.FC = () => {
     }
   };
 
-  // Añadir un log para depuración antes de renderizar
-  console.log("Antes de renderizar componentes:", {
-    userId: user?.id,
-    isOwnerOrAdmin,
-    selectedGroup,
-  });
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => {
+    // Implementar funcionalidades como atajos de teclado
+    // Por ejemplo: Ctrl+S para guardar
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      updateGroupNote(noteId);
+    }
+  };
+
+  const insertList = (noteId: string, type: 'bullet' | 'number') => {
+    const note = editingNote[noteId];
+    if (!note) return;
+
+    const textarea = document.querySelector(`textarea[data-note-id="${noteId}"]`) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const content = note.content || '';
+    const prefix = type === 'bullet' ? '• ' : '1. ';
+    
+    const newContent = 
+      content.substring(0, start) + 
+      prefix + 
+      content.substring(start, end) + 
+      '\n' + 
+      content.substring(end);
+    
+    handleNoteChange(noteId, 'content', newContent);
+    
+    // Reposicionar el cursor después de la inserción
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = start + prefix.length;
+      textarea.selectionEnd = end + prefix.length;
+    }, 0);
+  };
+
+  const handleExportNote = (format: string, noteId?: string) => {
+    if (!noteId) return;
+    
+    const note = groupNotes.find(n => n.id === noteId);
+    if (!note) return;
+    
+    let content = '';
+    let filename = '';
+    let mimeType = '';
+    
+    switch (format) {
+      case 'txt':
+        content = `${note.title || 'Sin título'}\n\n${note.content || ''}`;
+        filename = `${note.title || 'nota'}.txt`;
+        mimeType = 'text/plain';
+        break;
+      case 'html':
+        content = `<html><head><title>${note.title || 'Sin título'}</title></head><body><h1>${note.title || 'Sin título'}</h1><div>${(note.content || '').replace(/\n/g, '<br>')}</div></body></html>`;
+        filename = `${note.title || 'nota'}.html`;
+        mimeType = 'text/html';
+        break;
+      default:
+        return;
+    }
+    
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleFocusNote = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    setFocusedNoteId(id);
+    setEditingNoteId(id);
+    
+    // Si la nota no está en el estado de edición, añadirla
+    if (!editingNote[id]) {
+      const noteToEdit = groupNotes.find(note => note.id === id);
+      if (noteToEdit) {
+        setEditingNote({ ...editingNote, [id]: noteToEdit });
+      }
+    }
+  };
+
+  const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
+    event.stopPropagation();
+    
+    // Guardar cambios si hay una nota en edición
+    if (editingNoteId === id) {
+      handleUpdateNoteSubmit();
+    }
+    
+    setFocusedNoteId(null);
+    setEditingNoteId(null);
+  };
 
   return (
     <div className="groups-layout">
@@ -390,9 +582,22 @@ const Groups: React.FC = () => {
                   notes={groupNotes || []}
                   currentUserId={user?.id || ""}
                   isOwnerOrAdmin={isOwnerOrAdmin}
+                  editingNote={editingNote}
+                  focusedNoteId={focusedNoteId}
                   onEditNote={handleEditNote}
                   onDeleteNote={handleDeleteNote}
                   handleTogglePin={handleTogglePinNote}
+                  handleToggleMark={handleToggleMarkNote}
+                  handleNoteChange={handleNoteChange}
+                  updateGroupNote={updateGroupNote}
+                  handleFocus={handleFocusNote}
+                  handleFocusIndicatorClick={handleFocusIndicatorClick}
+                  handleKeyDown={handleKeyDown}
+                  insertList={insertList}
+                  autoResizeTextarea={autoResizeTextarea}
+                  handleImageUpload={handleNoteImageUpload}
+                  handleDeleteImage={handleDeleteNoteImage}
+                  handleExportNote={handleExportNote}
                 />
               </>
             ) : (
@@ -431,16 +636,6 @@ const Groups: React.FC = () => {
         <AddMemberModal
           onClose={() => setShowAddMemberModal(false)}
           onAddMember={handleAddMember}
-        />
-      )}
-      {editingNoteId && editingNote[editingNoteId] && (
-        <EditNoteModal
-          note={editingNote[editingNoteId]}
-          onClose={() => setEditingNoteId(null)}
-          onUpdateNote={handleUpdateNoteSubmit}
-          onNoteChange={(field, value) =>
-            handleNoteChange(editingNoteId, field, value)
-          }
         />
       )}
       
@@ -502,4 +697,4 @@ const Groups: React.FC = () => {
   );
 };
 
-export default Groups
+export default Groups;

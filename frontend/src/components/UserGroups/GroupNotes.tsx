@@ -15,11 +15,7 @@ interface NotesGroupsProps {
   onDeleteNote: (noteId: string) => void;
   handleTogglePin?: (noteId: string, event?: React.MouseEvent) => void;
   handleToggleMark?: (noteId: string, event: React.MouseEvent) => Promise<void>;
-  handleNoteChange?: (
-    id: string,
-    field: keyof GroupNote,
-    value: any
-  ) => void;
+  handleNoteChange?: (id: string, field: keyof GroupNote, value: any) => void;
   updateGroupNote?: (id: string, field?: keyof GroupNote) => Promise<boolean>;
   handleFocus?: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick?: (event: React.MouseEvent, id: string) => void;
@@ -46,11 +42,7 @@ interface GroupNoteItemProps {
   editingNote: Record<string, GroupNote>;
   focusedNoteId: string | null;
   sharingNoteId: string | null;
-  handleNoteChange: (
-    id: string,
-    field: keyof GroupNote,
-    value: any
-  ) => void;
+  handleNoteChange: (id: string, field: keyof GroupNote, value: any) => void;
   updateGroupNote: (id: string, field?: keyof GroupNote) => Promise<boolean>;
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
@@ -149,10 +141,13 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
   onEditNote,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const noteRef = useRef<HTMLDivElement>(null);
   const [localTitle, setLocalTitle] = useState(note?.title || "");
   const [localContent, setLocalContent] = useState(note?.content || "");
   const [lastSavedAt, setLastSavedAt] = useState<number>(Date.now());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Actualizar los estados locales cuando cambia la nota
   useEffect(() => {
@@ -176,14 +171,13 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     const newHeight = element.scrollHeight;
     const maxHeight = 200; // Altura máxima para notas no enfocadas
 
-    const parentNote = element.closest(".note-card");
-    const isFocused = parentNote?.classList.contains("focused");
+    const isFocused = focusedNoteId === note?.id;
 
     if (isFocused) {
-      // Para notas enfocadas
+      // Para notas enfocadas - permitir más altura
       element.style.height = `${Math.min(element.scrollHeight, 500)}px`;
     } else {
-      // Para notas normales
+      // Para notas normales - limitar altura
       element.style.height = `${Math.min(newHeight, maxHeight)}px`;
     }
 
@@ -218,7 +212,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
   // Función para guardar la nota automáticamente
   const saveNote = () => {
     if (!note) return;
-    
+
     // Evitar guardar si no ha cambiado nada
     if (note.title === localTitle && note.content === localContent) {
       return;
@@ -234,6 +228,11 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     // Llamar a la función del padre para guardar la nota
     onEditNote(updatedNote);
     setLastSavedAt(Date.now());
+
+    // También llamar a updateGroupNote para asegurar que se guarde en el backend
+    if (updateGroupNote) {
+      updateGroupNote(note.id).catch(console.error);
+    }
   };
 
   // Configurar guardado automático con debounce
@@ -245,9 +244,6 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     // Guardar después de 1 segundo de inactividad
     saveTimeoutRef.current = setTimeout(() => {
       saveNote();
-      if (updateGroupNote && note) {
-        updateGroupNote(note.id, field).catch(console.error);
-      }
     }, 1000);
   };
 
@@ -256,14 +252,23 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+
+        // Guardar al desmontar si hay cambios pendientes
+        if (
+          note &&
+          (note.title !== localTitle || note.content !== localContent)
+        ) {
+          saveNote();
+        }
       }
     };
-  }, []);
+  }, [note, localTitle, localContent]);
 
   // Manejar cambio de título
   const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setLocalTitle(newTitle);
+    setIsEditing(true);
 
     if (handleNoteChange && note) {
       handleNoteChange(note.id, "title", newTitle);
@@ -276,6 +281,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
   const onContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setLocalContent(newContent);
+    setIsEditing(true);
 
     if (handleNoteChange && note) {
       handleNoteChange(note.id, "content", newContent);
@@ -288,11 +294,13 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
   // Manejar actualización al perder el foco
   const onTitleBlur = () => {
     if (!note) return;
-    
+
     // Solo actualizar si hay cambios
     if (note.title !== localTitle) {
       // Actualizar el estado en el hook
-      handleNoteChange(note.id, "title", localTitle);
+      if (handleNoteChange) {
+        handleNoteChange(note.id, "title", localTitle);
+      }
 
       // Guardar los cambios en la base de datos
       if (updateGroupNote) {
@@ -314,11 +322,13 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
 
   const onContentBlur = () => {
     if (!note) return;
-    
+
     // Solo actualizar si hay cambios
     if (note.content !== localContent) {
       // Actualizar el estado en el hook
-      handleNoteChange(note.id, "content", localContent);
+      if (handleNoteChange) {
+        handleNoteChange(note.id, "content", localContent);
+      }
 
       // Guardar los cambios en la base de datos
       if (updateGroupNote) {
@@ -338,19 +348,43 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     }
   };
 
+  // Guardar la nota cuando se pierde el foco
+  const handleNoteBlur = (e: React.FocusEvent) => {
+    // Verificar si el foco se mantiene dentro de la misma nota
+    if (noteRef.current && noteRef.current.contains(e.relatedTarget as Node)) {
+      return; // El foco sigue dentro de la nota, no hacer nada
+    }
+
+    // Si estábamos editando, guardar los cambios
+    if (isEditing && note) {
+      saveNote();
+      setIsEditing(false);
+    }
+  };
+
   // Si la nota no existe, no renderizar nada
   if (!note || !note.id) {
     return null;
   }
 
+  // Determinar si esta nota está enfocada
+  const isFocused = focusedNoteId === note.id;
+
   return (
     <div
-      className={`note-card ${focusedNoteId === note.id ? "focused" : ""} ${
+      ref={noteRef}
+      className={`note-card ${isFocused ? "focused" : ""} ${
         note.is_marked ? "marked" : ""
       }`}
-      onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
+      onClick={(e) => {
+        if (!isFocused) {
+          handleFocus(note.id, e);
+        }
+      }}
       style={{ backgroundColor: note.color || "#ffffff" }}
       data-note-id={note.id}
+      tabIndex={0} // Hacer que el div pueda recibir foco
+      onBlur={handleNoteBlur} // Manejar evento onBlur para guardar cambios
     >
       <div className="note-actions">
         {(note.user_id === currentUserId || isOwnerOrAdmin) && (
@@ -390,16 +424,23 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
 
       <div
         className="focus-indicator"
-        onClick={(e) => handleFocusIndicatorClick(e, note.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleFocusIndicatorClick(e, note.id);
+        }}
       />
 
       <div className="note-content">
         <input
+          ref={inputRef}
           type="text"
           value={localTitle}
           onChange={onTitleChange}
           onBlur={onTitleBlur}
           onClick={(e) => e.stopPropagation()}
+          placeholder="Título"
+          onFocus={() => setIsEditing(true)}
+          data-note-id={note.id}
         />
 
         {/* Fecha de creación */}
@@ -442,6 +483,9 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
           onKeyDown={(e) => handleKeyDown(e, note.id)}
           onBlur={onContentBlur}
           onClick={(e) => e.stopPropagation()}
+          placeholder="Escribe aquí tu nota..."
+          onFocus={() => setIsEditing(true)}
+          data-note-id={note.id}
         />
       </div>
 
@@ -495,7 +539,7 @@ const GroupNotes: React.FC<NotesGroupsProps> = ({
   currentUserId,
   isOwnerOrAdmin,
   editingNote = {},
-  focusedNoteId = null,
+  focusedNoteId: externalFocusedNoteId,
   sharingNoteId = null,
   onEditNote,
   onDeleteNote,
@@ -503,8 +547,8 @@ const GroupNotes: React.FC<NotesGroupsProps> = ({
   handleToggleMark = async () => {},
   handleNoteChange = () => {},
   updateGroupNote = async () => false,
-  handleFocus = () => {},
-  handleFocusIndicatorClick = () => {},
+  handleFocus: externalHandleFocus,
+  handleFocusIndicatorClick: externalHandleFocusIndicatorClick,
   setSharingNoteId = () => {},
   handleKeyDown = () => {},
   insertList = () => {},
@@ -513,6 +557,100 @@ const GroupNotes: React.FC<NotesGroupsProps> = ({
   handleDeleteImage = async () => {},
   handleExportNote = () => {},
 }) => {
+  // Estado local para manejar el ID de la nota enfocada si no se proporciona externamente
+  const [internalFocusedNoteId, setInternalFocusedNoteId] = useState<
+    string | null
+  >(null);
+
+  // Usar el focusedNoteId proporcionado o el interno
+  const focusedNoteId =
+    externalFocusedNoteId !== undefined
+      ? externalFocusedNoteId
+      : internalFocusedNoteId;
+
+  // Manejar el enfoque de la nota internamente si no se proporciona una función externa
+  const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
+    if (externalHandleFocus) {
+      externalHandleFocus(id, event);
+    } else {
+      event.stopPropagation();
+      setInternalFocusedNoteId(id);
+
+      // Asegurar que el textarea se redimensione correctamente después de enfocar
+      setTimeout(() => {
+        const textarea = document.querySelector(
+          `.note-card[data-note-id="${id}"] textarea`
+        );
+        if (textarea && autoResizeTextarea) {
+          autoResizeTextarea(textarea as HTMLTextAreaElement);
+        }
+      }, 10);
+    }
+  };
+
+  // Manejar el clic en el indicador de enfoque
+  const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
+    if (externalHandleFocusIndicatorClick) {
+      externalHandleFocusIndicatorClick(event, id);
+    } else {
+      event.stopPropagation();
+
+      // Guardar la nota antes de quitar el foco
+      const note = notes.find((n) => n.id === id);
+      if (note) {
+        // Si hay cambios en la nota, guardarlos
+        const editedNote = editingNote[id];
+        if (editedNote) {
+          onEditNote(editedNote);
+          if (updateGroupNote) {
+            updateGroupNote(id).catch(console.error);
+          }
+        }
+      }
+
+      setInternalFocusedNoteId(null);
+
+      // Asegurar que todas las textareas se redimensionen correctamente después de quitar el enfoque
+      setTimeout(() => {
+        const textareas = document.querySelectorAll(".note-card textarea");
+        textareas.forEach((textarea) => {
+          if (autoResizeTextarea) {
+            autoResizeTextarea(textarea as HTMLTextAreaElement);
+          }
+        });
+      }, 10);
+    }
+  };
+
+  // Añadir un listener para detectar clics fuera de las notas y quitar el enfoque
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".note-card") && internalFocusedNoteId !== null) {
+        // Guardar cualquier nota que pudiera estar siendo editada
+        const editedNoteId = internalFocusedNoteId;
+        const note = notes.find((n) => n.id === editedNoteId);
+        if (note) {
+          // Si hay cambios en la nota, guardarlos
+          const editedNote = editingNote[editedNoteId];
+          if (editedNote) {
+            onEditNote(editedNote);
+            if (updateGroupNote) {
+              updateGroupNote(editedNoteId).catch(console.error);
+            }
+          }
+        }
+
+        setInternalFocusedNoteId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [internalFocusedNoteId, notes, editingNote, onEditNote, updateGroupNote]);
+
   // Asegurar que notes es un array
   const safeNotes = Array.isArray(notes) ? notes : [];
 
@@ -543,7 +681,7 @@ const GroupNotes: React.FC<NotesGroupsProps> = ({
         if (!note || !note.id) {
           return null;
         }
-        
+
         return (
           <GroupNoteItem
             key={note.id}
@@ -551,8 +689,8 @@ const GroupNotes: React.FC<NotesGroupsProps> = ({
             currentUserId={currentUserId}
             isOwnerOrAdmin={isOwnerOrAdmin}
             editingNote={editingNote || {}}
-            focusedNoteId={focusedNoteId || null}
-            sharingNoteId={sharingNoteId || null}
+            focusedNoteId={focusedNoteId}
+            sharingNoteId={sharingNoteId}
             handleNoteChange={handleNoteChange}
             updateGroupNote={updateGroupNote}
             handleFocus={handleFocus}
