@@ -356,3 +356,18 @@ UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
 
 -- Inicializar la columna images con array vacío donde sea NULL
 UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
+
+-- Crear tabla para tokens de recuperación de contraseña
+CREATE TABLE password_reset_tokens (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(100) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Crear índices para optimizar consultas
+CREATE INDEX idx_password_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_tokens_expires_at ON password_reset_tokens(expires_at);

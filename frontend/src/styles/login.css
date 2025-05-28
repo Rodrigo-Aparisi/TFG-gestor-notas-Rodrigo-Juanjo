@@ -223,8 +223,7 @@ form .linkTxt{
 }
 
 .linkTxt p a{
-    color: blue;
-    text-decoration: none;
+    color: var(--black);
     font-weight: 600;
     cursor: pointer;
     pointer-events: auto !important;
@@ -410,6 +409,34 @@ form .linkTxt{
     opacity: 1;
     transform: translateX(0);
 }
+
+.success-message {
+  background-color: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+  color: #2ecc71;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.forgot-password {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.forgot-password a {
+  color: var(--black);
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.forgot-password a:hover {
+  color: #e6b000;
+  text-decoration: underline;
+}
+
 
 /* Media Queries */
 @media screen and (max-width: 850px) {
