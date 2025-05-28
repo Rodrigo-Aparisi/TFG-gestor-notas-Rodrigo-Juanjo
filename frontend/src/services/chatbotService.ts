@@ -82,7 +82,7 @@ const chatbotService = {
         }
       }
 
-      // Detectar título específico - MEJORADO
+      // Detectar título específico
       // Buscar patrones específicos para títulos con "llamado" o "llamada"
       const llamadoPattern = /llamado\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;
       const llamadaPattern = /llamada\s+([^,.]+?)(?:\s*$|\s+(?:para|el|mañana|hoy))/i;

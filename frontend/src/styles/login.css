@@ -417,9 +417,16 @@ form .linkTxt{
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 15px;
-  text-align: center;
   font-size: 14px;
+  position: fixed;
+  top: 125px;
+  right: 15px;
+  width: 200px;
+  z-index: 1000;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
 
 .forgot-password {
   margin-top: 10px;
