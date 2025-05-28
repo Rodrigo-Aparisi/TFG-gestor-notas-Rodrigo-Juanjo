@@ -127,7 +127,7 @@ const Login: React.FC = () => {
     try {
       const response = await authService.register(registerData);
       if (response) {
-        alert("Registro exitoso");
+        setSuccessMessage("Registro exitoso");
         setRegisterData({
           username: "",
           email: "",
@@ -145,6 +145,16 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-container">
+      {/* Mostrar mensaje de éxito si existe */}
+      {successMessage && (
+        <div
+          className="success-message animation"
+          style={{ "--i": 0, "--j": 21 } as React.CSSProperties}
+        >
+          {successMessage}
+        </div>
+      )}
+
       <div className="wrapper">
         <span className="rotate-bg"></span>
         <span className="rotate-bg2"></span>
@@ -157,16 +167,6 @@ const Login: React.FC = () => {
           >
             Inicio de Sesión
           </h2>
-
-          {/* Mostrar mensaje de éxito si existe */}
-          {successMessage && (
-            <div
-              className="success-message animation"
-              style={{ "--i": 0, "--j": 21 } as React.CSSProperties}
-            >
-              {successMessage}
-            </div>
-          )}
 
           <form onSubmit={handleLogin}>
             <div

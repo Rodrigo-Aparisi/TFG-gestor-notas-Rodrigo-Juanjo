@@ -34,14 +34,6 @@ const WELCOME_MESSAGE = `¡Hola! Soy Olymp.IA, tu asistente para la app de notas
 
 \u00A0
 
-🔍 OTRAS FUNCIONES:
-
-• Buscar entre tus notas y recordatorios
-
-• Proporcionar información sobre tus datos
-
-\u00A0
-
 ¿En qué puedo ayudarte hoy?`;
 
 const Chatbot: React.FC = () => {

@@ -41,11 +41,6 @@ const ChatbotFloatingButton: React.FC = () => {
       • Crear recordatorios con fecha y hora
       • Configurar notificaciones
 
-      \u00A0
-      🔍 OTRAS FUNCIONES:
-      • Buscar en tus notas y recordatorios
-      • Proporcionar información sobre tus datos
-
       ¿En qué puedo ayudarte hoy?`,
         sender: 'bot',
         timestamp: new Date().toISOString()
