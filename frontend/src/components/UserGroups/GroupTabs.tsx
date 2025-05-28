@@ -2,7 +2,7 @@ import React from 'react';
 
 interface GroupTabsProps {
   activeTab: 'notes' | 'members';
-  onTabChange: (tab: 'notes' | 'members') => void;
+  onTabChange: (tab: 'notes' | 'members'| 'papelera') => void;
 }
 
 const GroupTabs: React.FC<GroupTabsProps> = ({ activeTab, onTabChange }) => {
@@ -13,6 +13,11 @@ const GroupTabs: React.FC<GroupTabsProps> = ({ activeTab, onTabChange }) => {
         onClick={() => onTabChange('notes')}
       >
         Notas
+      </div>
+      <div className="{`tab ${activeTab === 'papelera' ? 'active' : ''}`}"
+        onClick={() => onTabChange('papelera')}
+      >
+        Papelera
       </div>
       <div 
         className={`tab ${activeTab === 'members' ? 'active' : ''}`}
