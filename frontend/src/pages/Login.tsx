@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom"; // Corregido el import de Link
 import { authService } from "../services/auth";
 import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from "react-icons/ai";
 import "../styles/login.css";
+
+interface LocationState {
+  message?: string;
+}
 
 interface LoginData {
   email: string;
@@ -17,12 +21,27 @@ interface RegisterData {
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState;
+  
+  // Estado para el mensaje de éxito (por ejemplo, después de restablecer la contraseña)
+  const [successMessage, setSuccessMessage] = useState<string | undefined>(locationState?.message);
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
       navigate("/notes", { replace: true });
     }
   }, [navigate]);
+
+  // Limpiar mensaje de éxito después de 5 segundos
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(undefined);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const [loginData, setLoginData] = useState<LoginData>({
     email: "",
@@ -89,19 +108,17 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-        const response = await authService.login(loginData);
-        if (response && response.token && response.user) {
-            // Asegurarnos de que tenemos la imagen de perfil
-            console.log('Usuario logueado:', response.user);
-            navigate("/notes", { replace: true });
-        }
+      const response = await authService.login(loginData);
+      if (response && response.token && response.user) {
+        // Asegurarnos de que tenemos la imagen de perfil
+        console.log('Usuario logueado:', response.user);
+        navigate("/notes", { replace: true });
+      }
     } catch (error: any) {
-        console.error("Error en el login:", error);
-        setError(error.message || "Error en el inicio de sesión");
+      console.error("Error en el login:", error);
+      setError(error.message || "Error en el inicio de sesión");
     }
-};
-
-
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +157,17 @@ const Login: React.FC = () => {
           >
             Inicio de Sesión
           </h2>
+
+          {/* Mostrar mensaje de éxito si existe */}
+          {successMessage && (
+            <div
+              className="success-message animation"
+              style={{ "--i": 0, "--j": 21 } as React.CSSProperties}
+            >
+              {successMessage}
+            </div>
+          )}
+
           <form onSubmit={handleLogin}>
             <div
               className="input-box animation"
@@ -214,6 +242,9 @@ const Login: React.FC = () => {
                   Regístrate
                 </a>
               </p>
+              <div className="forgot-password">
+                <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+              </div>
             </div>
           </form>
         </div>

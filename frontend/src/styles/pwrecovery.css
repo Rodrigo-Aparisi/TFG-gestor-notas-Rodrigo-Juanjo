@@ -1,0 +1,176 @@
+/* Estilos para las páginas de recuperación de contraseña */
+.password-recovery-container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--background-darker);
+  border-radius: 8px;
+  border: 2px solid var(--dorado);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.password-recovery-container h1 {
+  color: var(--dorado);
+  font-size: 28px;
+  margin-bottom: 24px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.password-recovery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: var(--dorado);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.form-group input {
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 198, 0, 0.3);
+  background-color: var(--background-black);
+  color: var(--white);
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--dorado);
+  box-shadow: 0 0 0 2px rgba(255, 198, 0, 0.2);
+}
+
+.recovery-button {
+  padding: 14px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--dorado);
+  color: var(--background-dark);
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.recovery-button:hover {
+  background-color: #e6b000;
+}
+
+.recovery-button:disabled {
+  background-color: #aa8800;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert-success {
+  background-color: rgba(39, 174, 96, 0.2);
+  border: 1px solid #27ae60;
+  color: #2ecc71;
+}
+
+.alert-error {
+  background-color: rgba(231, 76, 60, 0.2);
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  color: var(--dorado);
+  font-size: 16px;
+  gap: 10px;
+}
+
+.loading-indicator::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 198, 0, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--dorado);
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+.forgot-password-link {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: var(--dorado);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover {
+  color: #e6b000;
+  text-decoration: underline;
+}
+
+.back-to-login {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.back-to-login a {
+  color: var(--dorado);
+  text-decoration: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-to-login a:hover {
+  text-decoration: underline;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilos para dispositivos móviles */
+@media screen and (max-width: 600px) {
+  .password-recovery-container {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .password-recovery-container h1 {
+    font-size: 24px;
+  }
+}
