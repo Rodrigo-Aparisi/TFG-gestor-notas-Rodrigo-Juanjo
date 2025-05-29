@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
 import { GroupNote } from "../types";
 import UserGroupSidebar from "../components/UserGroups/UserGroupSidebar";
-import GroupNoteCard from "../components/UserGroups/GroupNotes";
+import GroupNotesGrid from "../components/UserGroups/GroupNotesGrid"; // Corregida la importación
 import GroupOfMembersList from "../components/UserGroups/GroupOfMembersList";
 import CreateGroupModal from "../components/UserGroups/CreateGroupModal";
 import AddMemberModal from "../components/UserGroups/AddMemberModal";
@@ -578,7 +578,8 @@ const Groups: React.FC = () => {
                   />
                 </div>
 
-                <GroupNoteCard
+                {/* Aquí está el cambio principal: usar GroupNotesGrid en lugar de GroupNoteCard */}
+                <GroupNotesGrid
                   notes={groupNotes || []}
                   currentUserId={user?.id || ""}
                   isOwnerOrAdmin={isOwnerOrAdmin}
