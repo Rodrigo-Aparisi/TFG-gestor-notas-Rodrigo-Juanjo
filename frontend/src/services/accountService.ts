@@ -1,7 +1,8 @@
 import axios from "axios";
+import config from "../config/config";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:3001/api",
+  baseURL: process.env.REACT_APP_API_URL,
 });
 
 interface UserSettings {
@@ -145,7 +146,7 @@ export const accountService = {
 
         // Extraer solo la parte relativa de la URL
         const imageUrl = response.data.profile_image;
-        return imageUrl.replace('http://localhost:3001/api', '');
+        return imageUrl.replace(`${config.BASE_URL}/api`, '');
     } catch (error) {
         console.error("Error en updateUserProfileImage:", error);
         throw error;
