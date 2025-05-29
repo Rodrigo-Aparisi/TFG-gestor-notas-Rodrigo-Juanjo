@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GroupNote } from "../../types";
 import NoteImage from "../Notes/NoteImage";
-import GroupNoteActionsMenu, { savedGroupSelection } from "./GroupNoteActionsMenu";
+import GroupNoteActionsMenu, {
+  savedGroupSelection,
+} from "./GroupNoteActionsMenu";
 
 interface GroupNoteProps {
   note: GroupNote;
@@ -335,27 +337,27 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
       const end = savedGroupSelection.end;
       const content = localContent;
       const prefix = type === "bullet" ? "• " : "1. ";
-      
-      const newContent = 
-        content.substring(0, start) + 
-        prefix + 
-        content.substring(start, end) + 
-        "\n" + 
+
+      const newContent =
+        content.substring(0, start) +
+        prefix +
+        content.substring(start, end) +
+        "\n" +
         content.substring(end);
-      
+
       setLocalContent(newContent);
-      
+
       if (handleNoteChange && note) {
         handleNoteChange(noteId, "content", newContent);
       }
-      
+
       // Reposicionar el cursor después de la inserción
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
           textareaRef.current.selectionStart = start + prefix.length;
           textareaRef.current.selectionEnd = end + prefix.length;
-          
+
           // Actualizar el textarea visualmente
           resizeTextareaFn(textareaRef.current);
         }
@@ -365,22 +367,22 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
       // Si no hay selección guardada, insertar al final del contenido
       const textarea = textareaRef.current;
       if (!textarea) return;
-      
+
       const prefix = type === "bullet" ? "• " : "1. ";
       const newContent = localContent + (localContent ? "\n" : "") + prefix;
-      
+
       setLocalContent(newContent);
-      
+
       if (handleNoteChange && note) {
         handleNoteChange(noteId, "content", newContent);
       }
-      
+
       // Posicionar el cursor al final
       setTimeout(() => {
         textarea.focus();
         textarea.selectionStart = textarea.value.length;
         textarea.selectionEnd = textarea.value.length;
-        
+
         // Actualizar el textarea visualmente
         resizeTextareaFn(textarea);
         debouncedSave();

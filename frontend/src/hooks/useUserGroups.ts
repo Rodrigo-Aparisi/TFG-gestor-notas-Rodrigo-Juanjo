@@ -539,67 +539,97 @@ export const useUserGroups = () => {
     const note = groupNotes.find(n => n.id === noteId);
     if (!note) return;
     
-    const content = note.content || '';
-    const title = note.title || 'Nota sin título';
-    
-    if (format === 'txt') {
+    if (format === 'pdf') {
+      // Exportar como PDF usando iframe para imprimir
+      exportAsPDF(note);
+    } else if (format === 'txt') {
       // Exportar como TXT
-      const element = document.createElement('a');
-      const file = new Blob([content], {type: 'text/plain'});
-      element.href = URL.createObjectURL(file);
-      element.download = `${title}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      showFeedback('Nota exportada como TXT');
-    } else if (format === 'pdf') {
-      // Crear un iframe oculto para el PDF
+      exportAsTXT(note);
+    }
+  }, [groupNotes, showFeedback]);
+  
+  // Función para exportar como PDF
+  const exportAsPDF = (note: GroupNote) => {
+    try {
+      showFeedback('Preparando exportación a PDF...');
+
+      // Eliminar iframe existente si hay alguno
+      const existingIframe = document.getElementById('pdf-print-frame');
+      if (existingIframe) {
+        document.body.removeChild(existingIframe);
+      }
+
+      // Crear un iframe oculto
       const iframe = document.createElement('iframe');
+      iframe.id = 'pdf-print-frame';
       iframe.style.position = 'absolute';
       iframe.style.top = '-9999px';
       iframe.style.left = '-9999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
       document.body.appendChild(iframe);
-      
-      // Formatear contenido
-      const formattedContent = content
+
+      // Formato simple para el contenido
+      const formattedContent = (note.content || '')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/__(.*?)__/g, '<u>$1</u>')
         .replace(/\n/g, '<br>');
-      
-      // Escribir HTML en el iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
+
+      // Esperar a que el iframe esté cargado
+      iframe.onload = () => {
+        // Acceder al documento dentro del iframe
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          showFeedback('Error al crear el documento PDF');
+          return;
+        }
+
+        // Escribir el contenido HTML en el iframe
         iframeDoc.write(`
           <!DOCTYPE html>
           <html>
           <head>
-            <title>${title}</title>
+            <title>${note.title || 'Sin título'}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
-                margin: 20px;
                 line-height: 1.6;
+                margin: 20px;
+                color: #333;
               }
               h1 {
                 color: #333;
                 border-bottom: 1px solid #ddd;
+                padding-bottom: 10px;
               }
               .content {
                 margin-top: 20px;
               }
               .images {
                 margin-top: 30px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                max-width: 20%;
               }
               .images img {
                 max-width: 100%;
-                margin-bottom: 10px;
+                height: auto;
                 border: 1px solid #ddd;
+              }
+              .note-info {
+                font-size: 12px;
+                color: #666;
+                margin-top: 5px;
               }
             </style>
           </head>
           <body>
-            <h1>${title}</h1>
+            <h1>${note.title || 'Sin título'}</h1>
+            <div class="note-info">
+              Por: ${note.created_by_username || 'Usuario'}
+            </div>
             <div class="content">${formattedContent}</div>
             
             ${note.images && note.images.length > 0 ? `
@@ -611,17 +641,47 @@ export const useUserGroups = () => {
           </body>
           </html>
         `);
-        
+
         iframeDoc.close();
-        
-        // Imprimir el iframe como PDF
+
+        // Esperar un momento para que se cargue todo el contenido
         setTimeout(() => {
-          iframe.contentWindow?.print();
-          showFeedback('Documento preparado para descargar como PDF');
+          try {
+            // Imprimir el iframe (esto abrirá el diálogo de impresión)
+            iframe.contentWindow?.print();
+            showFeedback('Documento preparado para descargar como PDF');
+          } catch (err) {
+            console.error('Error al imprimir:', err);
+            showFeedback('Error al generar el PDF');
+          }
         }, 500);
-      }
+      };
+
+      // Iniciar la carga del iframe con un documento en blanco
+      iframe.src = 'about:blank';
+
+    } catch (error) {
+      console.error('Error al exportar como PDF:', error);
+      showFeedback('Error al exportar como PDF');
     }
-  }, [groupNotes, showFeedback]);
+  };
+
+  // Función para exportar como TXT
+  const exportAsTXT = (note: GroupNote) => {
+    const content = `${note.title || 'Sin título'}\n\nPor: ${note.created_by_username || 'Usuario'}\n\n${note.content || ''}`;
+    const blob = new Blob([content], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    
+    const element = document.createElement('a');
+    element.href = url;
+    element.download = `${note.title || 'nota'}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    URL.revokeObjectURL(url);
+    
+    showFeedback('Nota exportada como TXT');
+  };
 
   // Insertar lista en una nota
   const insertList = useCallback((noteId: string, type: 'bullet' | 'number') => {

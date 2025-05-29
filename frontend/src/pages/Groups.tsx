@@ -128,7 +128,10 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleTogglePinNote = async (noteId: string, event?: React.MouseEvent) => {
+  const handleTogglePinNote = async (
+    noteId: string,
+    event?: React.MouseEvent
+  ) => {
     if (event) {
       event.stopPropagation();
     }
@@ -137,31 +140,36 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleToggleMarkNote = async (noteId: string, event: React.MouseEvent) => {
+  const handleToggleMarkNote = async (
+    noteId: string,
+    event: React.MouseEvent
+  ) => {
     event.stopPropagation();
     try {
-      const note = groupNotes.find(n => n.id === noteId);
+      const note = groupNotes.find((n) => n.id === noteId);
       if (!note) return;
-      
+
       const updatedNote = {
         ...note,
-        is_marked: !note.is_marked
+        is_marked: !note.is_marked,
       };
-      
+
       setEditingNote({ ...editingNote, [noteId]: updatedNote });
-      
+
       // Aquí iría la llamada a la API para marcar/desmarcar la nota
-      const response = await api.put(`/user-groups/notes/${noteId}/toggle-mark`);
-      
+      const response = await api.put(
+        `/user-groups/notes/${noteId}/toggle-mark`
+      );
+
       if (response.data.success) {
         // Actualizar la lista de notas
-        const updatedNotes = groupNotes.map(n => 
+        const updatedNotes = groupNotes.map((n) =>
           n.id === noteId ? { ...n, is_marked: !n.is_marked } : n
         );
         // Aquí necesitarías una función para actualizar las notas en el estado
         // setGroupNotes(updatedNotes);
       }
-      
+
       return true;
     } catch (error) {
       console.error("Error al marcar/desmarcar la nota:", error);
@@ -225,18 +233,18 @@ const Groups: React.FC = () => {
 
       if (response.data && response.data.data && response.data.data.imageUrl) {
         // Actualizar la nota con la nueva imagen
-        const note = groupNotes.find(n => n.id === noteId);
+        const note = groupNotes.find((n) => n.id === noteId);
         if (note) {
           const updatedNote = {
             ...note,
-            images: [...(note.images || []), response.data.data.imageUrl]
+            images: [...(note.images || []), response.data.data.imageUrl],
           };
-          
+
           setEditingNote({ ...editingNote, [noteId]: updatedNote });
-          
+
           // Llamar a updateGroupNote para guardar los cambios
           await updateGroupNote(noteId);
-          
+
           showFeedback("Imagen subida correctamente");
         }
       }
@@ -248,25 +256,25 @@ const Groups: React.FC = () => {
 
   const handleDeleteNoteImage = async (noteId: string, imageIndex: number) => {
     try {
-      const note = groupNotes.find(n => n.id === noteId);
+      const note = groupNotes.find((n) => n.id === noteId);
       if (!note || !note.images || note.images.length <= imageIndex) return;
-      
+
       const updatedImages = [...note.images];
       updatedImages.splice(imageIndex, 1);
-      
+
       const updatedNote = {
         ...note,
-        images: updatedImages
+        images: updatedImages,
       };
-      
+
       setEditingNote({ ...editingNote, [noteId]: updatedNote });
-      
+
       // Llamar a la API para eliminar la imagen
       await api.delete(`/user-groups/notes/${noteId}/images/${imageIndex}`);
-      
+
       // Actualizar la nota
       await updateGroupNote(noteId);
-      
+
       showFeedback("Imagen eliminada correctamente");
     } catch (error) {
       console.error("Error al eliminar la imagen:", error);
@@ -426,36 +434,41 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    noteId: string
+  ) => {
     // Implementar funcionalidades como atajos de teclado
     // Por ejemplo: Ctrl+S para guardar
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       updateGroupNote(noteId);
     }
   };
 
-  const insertList = (noteId: string, type: 'bullet' | 'number') => {
+  const insertList = (noteId: string, type: "bullet" | "number") => {
     const note = editingNote[noteId];
     if (!note) return;
 
-    const textarea = document.querySelector(`textarea[data-note-id="${noteId}"]`) as HTMLTextAreaElement;
+    const textarea = document.querySelector(
+      `textarea[data-note-id="${noteId}"]`
+    ) as HTMLTextAreaElement;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const content = note.content || '';
-    const prefix = type === 'bullet' ? '• ' : '1. ';
-    
-    const newContent = 
-      content.substring(0, start) + 
-      prefix + 
-      content.substring(start, end) + 
-      '\n' + 
+    const content = note.content || "";
+    const prefix = type === "bullet" ? "• " : "1. ";
+
+    const newContent =
+      content.substring(0, start) +
+      prefix +
+      content.substring(start, end) +
+      "\n" +
       content.substring(end);
-    
-    handleNoteChange(noteId, 'content', newContent);
-    
+
+    handleNoteChange(noteId, "content", newContent);
+
     // Reposicionar el cursor después de la inserción
     setTimeout(() => {
       textarea.focus();
@@ -466,32 +479,36 @@ const Groups: React.FC = () => {
 
   const handleExportNote = (format: string, noteId?: string) => {
     if (!noteId) return;
-    
-    const note = groupNotes.find(n => n.id === noteId);
+
+    const note = groupNotes.find((n) => n.id === noteId);
     if (!note) return;
-    
-    let content = '';
-    let filename = '';
-    let mimeType = '';
-    
+
+    let content = "";
+    let filename = "";
+    let mimeType = "";
+
     switch (format) {
-      case 'txt':
-        content = `${note.title || 'Sin título'}\n\n${note.content || ''}`;
-        filename = `${note.title || 'nota'}.txt`;
-        mimeType = 'text/plain';
+      case "txt":
+        content = `${note.title || "Sin título"}\n\n${note.content || ""}`;
+        filename = `${note.title || "nota"}.txt`;
+        mimeType = "text/plain";
         break;
-      case 'html':
-        content = `<html><head><title>${note.title || 'Sin título'}</title></head><body><h1>${note.title || 'Sin título'}</h1><div>${(note.content || '').replace(/\n/g, '<br>')}</div></body></html>`;
-        filename = `${note.title || 'nota'}.html`;
-        mimeType = 'text/html';
+      case "html":
+        content = `<html><head><title>${
+          note.title || "Sin título"
+        }</title></head><body><h1>${note.title || "Sin título"}</h1><div>${(
+          note.content || ""
+        ).replace(/\n/g, "<br>")}</div></body></html>`;
+        filename = `${note.title || "nota"}.html`;
+        mimeType = "text/html";
         break;
       default:
         return;
     }
-    
+
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
@@ -500,14 +517,17 @@ const Groups: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleFocusNote = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
+  const handleFocusNote = (
+    id: string,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
     event.stopPropagation();
     setFocusedNoteId(id);
     setEditingNoteId(id);
-    
+
     // Si la nota no está en el estado de edición, añadirla
     if (!editingNote[id]) {
-      const noteToEdit = groupNotes.find(note => note.id === id);
+      const noteToEdit = groupNotes.find((note) => note.id === id);
       if (noteToEdit) {
         setEditingNote({ ...editingNote, [id]: noteToEdit });
       }
@@ -516,12 +536,12 @@ const Groups: React.FC = () => {
 
   const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
-    
+
     // Guardar cambios si hay una nota en edición
     if (editingNoteId === id) {
       handleUpdateNoteSubmit();
     }
-    
+
     setFocusedNoteId(null);
     setEditingNoteId(null);
   };
@@ -535,9 +555,9 @@ const Groups: React.FC = () => {
         onEditGroupName={handleEditGroupName}
         onEditGroupDescription={handleEditGroupDescription}
       />
-      
+
       <div className="overlay"></div>
-      
+
       <div className="groups-main">
         {loading && <div className="loading-indicator">Cargando...</div>}
         {feedback && <div className="feedback-message">{feedback}</div>}
@@ -578,7 +598,6 @@ const Groups: React.FC = () => {
                   />
                 </div>
 
-                {/* Aquí está el cambio principal: usar GroupNotesGrid en lugar de GroupNoteCard */}
                 <GroupNotesGrid
                   notes={groupNotes || []}
                   currentUserId={user?.id || ""}
@@ -623,7 +642,7 @@ const Groups: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Modales */}
       {showCreateGroupModal && (
         <CreateGroupModal
@@ -639,7 +658,7 @@ const Groups: React.FC = () => {
           onAddMember={handleAddMember}
         />
       )}
-      
+
       {/* Modal para editar el grupo (nombre y descripción) */}
       {(showRenameModal || showDescriptionModal) && (
         <div className="modal-overlay">
@@ -658,7 +677,9 @@ const Groups: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="group-description-edit">Descripción (opcional)</label>
+              <label htmlFor="group-description-edit">
+                Descripción (opcional)
+              </label>
               <textarea
                 id="group-description-edit"
                 value={newGroupDescription}
