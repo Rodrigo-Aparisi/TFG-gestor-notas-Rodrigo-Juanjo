@@ -1,16 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GroupNote } from "../../types";
-import Masonry from "react-masonry-css";
 import NoteImage from "../Notes/NoteImage";
-import NoteActionsMenu from "../Notes/NoteActionsMenu";
+import GroupNoteActionsMenu, { savedGroupSelection } from "./GroupNoteActionsMenu";
 
-interface NotesGroupsProps {
-  notes: GroupNote[];
+interface GroupNoteProps {
+  note: GroupNote;
   currentUserId: string;
   isOwnerOrAdmin: boolean;
   editingNote?: Record<string, GroupNote>;
   focusedNoteId?: string | null;
-  sharingNoteId?: string | null;
   onEditNote: (note: GroupNote) => void;
   onDeleteNote: (noteId: string) => void;
   handleTogglePin?: (noteId: string, event?: React.MouseEvent) => void;
@@ -19,7 +17,6 @@ interface NotesGroupsProps {
   updateGroupNote?: (id: string, field?: keyof GroupNote) => Promise<boolean>;
   handleFocus?: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick?: (event: React.MouseEvent, id: string) => void;
-  setSharingNoteId?: React.Dispatch<React.SetStateAction<string | null>>;
   handleKeyDown?: (
     e: React.KeyboardEvent<HTMLTextAreaElement>,
     noteId: string
@@ -32,37 +29,6 @@ interface NotesGroupsProps {
   ) => Promise<void>;
   handleDeleteImage?: (noteId: string, imageIndex: number) => Promise<void>;
   handleExportNote?: (format: string, noteId?: string) => void;
-}
-
-// Interfaz para las props del componente individual de nota
-interface GroupNoteItemProps {
-  note: GroupNote;
-  currentUserId: string;
-  isOwnerOrAdmin: boolean;
-  editingNote: Record<string, GroupNote>;
-  focusedNoteId: string | null;
-  sharingNoteId: string | null;
-  handleNoteChange: (id: string, field: keyof GroupNote, value: any) => void;
-  updateGroupNote: (id: string, field?: keyof GroupNote) => Promise<boolean>;
-  handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
-  handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
-  handleToggleMark: (id: string, event: React.MouseEvent) => Promise<void>;
-  handleTogglePin: (noteId: string, event?: React.MouseEvent) => void;
-  setSharingNoteId: React.Dispatch<React.SetStateAction<string | null>>;
-  handleKeyDown: (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-    noteId: string
-  ) => void;
-  insertList: (noteId: string, type: "bullet" | "number") => void;
-  onDeleteNote: (noteId: string) => void;
-  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
-  handleImageUpload: (
-    e: React.ChangeEvent<HTMLInputElement>,
-    noteId: string
-  ) => Promise<void>;
-  handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
-  handleExportNote: (format: string, noteId?: string) => void;
-  onEditNote: (note: GroupNote) => void;
 }
 
 // Función para formatear la fecha
@@ -116,29 +82,26 @@ const getTimeAgo = (dateString: string) => {
   }
 };
 
-// Componente individual para cada nota de grupo
-const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
+const GroupNotes: React.FC<GroupNoteProps> = ({
   note,
   currentUserId,
   isOwnerOrAdmin,
-  editingNote,
+  editingNote = {},
   focusedNoteId,
-  sharingNoteId,
-  handleNoteChange,
-  updateGroupNote,
+  onEditNote,
+  onDeleteNote,
+  handleToggleMark = async () => {},
+  handleTogglePin = () => {},
+  handleNoteChange = () => {},
+  updateGroupNote = async () => false,
   handleFocus,
   handleFocusIndicatorClick,
-  handleToggleMark,
-  handleTogglePin,
-  setSharingNoteId,
-  handleKeyDown,
+  handleKeyDown = () => {},
   insertList,
-  onDeleteNote,
   autoResizeTextarea,
-  handleImageUpload,
-  handleDeleteImage,
-  handleExportNote,
-  onEditNote,
+  handleImageUpload = async () => {},
+  handleDeleteImage = async () => {},
+  handleExportNote = () => {},
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,7 +156,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     if (textareaRef.current && note) {
       resizeTextareaFn(textareaRef.current);
     }
-  }, [localContent, focusedNoteId === note?.id, resizeTextareaFn, note]);
+  }, [localContent, focusedNoteId === note?.id, note, resizeTextareaFn]);
 
   // Añadir listener para el resize de la ventana
   useEffect(() => {
@@ -236,7 +199,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
   };
 
   // Configurar guardado automático con debounce
-  const debouncedSave = (field: keyof GroupNote) => {
+  const debouncedSave = () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -262,7 +225,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
         }
       }
     };
-  }, [note, localTitle, localContent]);
+  }, [note, localTitle, localContent, saveNote]);
 
   // Manejar cambio de título
   const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,7 +237,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
       handleNoteChange(note.id, "title", newTitle);
     }
 
-    debouncedSave("title");
+    debouncedSave();
   };
 
   // Manejar cambio de contenido
@@ -288,7 +251,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     }
 
     resizeTextareaFn(e.target);
-    debouncedSave("content");
+    debouncedSave();
   };
 
   // Manejar actualización al perder el foco
@@ -362,6 +325,69 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
     }
   };
 
+  // Implementación de la función handleInsertList
+  const handleInsertList = (noteId: string, type: "bullet" | "number") => {
+    if (!note || noteId !== note.id) return;
+
+    // Usar la selección guardada si existe
+    if (savedGroupSelection && savedGroupSelection.textareaId === noteId) {
+      const start = savedGroupSelection.start;
+      const end = savedGroupSelection.end;
+      const content = localContent;
+      const prefix = type === "bullet" ? "• " : "1. ";
+      
+      const newContent = 
+        content.substring(0, start) + 
+        prefix + 
+        content.substring(start, end) + 
+        "\n" + 
+        content.substring(end);
+      
+      setLocalContent(newContent);
+      
+      if (handleNoteChange && note) {
+        handleNoteChange(noteId, "content", newContent);
+      }
+      
+      // Reposicionar el cursor después de la inserción
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.selectionStart = start + prefix.length;
+          textareaRef.current.selectionEnd = end + prefix.length;
+          
+          // Actualizar el textarea visualmente
+          resizeTextareaFn(textareaRef.current);
+        }
+        debouncedSave();
+      }, 0);
+    } else {
+      // Si no hay selección guardada, insertar al final del contenido
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      
+      const prefix = type === "bullet" ? "• " : "1. ";
+      const newContent = localContent + (localContent ? "\n" : "") + prefix;
+      
+      setLocalContent(newContent);
+      
+      if (handleNoteChange && note) {
+        handleNoteChange(noteId, "content", newContent);
+      }
+      
+      // Posicionar el cursor al final
+      setTimeout(() => {
+        textarea.focus();
+        textarea.selectionStart = textarea.value.length;
+        textarea.selectionEnd = textarea.value.length;
+        
+        // Actualizar el textarea visualmente
+        resizeTextareaFn(textarea);
+        debouncedSave();
+      }, 0);
+    }
+  };
+
   // Si la nota no existe, no renderizar nada
   if (!note || !note.id) {
     return null;
@@ -377,7 +403,7 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
         note.is_marked ? "marked" : ""
       }`}
       onClick={(e) => {
-        if (!isFocused) {
+        if (!isFocused && handleFocus) {
           handleFocus(note.id, e);
         }
       }}
@@ -426,7 +452,9 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
         className="focus-indicator"
         onClick={(e) => {
           e.stopPropagation();
-          handleFocusIndicatorClick(e, note.id);
+          if (handleFocusIndicatorClick) {
+            handleFocusIndicatorClick(e, note.id);
+          }
         }}
       />
 
@@ -465,7 +493,9 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
                     className="delete-image-button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteImage(note.id, index);
+                      if (handleDeleteImage) {
+                        handleDeleteImage(note.id, index);
+                      }
                     }}
                   >
                     <i className="fas fa-times"></i>
@@ -480,7 +510,11 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
           ref={textareaRef}
           value={localContent}
           onChange={onContentChange}
-          onKeyDown={(e) => handleKeyDown(e, note.id)}
+          onKeyDown={(e) => {
+            if (handleKeyDown) {
+              handleKeyDown(e, note.id);
+            }
+          }}
           onBlur={onContentBlur}
           onClick={(e) => e.stopPropagation()}
           placeholder="Escribe aquí tu nota..."
@@ -497,10 +531,10 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
       <div className="note-actions-bottom">
         {/* Menú desplegable de acciones */}
         {(note.user_id === currentUserId || isOwnerOrAdmin) && (
-          <NoteActionsMenu
+          <GroupNoteActionsMenu
             noteId={note.id}
             onExport={handleExportNote}
-            onInsertList={insertList}
+            onInsertList={handleInsertList}
             onImageUpload={() =>
               document.getElementById(`image-input-${note.id}`)?.click()
             }
@@ -513,7 +547,11 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
           type="file"
           accept="image/*"
           style={{ display: "none" }}
-          onChange={(e) => handleImageUpload(e, note.id)}
+          onChange={(e) => {
+            if (handleImageUpload) {
+              handleImageUpload(e, note.id);
+            }
+          }}
         />
 
         {/* Botón de eliminar */}
@@ -530,186 +568,6 @@ const GroupNoteItem: React.FC<GroupNoteItemProps> = ({
         )}
       </div>
     </div>
-  );
-};
-
-// Componente principal que renderiza la lista de notas con Masonry
-const GroupNotes: React.FC<NotesGroupsProps> = ({
-  notes,
-  currentUserId,
-  isOwnerOrAdmin,
-  editingNote = {},
-  focusedNoteId: externalFocusedNoteId,
-  sharingNoteId = null,
-  onEditNote,
-  onDeleteNote,
-  handleTogglePin = () => {},
-  handleToggleMark = async () => {},
-  handleNoteChange = () => {},
-  updateGroupNote = async () => false,
-  handleFocus: externalHandleFocus,
-  handleFocusIndicatorClick: externalHandleFocusIndicatorClick,
-  setSharingNoteId = () => {},
-  handleKeyDown = () => {},
-  insertList = () => {},
-  autoResizeTextarea,
-  handleImageUpload = async () => {},
-  handleDeleteImage = async () => {},
-  handleExportNote = () => {},
-}) => {
-  // Estado local para manejar el ID de la nota enfocada si no se proporciona externamente
-  const [internalFocusedNoteId, setInternalFocusedNoteId] = useState<
-    string | null
-  >(null);
-
-  // Usar el focusedNoteId proporcionado o el interno
-  const focusedNoteId =
-    externalFocusedNoteId !== undefined
-      ? externalFocusedNoteId
-      : internalFocusedNoteId;
-
-  // Manejar el enfoque de la nota internamente si no se proporciona una función externa
-  const handleFocus = (id: string, event: React.MouseEvent<HTMLDivElement>) => {
-    if (externalHandleFocus) {
-      externalHandleFocus(id, event);
-    } else {
-      event.stopPropagation();
-      setInternalFocusedNoteId(id);
-
-      // Asegurar que el textarea se redimensione correctamente después de enfocar
-      setTimeout(() => {
-        const textarea = document.querySelector(
-          `.note-card[data-note-id="${id}"] textarea`
-        );
-        if (textarea && autoResizeTextarea) {
-          autoResizeTextarea(textarea as HTMLTextAreaElement);
-        }
-      }, 10);
-    }
-  };
-
-  // Manejar el clic en el indicador de enfoque
-  const handleFocusIndicatorClick = (event: React.MouseEvent, id: string) => {
-    if (externalHandleFocusIndicatorClick) {
-      externalHandleFocusIndicatorClick(event, id);
-    } else {
-      event.stopPropagation();
-
-      // Guardar la nota antes de quitar el foco
-      const note = notes.find((n) => n.id === id);
-      if (note) {
-        // Si hay cambios en la nota, guardarlos
-        const editedNote = editingNote[id];
-        if (editedNote) {
-          onEditNote(editedNote);
-          if (updateGroupNote) {
-            updateGroupNote(id).catch(console.error);
-          }
-        }
-      }
-
-      setInternalFocusedNoteId(null);
-
-      // Asegurar que todas las textareas se redimensionen correctamente después de quitar el enfoque
-      setTimeout(() => {
-        const textareas = document.querySelectorAll(".note-card textarea");
-        textareas.forEach((textarea) => {
-          if (autoResizeTextarea) {
-            autoResizeTextarea(textarea as HTMLTextAreaElement);
-          }
-        });
-      }, 10);
-    }
-  };
-
-  // Añadir un listener para detectar clics fuera de las notas y quitar el enfoque
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".note-card") && internalFocusedNoteId !== null) {
-        // Guardar cualquier nota que pudiera estar siendo editada
-        const editedNoteId = internalFocusedNoteId;
-        const note = notes.find((n) => n.id === editedNoteId);
-        if (note) {
-          // Si hay cambios en la nota, guardarlos
-          const editedNote = editingNote[editedNoteId];
-          if (editedNote) {
-            onEditNote(editedNote);
-            if (updateGroupNote) {
-              updateGroupNote(editedNoteId).catch(console.error);
-            }
-          }
-        }
-
-        setInternalFocusedNoteId(null);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [internalFocusedNoteId, notes, editingNote, onEditNote, updateGroupNote]);
-
-  // Asegurar que notes es un array
-  const safeNotes = Array.isArray(notes) ? notes : [];
-
-  // Configuración de las columnas para Masonry
-  const breakpointColumnsObj = {
-    default: 4,
-    1400: 3,
-    1100: 2,
-    700: 1,
-  };
-
-  if (safeNotes.length === 0) {
-    return (
-      <div className="empty-notes">
-        <p>Este grupo no tiene notas</p>
-      </div>
-    );
-  }
-
-  return (
-    <Masonry
-      breakpointCols={breakpointColumnsObj}
-      className="masonry-grid"
-      columnClassName="masonry-grid_column"
-    >
-      {safeNotes.map((note) => {
-        // Verificar que la nota es válida
-        if (!note || !note.id) {
-          return null;
-        }
-
-        return (
-          <GroupNoteItem
-            key={note.id}
-            note={note}
-            currentUserId={currentUserId}
-            isOwnerOrAdmin={isOwnerOrAdmin}
-            editingNote={editingNote || {}}
-            focusedNoteId={focusedNoteId}
-            sharingNoteId={sharingNoteId}
-            handleNoteChange={handleNoteChange}
-            updateGroupNote={updateGroupNote}
-            handleFocus={handleFocus}
-            handleFocusIndicatorClick={handleFocusIndicatorClick}
-            handleToggleMark={handleToggleMark}
-            handleTogglePin={handleTogglePin}
-            setSharingNoteId={setSharingNoteId}
-            handleKeyDown={handleKeyDown}
-            insertList={insertList}
-            onDeleteNote={onDeleteNote}
-            autoResizeTextarea={autoResizeTextarea}
-            handleImageUpload={handleImageUpload}
-            handleDeleteImage={handleDeleteImage}
-            handleExportNote={handleExportNote}
-            onEditNote={onEditNote}
-          />
-        );
-      })}
-    </Masonry>
   );
 };
 

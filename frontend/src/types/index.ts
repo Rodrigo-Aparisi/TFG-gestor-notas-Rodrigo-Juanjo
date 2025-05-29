@@ -61,6 +61,7 @@ export interface GroupNote {
   created_by_username: string;
   group_id: string;
   is_pinned: boolean;
+  is_marked: boolean;
   color: string | null;
   created_at: string;
   updated_at: string;
