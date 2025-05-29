@@ -14,6 +14,7 @@ import {
 } from "react-icons/ai";
 import "../styles/settings.css";
 import { logout, updateUserProfile } from "../store/slices/authSlice";
+import config from "../config/config";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -33,9 +34,9 @@ const Settings = () => {
 
   // Función helper para construir la URL completa de la imagen
   const getFullImageUrl = (url: string | undefined): string => {
-    if (!url) return "";
-    const filename = url.split("/").pop();
-    return `http://localhost:3001/uploads/profile-images/${filename}`;
+    if (!url) return '';
+    const filename = url.split('/').pop();
+    return `${config.BASE_URL}${config.UPLOAD_PATH}${filename}`;
   };
 
   const [profileImage, setProfileImage] = useState<string>(

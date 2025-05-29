@@ -123,7 +123,7 @@ export const emailService = {
   // Función para enviar correo de recuperación de contraseña
   async sendPasswordResetEmail(email: string, resetToken: string, username: string): Promise<boolean> {
     try {
-      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+      const resetLink = `${process.env.APP_URL}/reset-password/${resetToken}`;
       
       const subject = 'Recuperación de contraseña - Olympus Scribe';
       const htmlContent = `

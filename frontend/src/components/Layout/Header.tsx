@@ -9,6 +9,7 @@ import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
 import { GiCaduceus } from "react-icons/gi";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
+import config from "../../config/config";
 
 interface User {
   id: string;
@@ -28,10 +29,11 @@ const Header: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWeekView, setShowWeekView] = useState(false);
 
+
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
     const filename = url.split('/').pop();
-    return `http://localhost:3001/uploads/profile-images/${filename}`;
+    return `${config.BASE_URL}${config.UPLOAD_PATH}${filename}`;
   };
 
   // Efecto para manejar la carga inicial y la imagen

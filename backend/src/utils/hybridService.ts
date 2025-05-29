@@ -7,7 +7,7 @@ import { pool } from '../config/database';
 import { dateUtils } from './dateUtils';
 
 // URL de la API local de Ollama
-const OLLAMA_API_URL = 'http://localhost:11434/api';
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL;
 
 export const hybridService = {
   async processMessage(message: string, history: any[] = [], image?: string) {

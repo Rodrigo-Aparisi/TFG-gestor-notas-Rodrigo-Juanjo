@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/home.css';
+import config from "../config/config";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ const Home: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:3001/api/contact', {
+      const response = await fetch(`${config.BASE_URL}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
