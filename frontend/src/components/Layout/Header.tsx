@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { logout } from "../../store/slices/authSlice";
-import { FaCalendar, FaUsers } from "react-icons/fa";
+import { FaCalendar, FaUsers, FaBars } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
@@ -28,7 +28,7 @@ const Header: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWeekView, setShowWeekView] = useState(false);
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
@@ -85,9 +85,17 @@ const Header: React.FC = () => {
   const handleWeekViewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowWeekView(!showWeekView);
+    // Si el menú móvil está abierto, cerrarlo al abrir la vista semanal
+    if (mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
   };
 
-  const sandalias_aladas = "/sandalias_aladas.png";
+  // Función para manejar el clic en el botón de hamburguesa
+  const toggleMobileMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   return (
     <>
@@ -95,7 +103,6 @@ const Header: React.FC = () => {
         <nav aria-label="Navegación principal">
           <div className="nav-left">
             <Link to="/" className="logo" aria-label="Ir a la página principal">
-              {/* Usar el SVG como imagen */}
               <img 
                 src="/sandalias_aladas.svg" 
                 alt="Sandalias aladas" 
@@ -103,11 +110,26 @@ const Header: React.FC = () => {
               />
               <span className="logo-text">Olympus Scribe</span>
             </Link>
+
+            {/* Botón de hamburguesa para móviles */}
             {isAuthenticated && (
-              <div className="nav-icons">
+              <button 
+                className="mobile-menu-toggle" 
+                onClick={toggleMobileMenu}
+                aria-label="Abrir menú"
+              >
+                <FaBars />
+              </button>
+            )}
+
+            {isAuthenticated && (
+              <div className={`nav-icons ${mobileMenuOpen ? 'mobile-active' : ''}`}>
                 <button
                   className="icon-button"
-                  onClick={() => navigate("/notes")}
+                  onClick={() => {
+                    navigate("/notes");
+                    setMobileMenuOpen(false);
+                  }}
                   aria-label="Ir a notas"
                 >
                   <BsStickyFill size={20} />
@@ -115,7 +137,10 @@ const Header: React.FC = () => {
                 </button>
                 <button
                   className="icon-button"
-                  onClick={() => navigate("/groups")}
+                  onClick={() => {
+                    navigate("/groups");
+                    setMobileMenuOpen(false);
+                  }}
                   aria-label="Ir a grupos"
                 >
                   <FaUsers size={20} />
@@ -123,7 +148,10 @@ const Header: React.FC = () => {
                 </button>
                 <button
                   className="icon-button week-view-button"
-                  onClick={handleWeekViewClick}
+                  onClick={(e) => {
+                    handleWeekViewClick(e);
+                    setMobileMenuOpen(false);
+                  }}
                   aria-label="Vista semanal"
                 >
                   <IoCalendarOutline size={20} />
@@ -131,7 +159,10 @@ const Header: React.FC = () => {
                 </button>
                 <button
                   className="icon-button"
-                  onClick={() => navigate("/Reminders")}
+                  onClick={() => {
+                    navigate("/Reminders");
+                    setMobileMenuOpen(false);
+                  }}
                   aria-label="Ir a recordatorios"
                 >
                   <FaCalendar />
@@ -139,7 +170,10 @@ const Header: React.FC = () => {
                 </button>
                 <button
                   className="icon-button"
-                  onClick={() => navigate("/chatbot")}
+                  onClick={() => {
+                    navigate("/chatbot");
+                    setMobileMenuOpen(false);
+                  }}
                   aria-label="Olymp.ia"
                 >
                   <GiCaduceus size={20} />
@@ -148,67 +182,68 @@ const Header: React.FC = () => {
               </div>
             )}
           </div>
-        <div className="auth-container">
-          {isAuthenticated && user ? (
-            <div
-              className={`user-menu-container ${showDropdown ? "active" : ""}`}
-              onClick={handleMenuClick}
-            >
-              <div className="user-menu-icon">
-                {profileImage && !imageError ? (
-                  <img
-                    src={profileImage}
-                    alt="Usuario"
-                    className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
-                    onLoad={() => setImageLoaded(true)}
-                    onError={(e) => {
-                      console.error("Error cargando imagen:", profileImage);
-                      setImageError(true);
-                      e.currentTarget.src = "";
-                    }}
-                  />
-                ) : (
-                  <AiOutlineUser size={24} />
-                )}
-              </div>
-
-              <span className="user-name">{user.username}</span>
+          <div className="auth-container">
+            {isAuthenticated && user ? (
               <div
-                className={`dropdown-menu ${showDropdown ? "show" : ""}`}
-                id="user-dropdown"
-                role="menu"
+                className={`user-menu-container ${showDropdown ? "active" : ""}`}
+                onClick={handleMenuClick}
               >
-                <button
-                  onClick={() => {
-                    navigate("/settings");
-                    setShowDropdown(false);
-                  }}
-                  role="menuitem"
+                <div className="user-menu-icon">
+                  {profileImage && !imageError ? (
+                    <img
+                      src={profileImage}
+                      alt="Usuario"
+                      className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
+                      onLoad={() => setImageLoaded(true)}
+                      onError={(e) => {
+                        console.error("Error cargando imagen:", profileImage);
+                        setImageError(true);
+                        e.currentTarget.src = "";
+                      }}
+                    />
+                  ) : (
+                    <AiOutlineUser size={24} />
+                  )}
+                </div>
+
+                {/* Cambiar la clase user-name para que se muestre en móvil */}
+                <span className="user-name mobile-visible">{user.username}</span>
+                <div
+                  className={`dropdown-menu ${showDropdown ? "show" : ""}`}
+                  id="user-dropdown"
+                  role="menu"
                 >
-                  Configuración
-                </button>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setShowDropdown(false);
-                  }}
-                  role="menuitem"
-                >
-                  Cerrar Sesión
-                </button>
+                  <button
+                    onClick={() => {
+                      navigate("/settings");
+                      setShowDropdown(false);
+                    }}
+                    role="menuitem"
+                  >
+                    Configuración
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowDropdown(false);
+                    }}
+                    role="menuitem"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="login-button"
-              type="button"
-            >
-              Iniciar Sesión
-            </button>
-          )}
-        </div>
-      </nav>
+            ) : (
+              <button
+                onClick={() => navigate("/login")}
+                className="login-button"
+                type="button"
+              >s
+                Iniciar Sesión
+              </button>
+            )}
+          </div>
+        </nav>
       </header>
 
       {/* Popup de vista semanal fuera del header pero justo debajo de él */}
