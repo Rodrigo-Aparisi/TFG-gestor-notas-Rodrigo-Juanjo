@@ -356,3 +356,202 @@ body.light-theme,
     font-size: 0.9rem;
   }
 }
+
+/* Ajustes generales para el header */
+@media screen and (max-width: 768px) {
+  :root {
+    --header-height: 60px; /* Reducir altura del header en móviles */
+  }
+  
+  .header {
+    padding: 0.5rem 0;
+  }
+  
+  .header nav {
+    height: var(--header-height);
+    padding: 0 0.5rem;
+    justify-content: space-between;
+  }
+  
+  .nav-left {
+    gap: 1rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* Mantener el texto del logo visible pero con tamaño reducido */
+  .logo-text {
+    font-size: 14px;
+    display: inline-block;
+  }
+  
+  /* Ajustar tamaño del logo */
+  .logo-image {
+    height: 32px;
+  }
+  
+  /* Ajustar el icono y el texto */
+  .icon-button {
+    padding: 0.3rem;
+    font-size: 0.9rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  
+  /* Ocultar etiquetas de texto en los iconos */
+  .icon-label {
+    display: none;
+  }
+  
+  /* Ajustar menú de usuario */
+  .user-name {
+    font-size: 0.8rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .auth-container {
+    margin-left: auto;
+  }
+  
+  .user-menu-container {
+    padding: 2px 4px;
+  }
+  
+  /* Ajustar dropdown */
+  .dropdown-menu {
+    right: -10px;
+    min-width: 150px;
+  }
+  
+  /* Asegurar que el dropdown se muestre correctamente cuando está activo */
+  .dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Ajustes específicos para pantallas muy pequeñas */
+@media screen and (max-width: 480px) {
+  :root {
+    --header-height: 50px;
+  }
+  
+  .header nav {
+    padding: 0 0.3rem;
+  }
+  
+  /* Hacer el menú más compacto */
+  .nav-icons {
+    gap: 0.2rem;
+  }
+  
+  .icon-button {
+    padding: 0.2rem;
+    font-size: 0.8rem;
+  }
+  
+  .logo-image {
+    height: 28px;
+  }
+  
+  /* Logo text aún más pequeño en pantallas muy pequeñas */
+  .logo-text {
+    font-size: 12px;
+  }
+  
+  /* Ajustar tamaño de imagen de perfil */
+  .header-profile-image,
+  .user-menu-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .dropdown-menu button {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .login-button {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Estilo para menú móvil desplegable */
+.mobile-menu-toggle {
+  display: none;
+}
+
+@media screen and (max-width: 600px) {
+  /* Botón de hamburguesa en pantallas pequeñas */
+  .mobile-menu-toggle {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--dorado);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.3rem;
+  }
+  
+  /* Ajustar estructura del header */
+  .header nav {
+    position: relative;
+  }
+  
+  /* Ocultar nav-icons por defecto */
+  .nav-icons {
+    display: none;
+  }
+  
+  /* Mostrar nav-icons cuando el menú móvil está activo */
+  .nav-icons.mobile-active {
+    display: flex;
+    position: absolute;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    background-color: var(--background-darker);
+    padding: 0.5rem;
+    justify-content: space-around;
+    border-bottom: 2px solid var(--dorado);
+    z-index: 1000;
+  }
+  
+  /* Ajustar los iconos en el menú desplegable */
+  .nav-icons.mobile-active .icon-button {
+    flex-direction: column;
+  }
+  
+  /* Mostrar etiquetas de texto cuando el menú está desplegado */
+  .nav-icons.mobile-active .icon-label {
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 3px;
+  }
+}
+
+/* Estilos para el popup de vista semanal */
+.week-view-popup-container {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  max-height: calc(100vh - var(--header-height));
+  background-color: var(--background-darker);
+  z-index: 999;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid var(--dorado);
+}
+
+@media screen and (max-width: 768px) {
+  .week-view-popup-container {
+    padding: 10px;
+  }
+}

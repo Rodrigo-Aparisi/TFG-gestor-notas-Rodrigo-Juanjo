@@ -15,6 +15,8 @@ import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
 import ChatbotPage from './pages/ChatbotPage';
 import Groups from './pages/Groups';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
@@ -80,7 +82,9 @@ function App() {
                 <Route path="/" element={<Home />} />
                 
                 <Route path="/login" element={<Login />} />
-                
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                                
                 <Route path="/notes" element={
                   <PrivateRoute>
                     <Notes />

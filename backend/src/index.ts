@@ -12,6 +12,8 @@ import userGroupRoutes from './routes/userGroupsRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
 import chatbotRoutes from './routes/chatbotRoutes';
+import contactRoutes from './routes/contact';
+import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks'; // Importa el programador de correos
 import fs from 'fs';
@@ -69,7 +71,7 @@ export const uploadNoteImage = multer({
 
 // Middleware básico
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.APP_URL,
   credentials: true
 }));
 
@@ -126,6 +128,8 @@ app.use('/api/user-groups', userGroupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/password', passwordRoutes);
 
 // Añadir un middleware de logging para depuración
 app.use((req, res, next) => {
@@ -166,6 +170,20 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Configurar puerto
 const PORT = process.env.PORT || 3001;
+
+async function cleanupExpiredTokens() {
+  try {
+    await pool.query(
+      'DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = TRUE'
+    );
+    console.log('Tokens expirados o usados eliminados');
+  } catch (error) {
+    console.error('Error al limpiar tokens:', error);
+  }
+}
+
+// Ejecutar cada día
+setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
 
 // Iniciar servidor
 app.listen(PORT, () => {

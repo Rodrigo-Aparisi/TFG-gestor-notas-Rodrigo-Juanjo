@@ -38,9 +38,10 @@ const WeekView: React.FC<WeekViewProps> = ({
     });
   
     return (
-      <div className={`weekdays-header \${isInPopup ? 'in-popup' : ''}`}>
+      <div className={`weekdays-header ${isInPopup ? 'in-popup' : ''}`}>
         {weekDays.map((date, index) => {
           const dayName = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'][index];
+          const shortDayName = ['L', 'M', 'X', 'J', 'V', 'S', 'D'][index];
           // Obtener los recordatorios para este día
           const dayReminders = getDayReminders(reminders, date);
     
@@ -50,6 +51,8 @@ const WeekView: React.FC<WeekViewProps> = ({
             const dateB = new Date(b.dateTime);
             return dateA.getTime() - dateB.getTime();
           });
+          
+          const monthShort = date.toLocaleDateString('es-ES', { month: 'short' });
     
           return (
             <div 
@@ -64,23 +67,39 @@ const WeekView: React.FC<WeekViewProps> = ({
               onClick={() => onDateSelect(date)}
             >
               <div className="weekday-header-top">
-                <span className="weekday-name">{dayName}</span>&nbsp;
-                <span className="weekday-number">{date.getDate()}</span>&nbsp;
-                <span className="month-indicator">
-                  {date.toLocaleDateString('es-ES', { month: 'short' })}
-                </span>
+                {/* Versión desktop: Todo en una línea */}
+                <div className="desktop-header-format">
+                  <span className="desktop-day-name">{dayName}</span>
+                  <span className="desktop-day-number">{date.getDate()}</span>
+                  <span className="desktop-month-name">{monthShort}</span>
+                </div>
+                
+                {/* Versión móvil: Formato vertical */}
+                <div className="mobile-header-format">
+                  <span className="mobile-day-name">{shortDayName}</span>
+                  <span className="mobile-day-number">{date.getDate()}</span>
+                  <span className="mobile-month-name">
+                    {monthShort.substring(0, 3)}
+                  </span>
+                </div>
               </div>
-              {/* Renderizar los recordatorios del día, máximo 2 visibles */}
-              {dayReminders.length > 0 && (
-                <ReminderList
-                  reminders={dayReminders}
-                  date={date}
-                  maxVisible={2}
-                  onReminderClick={onReminderClick}
-                  onShowMore={onShowMore}
-                  focusedReminder={focusedReminder}
-                />
-              )}
+              
+              <div className="weekday-reminders-wrapper">
+                {dayReminders.length > 0 ? (
+                  <ReminderList
+                    reminders={dayReminders}
+                    date={date}
+                    maxVisible={2}
+                    onReminderClick={onReminderClick}
+                    onShowMore={onShowMore}
+                    focusedReminder={focusedReminder}
+                  />
+                ) : (
+                  <div className="no-reminders-indicator">
+                    <span className="empty-day-text">Sin recordatorios</span>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -88,7 +107,11 @@ const WeekView: React.FC<WeekViewProps> = ({
     );
   };
 
-  return generateWeekDaysHeader();
+  return (
+    <div className="week-view-container">
+      {generateWeekDaysHeader()}
+    </div>
+  );
 };
 
 export default WeekView;
