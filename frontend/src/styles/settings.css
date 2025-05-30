@@ -1,3 +1,81 @@
+/* Asegurar que los estilos de settings tengan mayor prioridad */
+.settings-page {
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+/* Estilos iniciales y de carga */
+.settings-page .settings-container {
+  display: flex;
+  background-color: var(--background-black);
+  border: 1px solid var(--dorado);
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 2rem auto;
+  color: var(--white);
+  max-height: 80vh;
+  overflow: hidden;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transition: opacity 0.3s ease;
+  position: relative;
+  z-index: 10;
+}
+
+.settings-page .settings-container.loaded {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.settings-page .settings-sidebar {
+  width: 250px;
+  background-color: var(--background-darker);
+  border-right: 1px solid var(--dorado);
+  padding: 1rem;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  z-index: 11;
+}
+
+.settings-page .settings-sections {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  height: 100%;
+  max-height: 80vh;
+  z-index: 11;
+  background-color: var(--background-black);
+  position: relative;
+}
+
+/* Eliminar cualquier fondo o efecto que pueda estar viniendo de home.css */
+.settings-page::before {
+  display: none !important;
+}
+
+.settings-page .home-container::before {
+  display: none !important;
+}
+
+/* Asegurar que el z-index para la sección de cuenta sea mayor */
+.settings-page #cuenta-section {
+  z-index: 15 !important;
+  position: relative;
+}
+
+/* Sobrescribir cualquier animación que pueda estar afectando a los elementos */
+.settings-page section {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  padding: 0px !important;
+}
+
 /* Estilos iniciales y de carga */
 .settings-container {
   display: flex;
@@ -328,6 +406,10 @@ section p {
   cursor: pointer;
 }
 
+.delete-confirmation .password-toggle {
+  transform: translateY(0%);
+}
+
 .warning-text {
   color: #ff9800;
   font-size: 0.85em;
@@ -566,6 +648,134 @@ section p {
   cursor: not-allowed;
 }
 
+
+.privacy-content {
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.privacy-text {
+  line-height: 1.6;
+}
+
+.privacy-list {
+  margin: 15px 0;
+  padding-left: 20px;
+}
+
+.privacy-list li {
+  margin-bottom: 12px;
+}
+
+.privacy-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.privacy-button {
+  background-color: var(--accent-color);
+  color: var(--text-light);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.privacy-button:hover {
+  background-color: var(--accent-hover);
+}
+
+
+/* Estilos para la sección de eliminar cuenta */
+.delete-account-section {
+  margin-top: 40px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.delete-warning {
+  color: #ff3b30;
+  background-color: rgba(255, 59, 48, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.delete-account-button {
+  background-color: #ff3b30;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.delete-account-button:hover {
+  background-color: #e0352b;
+}
+
+.delete-confirmation {
+  background-color: rgba(255, 59, 48, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+.delete-confirm-input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+.delete-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-delete-button {
+  background-color: #ff3b30;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  flex: 1;
+}
+
+.confirm-delete-button:hover:not(:disabled) {
+  background-color: #e0352b;
+}
+
+.cancel-delete-button {
+  border: 1px solid var(--border-color);
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.cancel-delete-button:hover:not(:disabled) {
+  background-color: var(--hover-bg);
+}
+
+.confirm-delete-button:disabled,
+.cancel-delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
 /* Media Queries */
 @media (max-width: 768px) {
   .settings-container {
@@ -575,8 +785,8 @@ section p {
   }
 
   .settings-sidebar {
-    width: 100%;
-    max-height: none;
+    width: 100% !important;
+    max-height: none !important;
   }
 
   .settings-sections {

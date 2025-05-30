@@ -1,3 +1,4 @@
+// chatbotRoutes.ts
 import express from 'express';
 import { chatbotController } from '../controllers/chatbotController';
 import { authenticateToken } from '../middleware/auth';
@@ -32,8 +33,7 @@ const upload = multer({
 // Middleware de autenticación
 router.use(authenticateToken);
 
-// Rutas del chatbot
+// Rutas del chatbot - limitadas a las funcionalidades requeridas
 router.post('/process', chatbotController.processMessage);
-router.post('/upload-image', upload.single('image'), chatbotController.uploadImage);
 
 export default router;

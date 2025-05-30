@@ -24,6 +24,18 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
   // Referencia al menú desplegable
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const previousNotesRef = useRef<string>('');
+  const previousSortTypeRef = useRef<SortType>('date');
+  const previousSortDirectionRef = useRef<SortDirection>('desc');
+  const previousSearchTextRef = useRef<string>('');
+  const previousDateFilterRef = useRef<string>('');
+
+  // Variables para detectar cambios
+  const sortTypeChanged = sortType !== previousSortTypeRef.current;
+  const sortDirectionChanged = sortDirection !== previousSortDirectionRef.current;
+  const searchTextChanged = searchText !== previousSearchTextRef.current;
+  const dateFilterChanged = JSON.stringify(dateFilteredNotes) !== previousDateFilterRef.current;
+
   // Cargar preferencias del servidor al iniciar
   useEffect(() => {
     const loadUserPreferences = async () => {
@@ -66,7 +78,18 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
   // Ordenar notas cuando cambien las preferencias o las notas
   useEffect(() => {
     if (!isLoading && notes.length > 0) {
-      sortAndFilterNotes(sortType, sortDirection, searchText, dateFilteredNotes);
+      // Añadir una comprobación para evitar ordenaciones innecesarias
+      const notesChanged = JSON.stringify(notes) !== previousNotesRef.current;
+      if (notesChanged || sortTypeChanged || sortDirectionChanged || searchTextChanged || dateFilterChanged) {
+        sortAndFilterNotes(sortType, sortDirection, searchText, dateFilteredNotes);
+        
+        // Actualizar las referencias
+        previousNotesRef.current = JSON.stringify(notes);
+        previousSortTypeRef.current = sortType;
+        previousSortDirectionRef.current = sortDirection;
+        previousSearchTextRef.current = searchText;
+        previousDateFilterRef.current = JSON.stringify(dateFilteredNotes);
+      }
     }
   }, [notes, sortType, sortDirection, searchText, dateFilteredNotes, isLoading]);
 
@@ -142,16 +165,26 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
     sortAndFilterNotes(sortType, sortDirection, text);
   };
 
-    const sortAndFilterNotes = (
+  const sortAndFilterNotes = (
     type: SortType, 
     direction: SortDirection, 
     search: string,
     dateFiltered: Note[] | null = null
   ) => {
-    // Comenzar con las notas filtradas por fecha o todas las notas
+    // Evitar ordenaciones innecesarias si no hay cambios
+    if (
+      type === previousSortTypeRef.current &&
+      direction === previousSortDirectionRef.current &&
+      search === previousSearchTextRef.current &&
+      JSON.stringify(dateFiltered) === previousDateFilterRef.current &&
+      previousNotesRef.current === JSON.stringify(notes)
+    ) {
+      return; // No hay cambios, salir de la función
+    }
+    
+    // El resto de la función queda igual
     let filtered = dateFiltered ? [...dateFiltered] : [...notes];
     
-    // Filtrar por texto de búsqueda si existe
     if (search && search.trim()) {
       filtered = filtered.filter(note => {
         const titleMatch = note.title.toLowerCase().includes(search.toLowerCase());
@@ -163,15 +196,12 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
       });
     }
     
-    // Ordenar según el tipo seleccionado
     filtered.sort((a, b) => {
-      // Primero ordenamos por pin si está seleccionado
       if (type === 'pinned') {
         if (a.is_pinned && !b.is_pinned) return direction === 'asc' ? 1 : -1;
         if (!a.is_pinned && b.is_pinned) return direction === 'asc' ? -1 : 1;
       }
       
-      // Luego por el criterio seleccionado
       if (type === 'title') {
         return direction === 'asc' 
           ? a.title.localeCompare(b.title) 
@@ -182,7 +212,6 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
         return direction === 'asc' ? dateA - dateB : dateB - dateA;
       }
       
-      // Por defecto ordenamos por fecha
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
       return direction === 'asc' ? dateA - dateB : dateB - dateA;
@@ -195,7 +224,7 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
   const getSortTypeText = () => {
     switch (sortType) {
       case 'title': return 'Por título';
-      case 'date': return 'Por fecha';
+      case 'date': return 'Por modificación';
       case 'pinned': return 'Por fijadas';
       default: return 'Ordenar';
     }
@@ -253,7 +282,7 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
                 className={`sort-item ${sortType === 'date' ? 'active' : ''}`} 
                 onClick={() => handleSort('date')}
               >
-                Por fecha
+                Por modificación
                 {sortType === 'date' && (
                   <i className={`fas fa-arrow-${sortDirection === 'asc' ? 'up' : 'down'}`}></i>
                 )}

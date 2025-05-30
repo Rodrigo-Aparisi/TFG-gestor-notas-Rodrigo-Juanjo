@@ -14,6 +14,7 @@ import {
 } from "react-icons/ai";
 import "../styles/settings.css";
 import { logout, updateUserProfile } from "../store/slices/authSlice";
+import config from "../config/config";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -25,12 +26,17 @@ const Settings = () => {
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  
+  // Mueve estos estados dentro del componente
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Función helper para construir la URL completa de la imagen
   const getFullImageUrl = (url: string | undefined): string => {
-    if (!url) return "";
-    const filename = url.split("/").pop();
-    return `http://localhost:3001/uploads/profile-images/${filename}`;
+    if (!url) return '';
+    const filename = url.split('/').pop();
+    return `${config.BASE_URL}${config.UPLOAD_PATH}${filename}`;
   };
 
   const [profileImage, setProfileImage] = useState<string>(
@@ -75,6 +81,39 @@ const Settings = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "ELIMINAR") {
+      showMessage("Por favor, escribe ELIMINAR para confirmar", "error");
+      return;
+    }
+
+    // Solicitar la contraseña actual
+    if (!userData.currentPassword) {
+      showMessage("Debes introducir tu contraseña actual para eliminar la cuenta", "error");
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      // Pasar la contraseña actual
+      await accountService.deleteUserAccount(user?.id, userData.currentPassword);
+      
+      showMessage("Cuenta eliminada correctamente", "success");
+      
+      // Cerrar sesión y redirigir al login
+      dispatch(logout());
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 2000);
+    } catch (error) {
+      console.error("Error al eliminar la cuenta:", error);
+      showMessage(error instanceof Error ? error.message : "Error al eliminar la cuenta", "error");
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
   const [theme, setTheme] = useState<ThemeType>("dark");
   const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -89,6 +128,7 @@ const Settings = () => {
       { key: "informacion", label: "Información de la cuenta" },
       { key: "email", label: "Email" },
       { key: "contrasena", label: "Contraseña" },
+      { key: "eliminar", label: "Eliminar cuenta" },
     ],
   };
 
@@ -385,7 +425,6 @@ const Settings = () => {
         <div className="settings-sidebar">
           {[
             { key: "cuenta", label: "Cuenta" },
-            { key: "general", label: "General" },
             { key: "privacidad", label: "Privacidad" },
           ].map((item) => (
             <div key={item.key}>
@@ -508,7 +547,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Sección de Contraseña – campos deshabilitados hasta pulsar “Editar datos” */}
+              {/* Sección de Contraseña – campos deshabilitados hasta pulsar "Editar datos" */}
               <div id="cuenta-contrasena" className="account-section">
                 <h3>Contraseña</h3>
                 <div className="password-container">
@@ -647,11 +686,94 @@ const Settings = () => {
                   </>
                 )}
               </div>
+
+              {/* Sección para eliminar la cuenta */}
+              <div id="cuenta-eliminar" className="account-section delete-account-section">
+                <h3>Eliminar cuenta</h3>
+                <div className="delete-account-container">
+                  <p className="delete-warning">
+                    Al eliminar tu cuenta, se borrarán permanentemente todos tus datos, incluyendo notas, recordatorios y configuraciones personales. Esta acción no se puede deshacer.
+                  </p>
+                  
+                  {!showDeleteConfirmation ? (
+                    <button
+                      type="button"
+                      className="delete-account-button"
+                      onClick={() => setShowDeleteConfirmation(true)}
+                    >
+                      Eliminar mi cuenta
+                    </button>
+                  ) : (
+                    <div className="delete-confirmation">
+                      <p>Para confirmar la eliminación de tu cuenta, escribe "ELIMINAR" en el campo a continuación:</p>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder="Escribe ELIMINAR"
+                        className="delete-confirm-input"
+                      />
+                      
+                      <div className="password-input-container">
+                        <label>Ingresa tu contraseña actual para confirmar:</label>
+                        <input
+                          type={showPasswords.currentPassword ? "text" : "password"}
+                          name="currentPassword"
+                          value={userData.currentPassword}
+                          onChange={handleChange}
+                          required
+                          className="delete-confirm-password"
+                        />
+                        <span
+                          className="password-toggle"
+                          onClick={() =>
+                            setShowPasswords((prev) => ({
+                              ...prev,
+                              currentPassword: !prev.currentPassword,
+                            }))
+                          }
+                        >
+                          {showPasswords.currentPassword ? (
+                            <AiOutlineEyeInvisible />
+                          ) : (
+                            <AiOutlineEye />
+                          )}
+                        </span>
+                      </div>
+                      
+                      <div className="delete-buttons">
+                        <button
+                          type="button"
+                          className="confirm-delete-button"
+                          onClick={handleDeleteAccount}
+                          disabled={isDeletingAccount}
+                        >
+                          {isDeletingAccount ? "Eliminando..." : "Confirmar eliminación"}
+                        </button>
+                        <button
+                          type="button"
+                          className="cancel-delete-button"
+                          onClick={() => {
+                            setShowDeleteConfirmation(false);
+                            setDeleteConfirmText("");
+                          }}
+                          disabled={isDeletingAccount}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </form>
           </section>
 
-          <section id="general-section">
+          {/* Sección General comentada pero mantenida para futuras implementaciones */}
+           {/* <section id="general-section">
             <h2>General</h2>
+           
             <div id="general-preferencias">
               <h3>Preferencias</h3>
               <div className="theme-selector">
@@ -699,11 +821,48 @@ const Settings = () => {
               <p>Contenido de Notificaciones generales.</p>
             </div>
           </section>
+          */}
 
           <section id="privacidad-section">
             <h2>Privacidad</h2>
-            <p>Contenido de configuraciones de Privacidad.</p>
+            <div className="privacy-content">
+              <h3>Aviso de Privacidad</h3>
+              <div className="privacy-text">
+                <p>
+                  Al utilizar Olympus Scribe, usted acepta los siguientes términos:
+                </p>
+                
+                <ol className="privacy-list">
+                  <li>
+                    <strong>Responsabilidad sobre el contenido:</strong> La Aplicación no se hace responsable por el contenido generado por la inteligencia artificial integrada.
+                  </li>
+                  <li>
+                    <strong>Datos personales:</strong> Los datos personales y contenidos almacenados (notas, recordatorios y otra información) son responsabilidad exclusiva del usuario.
+                  </li>
+                  <li>
+                    <strong>Recopilación de información:</strong> La Aplicación recopila únicamente la información necesaria para proporcionar sus servicios, incluyendo correo electrónico y credenciales de acceso. La información de sus notas podrá ser procesada por nuestros sistemas de IA para ofrecer funcionalidades como búsqueda y organización, pero no será compartida con terceros.
+                  </li>
+                  <li>
+                    <strong>Seguridad de la cuenta:</strong> El usuario es responsable de mantener la confidencialidad de su contraseña y cuenta.
+                  </li>
+                  <li>
+                    <strong>Procesamiento de datos:</strong> Para ofrecer funcionalidades de IA, sus notas y consultas serán procesadas por nuestros sistemas. Estos datos se utilizan exclusivamente para mejorar su experiencia personal y no se comparten con otros usuarios ni se utilizan para entrenar modelos generales.
+                  </li>
+                  <li>
+                    <strong>Almacenamiento de datos:</strong> Sus notas se almacenan en servidores seguros y puede solicitar la eliminación completa de su información en cualquier momento.
+                  </li>
+                  <li>
+                    <strong>Modificaciones:</strong> Nos reservamos el derecho de modificar este aviso de privacidad en cualquier momento, notificando los cambios a través de la aplicación.
+                  </li>
+                  <li>
+                    <strong>Aceptación:</strong> Al utilizar la Aplicación, el usuario reconoce haber leído y aceptado estos términos.
+                  </li>
+                </ol>
+                
+              </div>
+            </div>
           </section>
+
         </div>
       </div>
     </div>
