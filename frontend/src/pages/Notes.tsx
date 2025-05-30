@@ -349,92 +349,148 @@ const Notes: React.FC = () => {
   };
 
   // Función para insertar listas
-  const insertList = (noteId: string, type: 'bullet' | 'number', isNewNote = false) => {
-    // Primero, intentamos obtener el textarea directamente por ID
-    let textarea: HTMLTextAreaElement | null = null;
+ const insertList = (noteId: string, type: 'bullet' | 'number', isNewNote = false) => {
+  // Primero, intentamos obtener el textarea directamente por ID
+  let textarea: HTMLTextAreaElement | null = null;
+  
+  if (isNewNote) {
+    textarea = document.querySelector('.create-note textarea') as HTMLTextAreaElement;
+  } else {
+    // 1. Para notas compartidas, el textarea podría estar en un elemento con el ID de la nota compartida
+    // o con el ID de la nota original (note_id)
     
-    if (isNewNote) {
-      textarea = document.querySelector('.create-note textarea') as HTMLTextAreaElement;
-    } else {
-      // Para notas existentes, buscamos el textarea dentro del contenedor de la nota
+    // Intentar encontrar por data-note-id
+    textarea = document.querySelector(`textarea[data-note-id="${noteId}"]`) as HTMLTextAreaElement;
+    
+    // Si no lo encontramos, buscar en cualquier contenedor con data-note-id
+    if (!textarea) {
       const noteContainer = document.querySelector(`[data-note-id="${noteId}"]`);
       if (noteContainer) {
         textarea = noteContainer.querySelector('textarea') as HTMLTextAreaElement;
       }
     }
     
+    // 2. Si aún no lo encontramos, buscar en la nota actualmente enfocada
     if (!textarea) {
-      console.error(`No se pudo encontrar el textarea para la nota ${noteId}`);
-      showFeedback('Error al insertar lista');
-      return;
-    }
-    
-    const content = textarea.value;
-    const selectionStart = textarea.selectionStart;
-    
-    // Encontrar la línea actual
-    const textBeforeCursor = content.substring(0, selectionStart);
-    const lines = textBeforeCursor.split('\n');
-    const currentLineIndex = lines.length - 1;
-    const currentLine = lines[currentLineIndex] || '';
-    
-    // Determinar si estamos al principio del textarea o al inicio de una línea
-    const isAtBeginning = selectionStart === 0;
-    const isAtLineStart = currentLine.trim() === '';
-    
-    // Decidir si añadir un salto de línea o no
-    let insertText = '';
-    
-    // Solo añadir salto de línea si no estamos al principio del textarea ni al inicio de una línea
-    if (!isAtBeginning && !isAtLineStart) {
-      insertText += '\n';
-    }
-    
-    if (type === 'bullet') {
-      insertText += '• ';
-    } else if (type === 'number') {
-      // Buscar en todas las líneas anteriores, no solo la inmediata
-      let lastNumberedLine = -1;
-      let lastNumber = 0;
-      
-      for (let i = currentLineIndex; i >= 0; i--) {
-        const line = lines[i];
-        const numberMatch = line.match(/^(\s*)(\d+)\.(\s+)/);
-        
-        if (numberMatch) {
-          lastNumberedLine = i;
-          lastNumber = parseInt(numberMatch[2]);
-          break;
-        }
-      }
-      
-      // Si encontramos una línea numerada
-      if (lastNumberedLine !== -1) {
-        // Calcular el número correcto basado en la posición relativa
-        const nextNumber = lastNumber + (currentLineIndex - lastNumberedLine);
-        insertText += `${nextNumber + 1}. `;
-      } else {
-        // Si no hay línea numerada previa, comenzar en 1
-        insertText += '1. ';
+      const focusedNote = document.querySelector('.note-card.focused');
+      if (focusedNote) {
+        textarea = focusedNote.querySelector('textarea') as HTMLTextAreaElement;
       }
     }
     
-    const newContent = content.substring(0, selectionStart) + insertText + content.substring(selectionStart);
+    // 3. Último recurso: buscar cualquier textarea visible en la página
+    if (!textarea) {
+      const visibleTextareas = document.querySelectorAll('textarea:not([style*="display: none"])');
+      if (visibleTextareas.length === 1) {
+        // Si solo hay un textarea visible, usarlo
+        textarea = visibleTextareas[0] as HTMLTextAreaElement;
+      }
+    }
+  }
+  
+  if (!textarea) {
+    console.error(`No se pudo encontrar el textarea para la nota ${noteId}`);
+    showFeedback('Error al insertar lista');
+    return;
+  }
+  
+  // El resto de la función se mantiene igual...
+  const content = textarea.value;
+  const selectionStart = textarea.selectionStart;
+  
+  // Encontrar la línea actual
+  const textBeforeCursor = content.substring(0, selectionStart);
+  const lines = textBeforeCursor.split('\n');
+  const currentLineIndex = lines.length - 1;
+  const currentLine = lines[currentLineIndex] || '';
+  
+  // Determinar si estamos al principio del textarea o al inicio de una línea
+  const isAtBeginning = selectionStart === 0;
+  const isAtLineStart = currentLine.trim() === '';
+  
+  // Decidir si añadir un salto de línea o no
+  let insertText = '';
+  
+  // Solo añadir salto de línea si no estamos al principio del textarea ni al inicio de una línea
+  if (!isAtBeginning && !isAtLineStart) {
+    insertText += '\n';
+  }
+  
+  if (type === 'bullet') {
+    insertText += '• ';
+  } else if (type === 'number') {
+    // Buscar en todas las líneas anteriores, no solo la inmediata
+    let lastNumberedLine = -1;
+    let lastNumber = 0;
     
-    // Actualizar el contenido
+    for (let i = currentLineIndex; i >= 0; i--) {
+      const line = lines[i];
+      const numberMatch = line.match(/^(\s*)(\d+)\.(\s+)/);
+      
+      if (numberMatch) {
+        lastNumberedLine = i;
+        lastNumber = parseInt(numberMatch[2]);
+        break;
+      }
+    }
+    
+    // Si encontramos una línea numerada
+    if (lastNumberedLine !== -1) {
+      // Calcular el número correcto basado en la posición relativa
+      const nextNumber = lastNumber + (currentLineIndex - lastNumberedLine);
+      insertText += `${nextNumber + 1}. `;
+    } else {
+      // Si no hay línea numerada previa, comenzar en 1
+      insertText += '1. ';
+    }
+  }
+  
+  const newContent = content.substring(0, selectionStart) + insertText + content.substring(selectionStart);
+  
+  // Determinar si estamos en una nota compartida
+  const isSharedNote = document.querySelector('.note-card.focused.editable-note') !== null;
+  
+  // Para notas compartidas, necesitamos actualizar directamente el valor y disparar eventos
+  if (isSharedNote) {
+    // Actualizar el valor del textarea
+    textarea.value = newContent;
+    
+    // Disparar un evento de input para que React detecte el cambio
+    const inputEvent = new Event('input', { bubbles: true });
+    textarea.dispatchEvent(inputEvent);
+    
+    // También disparar un evento change
+    const changeEvent = new Event('change', { bubbles: true });
+    textarea.dispatchEvent(changeEvent);
+    
+    // Para componentes controlados por React, intentar actualizar el estado
+    // Esto es un intento de hacer que funcione con diferentes implementaciones
+    const reactInstance = (textarea as any)._reactProps;
+    if (reactInstance && reactInstance.onChange) {
+      const syntheticEvent = {
+        target: textarea,
+        currentTarget: textarea,
+        preventDefault: () => {},
+        stopPropagation: () => {}
+      };
+      reactInstance.onChange(syntheticEvent);
+    }
+  } else {
+    // Para notas normales o nuevas, usar el flujo normal
     if (isNewNote) {
       setNewNote(prev => ({ ...prev, content: newContent }));
     } else {
       handleNoteChange(noteId, 'content', newContent);
     }
-    
-    // Mover el cursor después del texto insertado
-    const newPosition = selectionStart + insertText.length;
-    setTimeout(() => {
-      textarea?.focus();
-      textarea?.setSelectionRange(newPosition, newPosition);
-    }, 0);
-  };
+  }
+  
+  // Mover el cursor después del texto insertado
+  const newPosition = selectionStart + insertText.length;
+  setTimeout(() => {
+    textarea?.focus();
+    textarea?.setSelectionRange(newPosition, newPosition);
+  }, 0);
+};
 
 
   return (
@@ -556,6 +612,7 @@ const Notes: React.FC = () => {
             handleFocusIndicatorClick={handleFocusIndicatorClick}
             autoResizeTextarea={autoResizeTextarea}
             showFeedback={showFeedback}
+            insertList={insertList}
           />
         )}
 
