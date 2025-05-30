@@ -1,50 +1,61 @@
-import React from 'react';
-import { UserGroup } from '../../types';
+import React from "react";
+import { Group } from "../../types";
+import { FaEdit, FaInfoCircle } from "react-icons/fa";
+import { on } from "events";
 
 interface UserGroupSidebarProps {
-  groups: UserGroup[];
-  selectedGroup: UserGroup | null;
+  groups: Group[];
+  activeGroup: string;
   onGroupSelect: (groupId: string) => void;
-  onCreateGroup: () => void;
+  onEditGroupName: (groupId: string) => void;
+  onEditGroupDescription: (groupId: string) => void;
 }
 
 const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
   groups,
-  selectedGroup,
+  activeGroup,
   onGroupSelect,
-  onCreateGroup
+  onEditGroupName,
+  onEditGroupDescription,
 }) => {
-  const safeGroups = Array.isArray(groups) ? groups : [];
-
   return (
-    <div className="groups-sidebar">
-      <div className="groups-header">
-        <h2>Mis Grupos</h2>
-        <button 
-          className="create-group-btn"
-          onClick={onCreateGroup}
-        >
-          + Nuevo Grupo
-        </button>
-      </div>
-      
-      <div className="groups-list">
-        {safeGroups.length === 0 ? (
-          <p className="no-groups-message">No tienes grupos creados</p>
-        ) : (
-          safeGroups.map(group => (
-            <div 
-              key={group.id}
-              className={`group-item ${selectedGroup?.id === group.id ? 'selected' : ''}`}
+    <div className="notes-sidebar">
+      <div className="group-list">
+        {/* Encabezado del sidebar */}
+        <div className="sidebar-header">
+          <h2>Mis Grupos</h2>
+        </div>
+        {/* Grupos */}
+        {groups
+          .filter((group) => !group.isDefault && group.id !== "trash")
+          .map((group) => (
+            <div
+              key={`group-${group.id}`}
+              className={`group-item ${
+                activeGroup === group.id ? "active" : ""
+              }`}
               onClick={() => onGroupSelect(group.id)}
             >
-              <h3>{group.name}</h3>
-              <p className="group-members-count">
-                {Array.isArray(group.members) ? group.members.length : 0} miembros
-              </p>
+              <div className="group-actions-left">
+                <button
+                  className="action-button edit-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditGroupName(group.id);
+                  }}
+                  title="Editar grupo"
+                >
+                  <FaEdit />
+                </button>
+              </div>
+
+              <div
+                className="group-color"
+                style={{ backgroundColor: group.color || "#3498db" }}
+              />
+              <span className="group-name">{group.name}</span>
             </div>
-          ))
-        )}
+          ))}
       </div>
     </div>
   );
