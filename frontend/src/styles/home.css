@@ -151,6 +151,7 @@ section.animate {
   position: relative;
   overflow: hidden;
   border-radius: 25px;
+  min-height: 550px;
 }
 
 .hero-section::before {
@@ -174,7 +175,7 @@ section.animate {
   font-size: clamp(2.5rem, 5vw, 4rem);
   font-weight: 800;
   margin-bottom: var(--spacing-md);
-  line-height: 1.1;
+  line-height: 1.25;
   background: linear-gradient(to right, var(--white), var(--dorado));
   -webkit-background-clip: text;
   background-clip: text;
@@ -457,7 +458,7 @@ section.animate {
   background: var(--dorado-hover);
 }
 
-/* Contact Section mejorada */
+/* Contact Section mejorada - CORREGIDA */
 .contact-section {
   padding: var(--spacing-xl) 0;
 }
@@ -477,6 +478,9 @@ section.animate {
 .contact-info {
   padding: var(--spacing-xl);
   background: linear-gradient(135deg, rgba(255, 198, 0, 0.1), rgba(0, 0, 0, 0));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .contact-info h3 {
@@ -529,6 +533,7 @@ section.animate {
 
 .contact-method span {
   color: var(--white);
+  word-break: break-word;
 }
 
 .contact-form {
@@ -543,8 +548,9 @@ section.animate {
 .form-group label {
   display: block;
   margin-bottom: var(--spacing-xs);
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--white) !important;
   font-weight: 500;
+  opacity: 0.8;
 }
 
 .form-group input,
@@ -624,7 +630,8 @@ section.animate {
 /* Estilos de botones mejorados */
 .primary-button,
 .secondary-button,
-.cta-button {
+.cta-button,
+.submit-button {
   padding: 0.85rem 1.75rem;
   font-weight: 600;
   border: none;
@@ -639,7 +646,8 @@ section.animate {
 }
 
 .primary-button,
-.cta-button {
+.cta-button,
+.submit-button {
   background-color: var(--dorado);
   color: var(--background-dark);
 }
@@ -668,7 +676,8 @@ section.animate {
 }
 
 .primary-button:hover,
-.cta-button:hover {
+.cta-button:hover,
+.submit-button:hover {
   background-color: var(--dorado-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 198, 0, 0.3);
@@ -687,23 +696,11 @@ section.animate {
 }
 
 .submit-button {
-  background-color: var(--dorado);
-  color: var(--background-dark);
   width: 100%;
   font-size: 1.1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all var(--transition-speed) ease;
-  min-width: 150px;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.submit-button:hover {
-  background-color: var(--dorado-hover);
+  padding: 1rem 1.75rem;
+  height: auto;
+  line-height: normal;
 }
 
 .submit-button:disabled {
@@ -755,6 +752,7 @@ section.animate {
   
   .testimonial-card {
     flex: 0 0 100%;
+    max-width: 100%;
   }
   
   .section-title {
@@ -783,6 +781,10 @@ section.animate {
   .cta-button {
     width: 100%;
   }
+  
+  .contact-method span {
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -802,5 +804,17 @@ section.animate {
   .contact-info, 
   .contact-form {
     padding: var(--spacing-md);
+  }
+  
+  .form-group label,
+  .form-group input,
+  .form-group textarea {
+    font-size: 0.9rem;
+  }
+  
+  .contact-method i {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
   }
 }

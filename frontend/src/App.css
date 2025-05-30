@@ -408,7 +408,7 @@ body.light-theme,
   /* Ajustar menú de usuario */
   .user-name {
     font-size: 0.8rem;
-    max-width: 80px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
