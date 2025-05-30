@@ -57,19 +57,16 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               required
               disabled={isSubmitting}
             />
-          </div>
-          
-          <div className="form-group">
             <label htmlFor="group-description">Descripción (opcional)</label>
-            <textarea
+            <input
               id="group-description"
+              type="text"
               value={newUserGroup.description || ''}
               onChange={e => setUserNewGroup({...newUserGroup, description: e.target.value})}
               placeholder="Descripción del grupo"
               disabled={isSubmitting}
             />
-          </div>
-          
+          </div>          
           <div className="modal-actions">
             <button 
               type="button"

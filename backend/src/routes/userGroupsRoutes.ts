@@ -16,6 +16,8 @@ router.post('/', userGroupController.createUserGroup);
 router.get('/:id', userGroupController.getUserGroup);
 router.put('/:id', userGroupController.updateUserGroup);
 router.delete('/:id', userGroupController.deleteUserGroup);
+router.put('/:id/rename', authenticateToken, userGroupController.renameUserGroup);
+router.put('/:id/description', authenticateToken, userGroupController.updateGroupDescription);
 
 // Rutas para miembros de grupos
 router.get('/:id/members', userGroupController.getGroupMembers);
