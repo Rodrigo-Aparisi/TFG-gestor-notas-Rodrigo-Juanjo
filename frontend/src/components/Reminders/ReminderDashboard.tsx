@@ -227,14 +227,8 @@ const ReminderDashboard: React.FC<ReminderDashboardProps> = ({
   return (
     <div className="reminder-dashboard">
       <div className="dashboard-header">
-        <div className="dashboard-controls">
-          <input
-            type="text"
-            placeholder="Buscar recordatorios..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="dashboard-search"
-          />
+        {/* Contenedor de filtros - Primero el filtro de estado y luego el calendario */}
+        <div className="dashboard-filter-container">
           <select 
             value={filterStatus === null ? '' : filterStatus} 
             onChange={(e) => setFilterStatus(e.target.value === '' ? null : Number(e.target.value))}
@@ -317,6 +311,17 @@ const ReminderDashboard: React.FC<ReminderDashboardProps> = ({
               </div>
             )}
           </div>
+        </div>
+        
+        {/* Campo de búsqueda separado a la derecha */}
+        <div className="dashboard-search-container">
+          <input
+            type="text"
+            placeholder="Buscar recordatorios..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="dashboard-search"
+          />
         </div>
       </div>
       
