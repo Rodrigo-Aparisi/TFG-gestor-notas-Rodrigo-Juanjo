@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../services/api';
 import "../styles/pwrecovery.css";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 type FormData = {
   email: string;
