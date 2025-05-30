@@ -12,6 +12,7 @@ import CreateGroupNoteForm from "../components/UserGroups/CreateGroupNoteForm";
 import GroupTabs from "../components/UserGroups/GroupTabs";
 import { useTextareaResize } from "../hooks/useTextareaResize";
 import api from "../services/api";
+import config from "../config/config";
 
 const Groups: React.FC = () => {
   const { user } = useAuth();
@@ -181,6 +182,7 @@ const Groups: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files || e.target.files.length === 0) return;
+    if (!selectedGroup) return; // Asegúrate de que hay un grupo seleccionado
 
     const file = e.target.files[0];
     const formData = new FormData();
@@ -188,7 +190,7 @@ const Groups: React.FC = () => {
 
     try {
       const response = await api.post(
-        "/user-groups/notes/upload-image",
+        `/user-groups/${selectedGroup.id}/notes/upload-image`,
         formData,
         {
           headers: {
@@ -210,19 +212,17 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleNoteImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    noteId: string
-  ) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+  const handleNoteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    if (!e.target.files || e.target.files.length === 0 || !selectedGroup) return;
 
     const file = e.target.files[0];
     const formData = new FormData();
     formData.append("image", file);
 
     try {
+      // Usa la ruta con el ID del grupo
       const response = await api.post(
-        "/user-groups/notes/upload-image",
+        `/user-groups/${selectedGroup.id}/notes/upload-image`,
         formData,
         {
           headers: {
@@ -231,21 +231,37 @@ const Groups: React.FC = () => {
         }
       );
 
+      // Añade un console.log para ver la respuesta completa
+      console.log("Respuesta de subida de imagen:", response.data);
+
       if (response.data && response.data.data && response.data.data.imageUrl) {
+        const imageUrl = response.data.data.imageUrl;
+        console.log("URL de imagen recibida:", imageUrl);
+        
         // Actualizar la nota con la nueva imagen
         const note = groupNotes.find((n) => n.id === noteId);
         if (note) {
+          const updatedImages = [...(note.images || []), imageUrl];
+          console.log("Imágenes actualizadas:", updatedImages);
+          
           const updatedNote = {
             ...note,
-            images: [...(note.images || []), response.data.data.imageUrl],
+            images: updatedImages,
           };
 
+          // Actualizar el estado local
           setEditingNote({ ...editingNote, [noteId]: updatedNote });
 
-          // Llamar a updateGroupNote para guardar los cambios
-          await updateGroupNote(noteId);
+          // Aquí es donde enviamos la actualización a la base de datos
+          // Asegúrate de que esta función está enviando las imágenes correctamente
+          const success = await updateGroupNote(noteId);
+          console.log("Resultado de la actualización:", success);
 
-          showFeedback("Imagen subida correctamente");
+          if (success) {
+            showFeedback("Imagen subida y guardada correctamente");
+          } else {
+            showFeedback("La imagen se subió pero no se pudo guardar en la nota");
+          }
         }
       }
     } catch (error) {

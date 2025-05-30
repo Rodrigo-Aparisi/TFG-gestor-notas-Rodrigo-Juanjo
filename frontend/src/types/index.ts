@@ -65,7 +65,7 @@ export interface GroupNote {
   color: string | null;
   created_at: string;
   updated_at: string;
-  images: string[];
+  images?: string[];
 }
 
 export interface CreateGroupData {

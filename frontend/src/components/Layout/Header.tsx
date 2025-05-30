@@ -238,7 +238,7 @@ const Header: React.FC = () => {
                 onClick={() => navigate("/login")}
                 className="login-button"
                 type="button"
-              >s
+              >
                 Iniciar Sesión
               </button>
             )}

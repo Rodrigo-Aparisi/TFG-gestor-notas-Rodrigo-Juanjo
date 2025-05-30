@@ -1062,33 +1062,6 @@ export class UserGroupController {
         return;
       }
 
-      // Verificar que el usuario es el creador de la nota o tiene permisos de administrador/propietario
-      const noteCreator = noteCheckResult.rows[0].user_id;
-      let hasPermission = noteCreator === userId;
-
-      if (!hasPermission) {
-        const roleCheckResult = await pool.query(
-          `SELECT role FROM group_members 
-        WHERE group_id = $1 AND user_id = $2`,
-          [groupId, userId]
-        );
-
-        if (roleCheckResult.rows.length === 0) {
-          res.status(403).json({ error: "No tienes acceso a este grupo" });
-          return;
-        }
-
-        const role = roleCheckResult.rows[0].role;
-        hasPermission = role === "owner" || role === "admin";
-
-        if (!hasPermission) {
-          res
-            .status(403)
-            .json({ error: "No tienes permisos para editar esta nota" });
-          return;
-        }
-      }
-
       // Construir la consulta de actualización
       let query = "UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP";
       const values = [];
@@ -1213,7 +1186,7 @@ export class UserGroupController {
       const images = noteResult.rows[0].images || [];
 
       for (const imagePath of images) {
-        if (imagePath && imagePath.startsWith("/uploads/group-note-images/")) {
+        if (imagePath && imagePath.startsWith(`${process.env.APP_URL_2}/uploads/group-note-images/`)) {
           const fullPath = path.join(__dirname, "..", imagePath);
           if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
@@ -1319,21 +1292,17 @@ export class UserGroupController {
   }
 
   // Subir una imagen para una nota de grupo
-  async uploadGroupNoteImage(
-    req: RequestWithFile,
-    res: Response
-  ): Promise<void> {
+  async uploadGroupNoteImage(req: RequestWithFile, res: Response): Promise<void> {
     try {
       if (!req.file) {
-        res
-          .status(400)
-          .json({ error: "No se ha proporcionado ninguna imagen" });
+        res.status(400).json({ error: "No se ha proporcionado ninguna imagen" });
         return;
       }
 
       // Construir la URL relativa para la imagen
-      const imageUrl = `/uploads/group-note-images/${req.file.filename}`;
+      const imageUrl = `${process.env.APP_URL_2}/uploads/group-note-images/${req.file.filename}`;
 
+      // Asegúrate de que la respuesta tenga esta estructura exacta
       res.json({
         message: "Imagen subida correctamente",
         data: {
@@ -1348,6 +1317,80 @@ export class UserGroupController {
         });
       }
       res.status(500).json({ error: "Error al procesar la imagen" });
+    }
+  }
+
+  async deleteGroupNoteImage(req: Request, res: Response): Promise<void> {
+    try {
+      const { noteId, imageIndex } = req.params;
+      const userId = req.user.id;
+      const index = parseInt(imageIndex);
+
+      // Verificar que la nota existe y el usuario tiene permiso
+      const noteResult = await pool.query(
+        `SELECT * FROM group_notes WHERE id = $1`,
+        [noteId]
+      );
+
+      if (noteResult.rows.length === 0) {
+        res.status(404).json({ error: "Nota no encontrada" });
+        return;
+      }
+
+      const note = noteResult.rows[0];
+      const images = note.images || [];
+
+      if (index < 0 || index >= images.length) {
+        res.status(400).json({ error: "Índice de imagen inválido" });
+        return;
+      }
+
+      // Verificar permisos (creador de la nota o admin/owner del grupo)
+      let hasPermission = note.user_id === userId;
+
+      if (!hasPermission) {
+        const roleResult = await pool.query(
+          `SELECT role FROM group_members 
+          WHERE group_id = $1 AND user_id = $2`,
+          [note.group_id, userId]
+        );
+
+        if (roleResult.rows.length > 0) {
+          const role = roleResult.rows[0].role;
+          hasPermission = role === 'owner' || role === 'admin';
+        }
+      }
+
+      if (!hasPermission) {
+        res.status(403).json({ error: "No tienes permiso para eliminar esta imagen" });
+        return;
+      }
+
+      // Eliminar el archivo si existe en el servidor
+      const imageUrl = images[index];
+      if (imageUrl && imageUrl.startsWith(`${process.env.APP_URL_2}/uploads/group-note-images/`)) {
+        const fullPath = path.join(__dirname, '..', imageUrl);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      }
+
+      // Actualizar el array de imágenes en la base de datos
+      const updatedImages = [...images];
+      updatedImages.splice(index, 1);
+
+      await pool.query(
+        `UPDATE group_notes SET images = $1 WHERE id = $2`,
+        [updatedImages, noteId]
+      );
+
+      res.json({ 
+        success: true,
+        message: "Imagen eliminada correctamente" 
+      });
+    } catch (error) {
+      console.error("Error al eliminar imagen:", error);
+      res.status(500).json({ error: "Error al eliminar la imagen" });
     }
   }
 
