@@ -1,7 +1,8 @@
 import axios from "axios";
+import config from "../config/config";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:3001/api",
+  baseURL: process.env.REACT_APP_API_URL,
 });
 
 interface UserSettings {
@@ -129,7 +130,7 @@ export const accountService = {
         }
         throw new Error('Error al actualizar el usuario');
     }
-},
+  },
 
   updateUserProfileImage: async (formData: FormData): Promise<string> => {
     try {
@@ -145,13 +146,29 @@ export const accountService = {
 
         // Extraer solo la parte relativa de la URL
         const imageUrl = response.data.profile_image;
-        return imageUrl.replace('http://localhost:3001/api', '');
+        return imageUrl.replace(`${config.BASE_URL}/api`, '');
     } catch (error) {
         console.error("Error en updateUserProfileImage:", error);
         throw error;
     }
-}
-,
+  },
+
+  deleteUserAccount: async (userId, password) => {
+    if (!userId) throw new Error("ID de usuario no proporcionado");
+    
+    try {
+      const response = await api.delete(`/account/delete`, {
+        data: { password } // Envía la contraseña en el cuerpo de la petición DELETE
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error al eliminar cuenta:", error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || "Error al eliminar la cuenta");
+      }
+      throw error;
+    }
+  }
 };
 
 // Interceptor para añadir el token a todas las peticiones

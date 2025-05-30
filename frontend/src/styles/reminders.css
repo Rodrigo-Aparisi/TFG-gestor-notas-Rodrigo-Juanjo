@@ -1515,3 +1515,1464 @@
   display: inline-block;
   vertical-align: middle;
 }
+
+.reminder-description::-webkit-scrollbar {
+  width: 3px;
+  height: 6px;
+}
+
+.reminder-description::-webkit-scrollbar-track {
+  background: #363636;
+}
+
+.reminder-description::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 2px;
+}
+
+/* Estilos para el dashboard de recordatorios */
+.reminder-dashboard-container {
+  width: 100%;
+  background: #ffffff1a;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.reminder-dashboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.dashboard-header h3 {
+  color: var(--dorado);
+  font-size: 1.4em;
+  margin: 0;
+}
+
+.dashboard-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dashboard-search {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+  width: 250px;
+}
+
+.dashboard-filter {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+}
+
+.dashboard-table-container {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table th {
+  background: rgba(54, 54, 54, 0.9);
+  color: var(--dorado);
+  font-weight: 600;
+  padding: 12px 15px;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 2px solid var(--dorado);
+}
+
+.dashboard-table th:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.dashboard-table td {
+  padding: 10px 15px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+  color: #ffffff;
+}
+
+.dashboard-row {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dashboard-row:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.dashboard-row.status-1 {
+  border-left: 3px solid #ffd700;
+}
+
+.dashboard-row.status-2 {
+  border-left: 3px solid #4CAF50;
+  opacity: 0.7;
+}
+
+.dashboard-row.status-3 {
+  border-left: 3px solid #f44336;
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+.dashboard-time {
+  display: block;
+  font-size: 0.85em;
+  color: var(--dorado);
+  opacity: 0.8;
+  margin-top: 3px;
+}
+
+.dashboard-title {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: inline-block;
+}
+
+.dashboard-status.status-1 {
+  background: rgba(255, 215, 0, 0.1);
+  color: #ffd700;
+}
+
+.dashboard-status.status-2 {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.dashboard-status.status-3 {
+  background: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.no-reminders {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Ajustes a la estructura existente para acomodar el dashboard */
+/* Scrollbars para el dashboard */
+.dashboard-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dashboard-table-container::-webkit-scrollbar-track {
+  background: #363636;
+  border-radius: 4px;
+}
+
+.dashboard-table-container::-webkit-scrollbar-thumb {
+  background: var(--dorado);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (min-width: 1200px) {
+  .calendar-and-form {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .calendar-mini-grid {
+    width: 28%;
+  }
+  
+  .reminder-dashboard-container {
+    width: 38%;
+    margin: 0;
+  }
+  
+  .reminder-form {
+    width: 28%;
+  }
+}
+
+/* Estilos para el encabezado fijo */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #363636;
+  border-left: 3px solid var(--dorado);
+}
+
+.sticky-header th {
+  position: sticky;
+  top: 0;
+  background-color: rgba(54, 54, 54, 0.9);
+  box-shadow: 0 1px 0 0 var(--dorado);
+}
+
+/* Estilos para el filtro de fecha con el prefijo rd- */
+.rd-date-filter-container {
+  position: relative;
+  display: inline-block;
+}
+
+.rd-date-filter-button {
+  background-color: transparent;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  position: relative;
+  color: var(--dorado);
+}
+
+.rd-date-filter-button.rd-active {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.rd-filter-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  background-color: #ff5555;
+  border-radius: 50%;
+}
+
+.rd-mini-calendar-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 270px;
+  background-color: #363636;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  padding: 10px;
+  margin-top: 5px;
+}
+
+.rd-mini-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--dorado);
+}
+
+.rd-nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--dorado);
+}
+
+.rd-mini-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.rd-mini-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.rd-mini-day {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.rd-mini-day:hover {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+.rd-mini-day.rd-other-month {
+  color: #666;
+}
+
+.rd-mini-day.rd-today {
+  font-weight: bold;
+  border: 1px solid var(--dorado);
+}
+
+.rd-mini-day.rd-start-date,
+.rd-mini-day.rd-end-date {
+  background-color: var(--dorado);
+  color: var(--background-dark);
+}
+
+.rd-mini-day.rd-in-range {
+  background-color: rgba(255, 215, 0, 0.2);
+}
+
+.rd-date-range-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dorado);
+  color: var(--dorado);
+}
+
+.rd-clear-filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ff5555;
+}
+
+.rd-mini-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--dorado);
+}
+
+
+/* Media Queries para dispositivos móviles */
+@media screen and (max-width: 768px) {
+  /* Contenedor principal */
+  .calendar-container {
+    padding: 5px 10px;
+    width: 100%;
+    margin: 10px auto;
+  }
+
+  /* Cabecera del calendario */
+  .calendar-header {
+    flex-direction: column;
+    gap: 15px;
+    max-width: 100%;
+  }
+
+  .calendar-header h2 {
+    font-size: 1.8rem;
+    white-space: normal;
+  }
+
+  /* Vista de semana */
+  .weekdays-header {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    min-height: auto;
+    overflow-x: auto;
+  }
+
+  .weekday-header-item {
+    font-size: 0.9em;
+    padding: 3px;
+    min-width: 45px;
+  }
+
+  /* Contenedor principal */
+  .main {
+    width: 100%;
+  }
+
+  /* Layout de calendario y formulario */
+  .calendar-and-form {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .calendar-mini-grid,
+  .reminder-dashboard-container,
+  .reminder-form {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  /* Ajustes para las tarjetas de recordatorios */
+  .day {
+    min-height: 80px;
+    max-height: 80px;
+    font-size: 1em;
+  }
+
+  .reminder-pill {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+    min-height: 16px;
+    margin: 1px;
+  }
+
+  /* Popup de recordatorios */
+  .reminder-popup {
+    min-width: 90%;
+    max-width: 95%;
+    padding: 15px;
+  }
+
+  .reminder-popup-header h3 {
+    font-size: 1.2em;
+  }
+
+  /* Formulario de recordatorios */
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .date-time-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .date-input {
+    max-width: 100%;
+  }
+
+  /* Dashboard de recordatorios */
+  .dashboard-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .dashboard-controls {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dashboard-search {
+    width: 100%;
+  }
+
+  /* Tabla responsive */
+  .dashboard-table-container {
+    overflow-x: auto;
+  }
+
+  .dashboard-table {
+    min-width: 600px; /* Forzar scroll horizontal */
+  }
+
+  /* Mini calendario */
+  .mini-calendar-container {
+    max-width: 100%;
+  }
+
+  /* Botones de navegación */
+  .nav-button {
+    width: auto;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+}
+
+/* Media Queries para tablets */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .calendar-and-form {
+    flex-direction: column;
+  }
+
+  .calendar-mini-grid,
+  .reminder-dashboard-container,
+  .reminder-form {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .calendar-header {
+    max-width: 100%;
+  }
+
+  .weekday-header-item {
+    font-size: 1em;
+  }
+
+  .day {
+    min-height: 100px;
+  }
+}
+
+/* Ajustes para la vista de día expandida */
+@media screen and (max-width: 480px) {
+  .reminder-popup-item {
+    padding: 10px;
+  }
+
+  .reminder-popup-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reminder-popup-actions button {
+    width: 100%;
+  }
+
+  /* Ajustes para el detalle de recordatorio */
+  .reminder-card.focused {
+    width: 95vw;
+    padding: 15px;
+  }
+
+  .reminder-edit-content input,
+  .reminder-edit-content textarea {
+    font-size: 0.9rem;
+  }
+
+  /* Vista de semana más compacta */
+  .weekday-header-item {
+    font-size: 0.8em;
+    border-right: none;
+  }
+
+  .weekday-header-item::after {
+    display: none;
+  }
+  
+  /* Navegación de meses más compacta */
+  .nav-button {
+    width: auto;
+    font-size: 0.7rem;
+    padding: 5px 8px;
+    height: auto;
+  }
+  
+  /* Mejor visualización del título del mes */
+  .calendar-header h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mejoras para pantallas muy pequeñas */
+@media screen and (max-width: 360px) {
+  .weekdays-header {
+    grid-template-columns: repeat(7, minmax(40px, 1fr));
+  }
+  
+  .calendar-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .nav-button {
+    font-size: 0.6rem;
+    padding: 4px 6px;
+  }
+}
+
+.mobile-day-name {
+  display: none;
+}
+
+@media screen and (max-width: 480px) {
+  .mobile-day-name {
+    display: inline;
+  }
+  
+  .desktop-day-name {
+    display: none;
+  }
+  
+  /* Ajustes para el dashboard en móvil */
+  .dashboard-table {
+    font-size: 0.9rem;
+  }
+  
+  .dashboard-table th,
+  .dashboard-table td {
+    padding: 8px 10px;
+  }
+  
+  /* Ajustar tamaño de los días en el mini calendario */
+  .mini-day {
+    min-height: 24px;
+    font-size: 0.9em;
+  }
+}
+
+/* Estilos específicos para WeekView */
+.week-view-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.weekday-header-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  margin-bottom: 5px;
+}
+
+.weekday-name-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.mobile-day-name, .mobile-month {
+  display: none;
+}
+
+.desktop-day-name, .desktop-month {
+  display: inline;
+}
+
+.weekday-number {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--dorado);
+}
+
+.weekday-reminders-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.no-reminders-indicator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.7em;
+  text-align: center;
+  padding: 5px 0;
+  font-style: italic;
+}
+
+.empty-day-text {
+  display: none;
+}
+
+/* Modificaciones para la visualización en móvil */
+@media screen and (max-width: 768px) {
+  .weekdays-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    min-height: auto;
+    padding: 10px 5px;
+  }
+  
+  .weekday-header-item {
+    min-height: 100px;
+    padding: 5px 2px;
+    border-right: none;
+    font-size: 0.9em;
+  }
+  
+  .weekday-header-item::after {
+    display: none;
+  }
+  
+  .weekday-header-top {
+    padding: 2px 0;
+  }
+  
+  .mobile-day-name {
+    display: inline;
+    font-size: 0.9em;
+  }
+  
+  .desktop-day-name {
+    display: none;
+  }
+  
+  .mobile-month {
+    display: inline;
+    font-size: 0.7em;
+    opacity: 0.8;
+  }
+  
+  .desktop-month {
+    display: none;
+  }
+  
+  .weekday-number {
+    font-size: 1em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.65rem;
+    padding: 1px 3px;
+    margin: 1px 0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .weekdays-header {
+    gap: 2px;
+    padding: 5px 2px;
+  }
+  
+  .weekday-header-item {
+    min-height: 80px;
+    padding: 2px 1px;
+  }
+  
+  .weekday-header-top {
+    padding: 1px 0;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.8em;
+  }
+  
+  .weekday-number {
+    font-size: 0.9em;
+  }
+  
+  .mobile-month {
+    font-size: 0.6em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.6rem;
+    min-height: 14px;
+    padding: 0 2px;
+  }
+  
+  /* Mostrar texto para días sin recordatorios */
+  .empty-day-text {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .weekday-header-item {
+    min-height: 70px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.7em;
+  }
+  
+  .weekday-number {
+    font-size: 0.8em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.55rem;
+    margin: 1px 0;
+    padding: 0 1px;
+  }
+}
+
+
+/* Ajustes para ReminderList en dispositivos móviles */
+@media screen and (max-width: 768px) {
+  .reminders-container {
+    max-height: 60px;
+    padding: 2px;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.7rem;
+    padding: 1px 3px;
+    margin-top: 2px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .reminders-container {
+    max-height: 45px;
+    padding: 1px;
+  }
+  
+  .reminder-time {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+  
+  .reminder-title {
+    font-size: 0.7rem;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.65rem;
+    padding: 0 2px;
+    margin-top: 1px;
+  }
+}
+
+/* Estilos específicos para WeekView que respetan el formato original en desktop */
+.week-view-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Mantener el estilo original para desktop */
+.weekday-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 0;
+  position: relative;
+}
+
+/* Mantener el estilo original para desktop */
+.weekday-name-container {
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+/* Los nombres cortos solo aparecen en móvil */
+.mobile-day-name, .mobile-month {
+  display: none;
+}
+
+.desktop-day-name, .desktop-month {
+  display: inline;
+}
+
+/* Mantener el estilo original para el número de día */
+.weekday-number {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--dorado);
+  margin: 0 5px;
+}
+
+/* Mantener el estilo original para el contenedor de recordatorios */
+.weekday-reminders-wrapper {
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Ocultar el indicador de "sin recordatorios" en desktop */
+.no-reminders-indicator {
+  display: none;
+}
+
+/* Mantener la línea divisoria en desktop */
+.weekday-header-item::after {
+  content: '';
+  position: absolute;
+  top: 27%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background-color: var(--dorado);
+}
+
+/* RESPONSIVE: Solo aplicar cambios en móvil */
+@media screen and (max-width: 768px) {
+  .weekdays-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    min-height: auto;
+    padding: 10px 5px;
+  }
+  
+  .weekday-header-item {
+    min-height: 100px;
+    padding: 5px 2px;
+    border-right: none;
+    font-size: 0.9em;
+  }
+  
+  /* Eliminar la línea divisoria en móvil */
+  .weekday-header-item::after {
+    display: none;
+  }
+  
+  /* Cambiar a layout vertical en móvil */
+  .weekday-header-top {
+    flex-direction: column;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    margin-bottom: 5px;
+  }
+  
+  /* Mostrar nombres cortos en móvil */
+  .mobile-day-name {
+    display: inline;
+    font-size: 0.9em;
+  }
+  
+  .desktop-day-name {
+    display: none;
+  }
+  
+  .mobile-month {
+    display: inline;
+    font-size: 0.7em;
+    opacity: 0.8;
+  }
+  
+  .desktop-month {
+    display: none;
+  }
+  
+  .weekday-number {
+    font-size: 1em;
+  }
+  
+  /* Ajustes para los recordatorios en móvil */
+  .reminder-pill {
+    font-size: 0.65rem;
+    padding: 1px 3px;
+    margin: 1px 0;
+  }
+  
+  /* Mostrar indicador de "sin recordatorios" solo en móvil */
+  .no-reminders-indicator {
+    display: block;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.7em;
+    text-align: center;
+    padding: 5px 0;
+    font-style: italic;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .weekdays-header {
+    gap: 2px;
+    padding: 5px 2px;
+  }
+  
+  .weekday-header-item {
+    min-height: 80px;
+    padding: 2px 1px;
+  }
+  
+  .weekday-header-top {
+    padding: 1px 0;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.8em;
+  }
+  
+  .weekday-number {
+    font-size: 0.9em;
+  }
+  
+  .mobile-month {
+    font-size: 0.6em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.6rem;
+    min-height: 14px;
+    padding: 0 2px;
+  }
+  
+  /* Ocultar texto para días sin recordatorios en pantallas muy pequeñas */
+  .empty-day-text {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .weekday-header-item {
+    min-height: 70px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.7em;
+  }
+  
+  .weekday-number {
+    font-size: 0.8em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.55rem;
+    margin: 1px 0;
+    padding: 0 1px;
+  }
+}
+
+/* Ajustes para ReminderList en dispositivos móviles */
+@media screen and (max-width: 768px) {
+  .reminders-container {
+    max-height: 60px;
+    padding: 2px;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.7rem;
+    padding: 1px 3px;
+    margin-top: 2px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .reminders-container {
+    max-height: 45px;
+    padding: 1px;
+  }
+  
+  .reminder-time {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+  
+  .reminder-title {
+    font-size: 0.7rem;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.65rem;
+    padding: 0 2px;
+    margin-top: 1px;
+  }
+}
+
+/* Estilos específicos para WeekView que respetan el formato original en desktop */
+.week-view-container {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Configuración para la cabecera de día */
+.weekday-header-top {
+  position: relative;
+  padding: 5px 0;
+  text-align: center;
+}
+
+/* Formato para desktop: MIÉ 28 MAY en una línea */
+.desktop-header-format {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
+.desktop-day-name {
+  color: var(--dorado);
+  font-weight: bold;
+}
+
+.desktop-day-number {
+  color: var(--dorado);
+  font-weight: bold;
+}
+
+.desktop-month-name {
+  color: var(--dorado);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Formato para móvil (oculto en desktop) */
+.mobile-header-format {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-day-name, 
+.mobile-day-number, 
+.mobile-month-name {
+  display: block;
+}
+
+/* Mantener el estilo original para el contenedor de recordatorios */
+.weekday-reminders-wrapper {
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Ocultar el indicador de "sin recordatorios" en desktop */
+.no-reminders-indicator {
+  display: none;
+}
+
+/* Mantener la línea divisoria en desktop */
+.weekday-header-item::after {
+  content: '';
+  position: absolute;
+  top: 27%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background-color: var(--dorado);
+}
+
+/* RESPONSIVE: Solo aplicar cambios en móvil */
+@media screen and (max-width: 768px) {
+  .weekdays-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    min-height: auto;
+    padding: 10px 5px;
+  }
+  
+  .weekday-header-item {
+    min-height: 100px;
+    padding: 5px 2px;
+    border-right: none;
+    font-size: 0.9em;
+  }
+  
+  /* Eliminar la línea divisoria en móvil */
+  .weekday-header-item::after {
+    display: none;
+  }
+  
+  /* Cambiar formatos de visualización */
+  .desktop-header-format {
+    display: none;
+  }
+  
+  .mobile-header-format {
+    display: flex;
+  }
+  
+  .weekday-header-top {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+    margin-bottom: 5px;
+    padding: 3px 0;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.9em;
+    color: var(--dorado);
+    font-weight: bold;
+  }
+  
+  .mobile-day-number {
+    font-size: 1em;
+    color: var(--dorado);
+    font-weight: bold;
+  }
+  
+  .mobile-month-name {
+    font-size: 0.7em;
+    color: var(--dorado);
+    opacity: 0.8;
+  }
+  
+  /* Ajustes para los recordatorios en móvil */
+  .reminder-pill {
+    font-size: 0.65rem;
+    padding: 1px 3px;
+    margin: 1px 0;
+  }
+  
+  /* Mostrar indicador de "sin recordatorios" solo en móvil */
+  .no-reminders-indicator {
+    display: block;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.7em;
+    text-align: center;
+    padding: 5px 0;
+    font-style: italic;
+  }
+  
+  .weekday-reminders-wrapper {
+    margin-top: 5px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .weekdays-header {
+    gap: 2px;
+    padding: 5px 2px;
+  }
+  
+  .weekday-header-item {
+    min-height: 80px;
+    padding: 2px 1px;
+  }
+  
+  .weekday-header-top {
+    padding: 1px 0;
+    margin-bottom: 2px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.8em;
+  }
+  
+  .mobile-day-number {
+    font-size: 0.9em;
+  }
+  
+  .mobile-month-name {
+    font-size: 0.6em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.6rem;
+    min-height: 14px;
+    padding: 0 2px;
+  }
+  
+  /* Ocultar texto para días sin recordatorios en pantallas muy pequeñas */
+  .empty-day-text {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .weekday-header-item {
+    min-height: 70px;
+  }
+  
+  .mobile-day-name {
+    font-size: 0.7em;
+  }
+  
+  .mobile-day-number {
+    font-size: 0.8em;
+  }
+  
+  .reminder-pill {
+    font-size: 0.55rem;
+    margin: 1px 0;
+    padding: 0 1px;
+  }
+}
+
+/* Ajustes para ReminderList en dispositivos móviles */
+@media screen and (max-width: 768px) {
+  .reminders-container {
+    max-height: 60px;
+    padding: 2px;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.7rem;
+    padding: 1px 3px;
+    margin-top: 2px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .reminders-container {
+    max-height: 45px;
+    padding: 1px;
+  }
+  
+  .reminder-time {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+  
+  .reminder-title {
+    font-size: 0.7rem;
+  }
+  
+  .show-more-reminders {
+    font-size: 0.65rem;
+    padding: 0 2px;
+    margin-top: 1px;
+  }
+}
+
+/* Estilos para mostrar las primeras letras del recordatorio en móvil en lugar de la hora */
+@media screen and (max-width: 768px) {
+  /* Ocultar la hora del recordatorio en móvil */
+  .reminder-time {
+    display: none;
+  }
+  
+  /* Hacer que el título del recordatorio ocupe todo el espacio disponible */
+  .reminder-pill {
+    padding: 1px 4px;
+    justify-content: center;
+  }
+  
+  .reminder-title {
+    max-width: 100%;
+    font-size: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 0 2px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .reminder-pill {
+    padding: 1px 2px;
+    min-height: 14px;
+  }
+  
+  .reminder-title {
+    font-size: 0.65rem;
+  }
+  
+  /* Aumentar el número de caracteres visibles del título */
+  .weekday-reminders-wrapper {
+    width: 100%;
+  }
+}
+
+
+/* Estilos para reorganizar el dashboard */
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.dashboard-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-search-container {
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.dashboard-filter {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+  min-width: 150px;
+}
+
+.dashboard-search {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(54, 54, 54, 0.8);
+  color: #ffffff;
+  width: 100%;
+}
+
+/* Ajustes para dispositivos móviles */
+@media screen and (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dashboard-filter-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .dashboard-search-container {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .dashboard-filter {
+    flex: 1;
+  }
+}
+
+/* Estilos específicos para pantallas pequeñas */
+@media screen and (max-width: 480px) {
+  .dashboard-filter-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .rd-date-filter-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .rd-date-filter-button {
+    width: 100%;
+  }
+}
+
+
+/* Ajustes para el filtro de fecha y el calendario */
+.rd-date-filter-container {
+  position: relative;
+  display: inline-block;
+}
+
+.rd-date-filter-button {
+  background-color: transparent;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  position: relative;
+  color: var(--dorado);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd-date-filter-button i {
+  margin-right: 5px;
+}
+
+.rd-date-filter-button.rd-active {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.rd-mini-calendar-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 270px;
+  background-color: #363636;
+  border: 1px solid var(--dorado);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  padding: 10px;
+  margin-top: 5px;
+}
+
+/* En dispositivos móviles, ajustar la posición del dropdown */
+@media screen and (max-width: 480px) {
+  .rd-mini-calendar-dropdown {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 300px;
+  }
+}

@@ -73,6 +73,15 @@ CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
 CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
 
+-- Crear función para actualizar el timestamp de updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- Crear triggers para actualizar updated_at automáticamente
 CREATE TRIGGER update_user_groups_updated_at
     BEFORE UPDATE ON user_groups
@@ -228,15 +237,6 @@ CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
 CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
 CREATE INDEX idx_shared_notes_can_edit ON shared_notes(can_edit);
 
--- Crear función para actualizar el timestamp de updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
 -- Crear triggers para actualizar updated_at automáticamente
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
@@ -357,30 +357,17 @@ UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
 -- Inicializar la columna images con array vacío donde sea NULL
 UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
 
--- Crear tabla para notas compartidas
-CREATE TABLE shared_notes (
+-- Crear tabla para tokens de recuperación de contraseña
+CREATE TABLE password_reset_tokens (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
-    owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    shared_with_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(100) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear índices para mejorar el rendimiento
-CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
-CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
-CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
-
--- Crear trigger para actualizar updated_at
-CREATE TRIGGER update_shared_notes_updated_at
-    BEFORE UPDATE ON shared_notes
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Crear trigger para actualizar updated_at automáticamente
-CREATE TRIGGER update_note_groups_updated_at
-    BEFORE UPDATE ON note_groups
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- Crear índices para optimizar consultas
+CREATE INDEX idx_password_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_tokens_expires_at ON password_reset_tokens(expires_at);

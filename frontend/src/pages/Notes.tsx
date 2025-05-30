@@ -94,6 +94,13 @@ const Notes: React.FC = () => {
     handleTabChangeBase(tabId, loadNotes);
   };
 
+  const handleOverlayClick = (event: React.MouseEvent) => {
+    if (focusedNoteId) {
+      if (event.target === event.currentTarget) {
+        handleBlur();
+      }
+    }
+  };
 
   const getNotesForActiveGroup = () => {
     // Si estamos en "Todas las notas"
@@ -234,38 +241,29 @@ const Notes: React.FC = () => {
 
   // Efecto para sincronizar notas marcadas solo cuando es necesario
   useEffect(() => {
-    if (shouldSyncMarkedNotes) {
-      // Identificar notas que están marcadas según su propiedad is_marked
-      const markedNoteIds = notes
-        .filter(note => note.is_marked)
-        .map(note => note.id);
-      
-      // Actualizar el estado
-      setMarkedNotes(markedNoteIds);
-      setShouldSyncMarkedNotes(false);
-    }
-  }, [notes, shouldSyncMarkedNotes]);
-
-  // Actualiza este efecto para que se ejecute cuando cambie el grupo activo
-  useEffect(() => {
-    setShouldSyncMarkedNotes(true); // Esto forzará la sincronización cuando cambie el grupo
-  }, [activeGroup]);
-
-  useEffect(() => {
     // Cuando cambia el grupo activo, actualiza las notas filtradas
     if (activeGroup === 'main') {
-      handleFilteredNotes(notes);
+      // Solo actualizar si realmente hay un cambio
+      if (JSON.stringify(filteredNotes) !== JSON.stringify(notes)) {
+        handleFilteredNotes(notes);
+      }
     } else {
       const currentGroup = groups.find(g => g.id === activeGroup);
       if (!currentGroup || !currentGroup.noteIds || currentGroup.noteIds.length === 0) {
         // Si el grupo está vacío o no existe, establecer notas filtradas como array vacío
-        handleFilteredNotes([]);
+        if (filteredNotes.length > 0) {
+          handleFilteredNotes([]);
+        }
       } else {
         // Filtrar las notas que pertenecen al grupo
         const groupNotes = notes.filter(note => 
           currentGroup.noteIds.includes(note.id.toString())
         );
-        handleFilteredNotes(groupNotes);
+        
+        // Solo actualizar si realmente hay un cambio
+        if (JSON.stringify(filteredNotes) !== JSON.stringify(groupNotes)) {
+          handleFilteredNotes(groupNotes);
+        }
       }
     }
   }, [activeGroup, groups, notes]);
@@ -449,6 +447,11 @@ const Notes: React.FC = () => {
         onDeleteGroup={handleDeleteGroup}
         onMoveGroup={handleMoveGroup}
         onEditGroup={handleEditGroup}
+      />
+
+      <div 
+        className={`overlay ${focusedNoteId ? 'active' : ''}`} 
+        onClick={handleOverlayClick}
       />
 
       {/* Contenido principal */}
