@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import NoteImage from '../Notes/NoteImage';
+import NoteActionsMenu from '../Notes/NoteActionsMenu';
 import { CreateGroupNoteData } from '../../types';
 
 interface CreateGroupNoteFormProps {
-  newNote: CreateGroupNoteData & { images?: string[] };
+  newNote: CreateGroupNoteData & { images: string[] };
   isLoading: boolean;
-  setNewNote: React.Dispatch<React.SetStateAction<CreateGroupNoteData & { images?: string[] }>>;
-  handleCreateNote: () => Promise<boolean>;
-  handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
-  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
+  setNewNote: React.Dispatch<React.SetStateAction<CreateGroupNoteData & { images: string[] }>>;
+  handleCreateNote: () => Promise<void>;
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote?: boolean) => void;
+  insertList: (noteId: string, type: 'bullet' | 'number', isNewNote?: boolean) => void;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
+  autoResizeTextarea: (element: HTMLTextAreaElement) => void;
+  handleExportNote: (format: string, noteId?: string) => void;
 }
 
 const CreateGroupNoteForm: React.FC<CreateGroupNoteFormProps> = ({
@@ -16,108 +20,100 @@ const CreateGroupNoteForm: React.FC<CreateGroupNoteFormProps> = ({
   isLoading,
   setNewNote,
   handleCreateNote,
+  handleKeyDown,
+  insertList,
   handleImageUpload,
-  autoResizeTextarea
+  autoResizeTextarea,
+  handleExportNote
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  const handleCancel = () => {
-    setNewNote({ title: '', content: '', images: [] });
-    setIsExpanded(false);
-  };
-
-  const handleCreate = async () => {
-    const success = await handleCreateNote();
-    if (success) {
-      setNewNote({ title: '', content: '', images: [] });
-      setIsExpanded(false);
-    }
-  };
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="create-note">
       <input
         type="text"
-        placeholder="Título de la nota..."
+        placeholder="Añade una nota..."
         value={newNote.title}
         onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+        onClick={() => {
+          if (!isExpanded) {
+            setIsExpanded(true);
+          }
+        }}
       />
 
-      <textarea
-        placeholder="Contenido de la nota..."
-        value={newNote.content}
-        onChange={e => {
-          setNewNote(prev => ({ ...prev, content: e.target.value }));
-          if (autoResizeTextarea) {
-            autoResizeTextarea(e.target as HTMLTextAreaElement);
-          }
-        }}
-        onInput={e => {
-          if (autoResizeTextarea) {
-            autoResizeTextarea(e.target as HTMLTextAreaElement);
-          }
-        }}
-      />
-      
-      {/* Sección de imágenes para la nota nueva */}
-      {newNote.images && newNote.images.length > 0 && (
-        <div className="note-images">
-          {newNote.images.map((imageUrl, index) => (
-            <NoteImage
-              key={index}
-              imageUrl={imageUrl}
-              index={index}
-              onDelete={() => {
-                setNewNote(prev => ({
-                  ...prev,
-                  images: prev.images ? prev.images.filter((_, i) => i !== index) : []
-                }));
-              }}
-            />
-          ))}
-        </div>
-      )}
-      
-      <div className="button-container">
-        <div className="left-actions">
-          {handleImageUpload && (
-            <>
-              <button 
-                className="list-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  document.getElementById('group-image-input-new')?.click();
-                }}
-                title="Insertar imagen"
-              >
-                <i className="fas fa-image"></i>
-              </button>
+      {isExpanded && (
+        <>
+          <textarea
+            placeholder="Contenido de la nota..."
+            value={newNote.content}
+            onChange={e => {
+              setNewNote(prev => ({ ...prev, content: e.target.value }));
+              autoResizeTextarea(e.target as HTMLTextAreaElement);
+            }}
+            onInput={(e) => autoResizeTextarea(e.target as HTMLTextAreaElement)}
+          />
+
+          {newNote.images && newNote.images.length > 0 && (
+            <div className="note-images">
+              {newNote.images.map((imageUrl, index) => (
+                <NoteImage
+                  key={index}
+                  imageUrl={imageUrl}
+                  index={index}
+                  onDelete={() => {
+                    setNewNote(prev => ({
+                      ...prev,
+                      images: prev.images.filter((_, i) => i !== index)
+                    }));
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="button-container">
+            <div className="left-actions">
+              <NoteActionsMenu
+                isNewNote={true}
+                onExport={handleExportNote}
+                onInsertList={insertList}
+                onImageUpload={() => document.getElementById('image-input-new')?.click()}
+              />
+
               <input
-                id="group-image-input-new"
+                id="image-input-new"
                 type="file"
                 accept="image/*"
                 style={{ display: 'none' }}
                 onChange={(e) => handleImageUpload(e, 'new')}
               />
-            </>
-          )}
-        </div>
-        <div className="right-actions">
-          <button 
-            className="cancel-button"
-            onClick={handleCancel}
-          >
-            Cancelar
-          </button>
-          <button 
-            className="create-button"
-            onClick={handleCreate}
-            disabled={isLoading || !newNote.title.trim() || !newNote.content.trim()}
-          >
-            Crear Nota
-          </button>
-        </div>
-      </div>
+            </div>
+
+            <div className="right-actions">
+              <button 
+                className="cancel-button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setNewNote({ title: '', content: '', images: [] });
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="create-button"
+                onClick={() => {
+                  handleCreateNote();
+                  setIsExpanded(false);
+                }}
+                disabled={isLoading}
+              >
+                Crear Nota
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
