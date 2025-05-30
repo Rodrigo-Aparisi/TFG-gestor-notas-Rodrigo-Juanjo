@@ -14,11 +14,6 @@ const GroupTabs: React.FC<GroupTabsProps> = ({ activeTab, onTabChange }) => {
       >
         Notas
       </div>
-      <div className="{`tab ${activeTab === 'papelera' ? 'active' : ''}`}"
-        onClick={() => onTabChange('papelera')}
-      >
-        Papelera
-      </div>
       <div 
         className={`tab ${activeTab === 'members' ? 'active' : ''}`}
         onClick={() => onTabChange('members')}
