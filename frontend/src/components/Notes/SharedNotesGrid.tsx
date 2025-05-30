@@ -9,6 +9,7 @@ interface SharedNotesGridProps {
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
   showFeedback?: (message: string) => void;
+  insertList?: (noteId: string, type: 'bullet' | 'number') => void;
 }
 
 const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
@@ -17,7 +18,8 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
   handleFocus,
   handleFocusIndicatorClick,
   autoResizeTextarea,
-  showFeedback
+  showFeedback,
+  insertList
 }) => {
   const breakpointColumns = {
     default: 5,
@@ -42,6 +44,7 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
             handleFocusIndicatorClick={handleFocusIndicatorClick}
             autoResizeTextarea={autoResizeTextarea}
             showFeedback={showFeedback}
+            insertList={insertList}
           />
         ))
       ) : (

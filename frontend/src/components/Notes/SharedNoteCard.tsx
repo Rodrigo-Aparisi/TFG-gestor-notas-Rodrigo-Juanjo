@@ -9,6 +9,7 @@ interface SharedNoteCardProps {
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
   showFeedback?: (message: string) => void;
+  insertList?: (noteId: string, type: 'bullet' | 'number') => void;
 }
 
 const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
@@ -17,7 +18,8 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   handleFocus,
   handleFocusIndicatorClick,
   autoResizeTextarea,
-  showFeedback
+  showFeedback,
+  insertList
 }) => {
   const [editedTitle, setEditedTitle] = useState(note.title || '');
   const [editedContent, setEditedContent] = useState(note.content || '');
@@ -75,33 +77,81 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
     }
   };
 
-  // Función para insertar listas en el contenido
-  const insertList = (type: 'bullet' | 'number') => {
+  // Función para manejar teclas en el textarea
+  const handleSharedKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!isEditable) return;
     
-    const textarea = document.querySelector(`textarea[data-note-id="\${note.id}"]`) as HTMLTextAreaElement;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const content = editedContent;
-    
-    let prefix = '';
-    if (type === 'bullet') {
-      prefix = '• ';
-    } else if (type === 'number') {
-      prefix = '1. ';
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      
+      // Verificar si estamos en una línea de lista
+      const textBeforeCursor = content.substring(0, selectionStart);
+      const lines = textBeforeCursor.split('\n');
+      const currentLineIndex = lines.length - 1;
+      const currentLine = lines[currentLineIndex] || '';
+      
+      // Detectar si la línea actual es una lista
+      const bulletMatch = currentLine.match(/^(\s*)([•\-*]|\d+\.)\s*/);
+      if (bulletMatch) {
+        e.preventDefault(); // Prevenir el comportamiento predeterminado
+        
+        const [, indent, bullet] = bulletMatch;
+        
+        // Si la línea está vacía excepto por el marcador, terminar la lista
+        if (currentLine.trim() === bullet.trim()) {
+          const newContent = content.slice(0, selectionStart - bulletMatch[0].length) + 
+                           '\n' + content.slice(selectionStart);
+          
+          setEditedContent(newContent);
+          
+          // Posicionar el cursor después del salto de línea
+          setTimeout(() => {
+            textarea.selectionStart = selectionStart - bulletMatch[0].length + 1;
+            textarea.selectionEnd = textarea.selectionStart;
+          }, 0);
+          
+          return;
+        }
+        
+        // Continuar la lista con el siguiente elemento
+        const newBullet = bullet.match(/\d+\./) 
+          ? `${parseInt(bullet) + 1}.` 
+          : '•';
+        
+        const newContent = content.slice(0, selectionStart) + 
+                         '\n' + indent + newBullet + ' ' + 
+                         content.slice(selectionStart);
+        
+        setEditedContent(newContent);
+        
+        // Posicionar el cursor después del nuevo marcador
+        const newPosition = selectionStart + 1 + indent.length + newBullet.length + 1;
+        setTimeout(() => {
+          textarea.selectionStart = newPosition;
+          textarea.selectionEnd = newPosition;
+        }, 0);
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const { selectionStart } = textarea;
+      const content = textarea.value;
+      
+      // Insertar tabulación (4 espacios)
+      const newContent = content.slice(0, selectionStart) + 
+                       '    ' + 
+                       content.slice(selectionStart);
+      
+      setEditedContent(newContent);
+      
+      // Posicionar el cursor después de la tabulación
+      setTimeout(() => {
+        textarea.selectionStart = selectionStart + 4;
+        textarea.selectionEnd = textarea.selectionStart;
+      }, 0);
     }
-    
-    const newContent = content.substring(0, start) + prefix + content.substring(end);
-    setEditedContent(newContent);
-    
-    // Focus y posicionar cursor después del prefijo
-    setTimeout(() => {
-      textarea.focus();
-      const newPosition = start + prefix.length;
-      textarea.setSelectionRange(newPosition, newPosition);
-    }, 0);
   };
 
   // Función para subir imágenes
@@ -142,7 +192,6 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
     }
   };
   
-
   // Función para eliminar imágenes
   const handleDeleteImage = async (imageIndex: number) => {
     if (!isEditable) return;
@@ -172,7 +221,6 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
     }
   };
   
-
   return (
     <div 
       className={`note-card ${focusedNoteId === note.id ? 'focused' : ''} ${isEditable ? 'editable-note' : ''}`}
@@ -182,6 +230,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         borderColor: isEditable ? '#2ecc71' : '#ccc',
         borderWidth: isEditable ? '2px' : '1px'
       }}
+      data-note-id={note.id}
     >
       {/* Indicador de edición */}
       {isEditable && (
@@ -230,6 +279,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
             setEditedContent(e.target.value);
             autoResizeTextarea(e.target as HTMLTextAreaElement);
           } : undefined}
+          onKeyDown={isEditable ? handleSharedKeyDown : undefined} // Usar nuestra nueva función
           readOnly={!isEditable}
           onBlur={isEditable ? handleUpdateNote : undefined}
           onClick={(e) => e.stopPropagation()}
@@ -248,7 +298,9 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
                 className="list-button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  insertList('bullet');
+                  if (insertList) {
+                    insertList(note.id, 'bullet');
+                  }
                 }}
                 title="Insertar lista con viñetas"
               >
@@ -259,7 +311,9 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
                 className="list-button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  insertList('number');
+                  if (insertList) {
+                    insertList(note.id, 'number');
+                  }
                 }}
                 title="Insertar lista numerada"
               >
@@ -270,7 +324,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
                 className="list-button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  document.getElementById(`shared-image-input-\${note.id}`)?.click();
+                  document.getElementById(`shared-image-input-${note.id}`)?.click();
                 }}
                 title="Insertar imagen"
               >
@@ -278,7 +332,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
               </button>
               
               <input
-                id={`shared-image-input-\${note.id}`}
+                id={`shared-image-input-${note.id}`}
                 type="file"
                 accept="image/*"
                 style={{ display: 'none' }}
@@ -297,7 +351,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         
         {/* Feedback local (si no se usa el global) */}
         {!showFeedback && feedback.message && (
-          <div className={`note-feedback \${feedback.type}`}>
+          <div className={`note-feedback ${feedback.type}`}>
             {feedback.message}
           </div>
         )}
