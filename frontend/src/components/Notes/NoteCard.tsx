@@ -28,6 +28,57 @@ interface NoteCardProps {
   handleExportNote: (format: string, noteId?: string) => void;
 }
 
+// Función para formatear la fecha
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  
+  // Verificar si es una fecha válida
+  if (isNaN(date.getTime())) return '';
+  
+  // Opciones de formato para español
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  
+  return date.toLocaleDateString('es-ES', options);
+};
+
+// Función para mostrar tiempo relativo (hace X tiempo)
+const getTimeAgo = (dateString: string) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  
+  // Verificar si es una fecha válida
+  if (isNaN(date.getTime())) return '';
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+  
+  if (diffSec < 60) {
+    return 'hace un momento';
+  } else if (diffMin < 60) {
+    return `hace ${diffMin} minuto${diffMin === 1 ? '' : 's'}`;
+  } else if (diffHour < 24) {
+    return `hace ${diffHour} hora${diffHour === 1 ? '' : 's'}`;
+  } else if (diffDay < 30) {
+    return `hace ${diffDay} día${diffDay === 1 ? '' : 's'}`;
+  } else {
+    // Para fechas más antiguas, mostrar la fecha completa
+    return formatDate(dateString);
+  }
+};
+
 const NoteCard: React.FC<NoteCardProps> = ({
   note,
   editingNote,
@@ -159,6 +210,13 @@ const NoteCard: React.FC<NoteCardProps> = ({
           onBlur={() => handleUpdateNote(note.id, 'title')}
           onClick={e => e.stopPropagation()}
         />
+        
+        {/* Añadir la fecha de creación aquí */}
+        {note.created_at && (
+          <div className="note-date">
+            {getTimeAgo(note.created_at)}
+          </div>
+        )}
         
         {/* Sección de imágenes */}
         {note.images && note.images.length > 0 && (

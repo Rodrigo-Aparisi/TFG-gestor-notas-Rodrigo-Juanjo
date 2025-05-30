@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 10px;
   background-color: var(--theme-background, #221e19);
-  padding-bottom: 70px;
+  padding-bottom: 35px;
 }
 
 /* Personalizar scrollbar */
@@ -182,6 +182,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  margin-top: 20px;
 }
 
 .note-action-container, .reminder-action-container, .transcription-container {
@@ -244,4 +245,59 @@
 
 .chatbot-message.bot .message-content a:hover {
   text-decoration: none;
+}
+
+/* Añadir a tu archivo de estilos */
+.chatbot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: var(--background-darker, #1a1a1a);
+  color: var(--dorado, #ffc600);
+  border-bottom: 3px solid var(--dorado, #ffc600);
+}
+
+.chatbot-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.clear-history {
+  background: none;
+  border: none;
+  color: var(--dorado, #ffc600);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.clear-history:hover {
+  background-color: rgba(255, 198, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.selected-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: rgba(255, 198, 0, 0.1);
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-right: 5px;
+}
+
+.selected-image-preview button {
+  background: none;
+  border: none;
+  color: var(--dorado, #ffc600);
+  cursor: pointer;
+}
+
+.message-input-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }

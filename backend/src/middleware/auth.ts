@@ -12,7 +12,6 @@ declare global {
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    console.log('Token recibido:', token ? 'Sí' : 'No');
 
     if (!token) {
       return res.status(401).json({ error: 'Access denied - No token' });
@@ -25,7 +24,6 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     const verified = jwt.verify(token, secret);
-    console.log('Token verificado:', verified);
     
     // Asegurarse de que el ID esté presente
     if (!verified || typeof verified !== 'object' || !verified.id) {
@@ -34,7 +32,6 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     req.user = verified;
-    console.log('Usuario establecido en req:', req.user);
     
     next();
   } catch (error) {

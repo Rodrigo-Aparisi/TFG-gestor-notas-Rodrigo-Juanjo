@@ -37,7 +37,7 @@ export const accountController = {
       });
 
     const userId = req.user.id;
-    const baseUrl = process.env.API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.API_URL;
     const imageUrl = `/uploads/profile-images/${req.file.filename}`;
     const fullImageUrl = `${baseUrl}${imageUrl}`;
 

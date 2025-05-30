@@ -15,6 +15,8 @@ import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
 import ChatbotPage from './pages/ChatbotPage';
 import Groups from './pages/Groups';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
@@ -57,9 +59,10 @@ const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Componente para controlar la visibilidad del botón flotante
 const FloatingButtonController: React.FC = () => {
   const location = useLocation();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   
-  // No mostrar el botón flotante en la página de login o en la página del chatbot
-  if (location.pathname === '/login' || location.pathname === '/chatbot') {
+  // No mostrar el botón flotante en la página de login, en la página del chatbot o si no está autenticado
+  if (location.pathname === '/login' || location.pathname === '/chatbot' || !isAuthenticated) {
     return null;
   }
   
@@ -75,40 +78,46 @@ function App() {
             <Header />
             <main className="main-content">
               <Routes>
-                <Route path="/" element={
-                  <PrivateRoute>
-                    <Home />
-                  </PrivateRoute>
-                } />
+                {/* Ruta principal accesible sin autenticación */}
+                <Route path="/" element={<Home />} />
+                
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                                
                 <Route path="/notes" element={
                   <PrivateRoute>
                     <Notes />
                   </PrivateRoute>
                 } />
+                
                 <Route path="/trash" element={
                   <PrivateRoute>
-                    <Trash  />
+                    <Trash />
                   </PrivateRoute>
                 } />
+                
                 <Route path="/Reminders" element={
                   <PrivateRoute>
                     <Reminders />
                   </PrivateRoute>
                 } />
+                
                 <Route path="/settings" element={
                   <PrivateRoute>
                     <Settings />
                   </PrivateRoute>
                 } />
+                
                 <Route path="/chatbot" element={
                   <PrivateRoute>
                     <ChatbotPage />
                   </PrivateRoute>
                 } />
-                <Route path="groups" element={
+                
+                <Route path="/groups" element={
                   <PrivateRoute>
-                    <Groups/>
+                    <Groups />
                   </PrivateRoute>
                 } />
 
@@ -117,7 +126,6 @@ function App() {
               </Routes>
             </main>
             
-            {/* Añade el componente FloatingButtonController aquí */}
             <FloatingButtonController />
           </div>
         </ThemeLoader>
