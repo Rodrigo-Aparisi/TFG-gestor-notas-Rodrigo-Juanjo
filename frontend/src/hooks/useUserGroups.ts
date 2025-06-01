@@ -784,6 +784,107 @@ export const useUserGroups = () => {
     [userGroups, fetchGroupNotes]
   );
 
+  const handleGroupImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await api.post(
+        "/user-groups/notes/upload-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        setNewNote((prev) => ({
+          ...prev,
+          images: [...(prev.images || []), response.data.data.imageUrl],
+        }));
+        showFeedback("Imagen subida correctamente");
+      }
+    } catch (error) {
+      console.error("Error al subir la imagen:", error);
+      showFeedback("Error al subir la imagen");
+    }
+  };
+
+  const handleNoteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await api.post(
+        "/user-groups/notes/upload-image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data && response.data.data && response.data.data.imageUrl) {
+        // Actualizar la nota con la nueva imagen
+        const note = groupNotes.find((n) => n.id === noteId);
+        if (note) {
+          const updatedNote = {
+            ...note,
+            images: [...(note.images || []), response.data.data.imageUrl],
+          };
+
+          setEditingNote({ ...editingNote, [noteId]: updatedNote });
+
+          // Llamar a updateGroupNote para guardar los cambios
+          await updateGroupNote(noteId);
+
+          showFeedback("Imagen subida correctamente");
+        }
+      }
+    } catch (error) {
+      console.error("Error al subir la imagen:", error);
+      showFeedback("Error al subir la imagen");
+    }
+  };
+
+  const handleDeleteNoteImage = async (noteId: string, imageIndex: number) => {
+    try {
+      const note = groupNotes.find((n) => n.id === noteId);
+      if (!note || !note.images || note.images.length <= imageIndex) return;
+
+      const updatedImages = [...note.images];
+      updatedImages.splice(imageIndex, 1);
+
+      const updatedNote = {
+        ...note,
+        images: updatedImages,
+      };
+
+      setEditingNote({ ...editingNote, [noteId]: updatedNote });
+
+      // Llamar a la API para eliminar la imagen
+      await api.delete(`/user-groups/notes/${noteId}/images/${imageIndex}`);
+
+      // Actualizar la nota
+      await updateGroupNote(noteId);
+
+      showFeedback("Imagen eliminada correctamente");
+    } catch (error) {
+      console.error("Error al eliminar la imagen:", error);
+      showFeedback("Error al eliminar la imagen");
+    }
+  };
+
+
   // Cargar grupos al montar el componente
   useEffect(() => {
     fetchUserGroups();
@@ -824,5 +925,8 @@ export const useUserGroups = () => {
     setShowAddMemberModal,
     setNewNote,
     setEditingNote,
+    handleGroupImageUpload,
+    handleNoteImageUpload,
+    handleDeleteNoteImage,
   };
 };

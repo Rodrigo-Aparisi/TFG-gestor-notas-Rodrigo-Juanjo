@@ -15,7 +15,7 @@ import chatbotRoutes from './routes/chatbotRoutes';
 import contactRoutes from './routes/contact';
 import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
-import { setupEmailScheduler } from './utils/emailTasks'; // Importa el programador de correos
+import { setupEmailScheduler } from './utils/emailTasks';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -39,8 +39,14 @@ if (!fs.existsSync(noteImagesDir)) {
   fs.mkdirSync(noteImagesDir, { recursive: true });
 }
 
+const groupNoteImagesDir = path.join(uploadsDir, 'group-note-images');
+if (!fs.existsSync(groupNoteImagesDir)) {
+  fs.mkdirSync(groupNoteImagesDir, { recursive: true });
+}
+
 app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/group-note-images', express.static(path.join(__dirname, 'uploads/group-note-images')));
 
 // Configurar multer para las imágenes de las notas
 const noteImageStorage = multer.diskStorage({
