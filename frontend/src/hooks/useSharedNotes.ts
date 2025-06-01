@@ -1,11 +1,18 @@
 import { useState, useCallback, useEffect } from "react";
 import { noteService } from "../services/api";
+import { SharedNote } from "../types";
 
 export function useSharedNotes() {
   const [activeTab, setActiveTab] = useState<string>("my-notes");
   const [hasSharedNotes, setHasSharedNotes] = useState<boolean>(false);
   const [sharedNotes, setSharedNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [feedback, setFeedback] = useState("");
+
+  const showFeedback = useCallback((message: string) => {
+    setFeedback(message);
+    setTimeout(() => setFeedback(""), 3000);
+  }, []);
 
   const loadSharedNotes = useCallback(async () => {
     try {
@@ -112,6 +119,175 @@ export function useSharedNotes() {
     }
   };
 
+  const handleExportSharedNote = (
+    format: string,
+    noteData: string | SharedNote
+  ) => {
+    // Si recibimos un string (ID), buscar la nota en el estado
+    if (typeof noteData === "string") {
+      const noteId = noteData;
+      const note = sharedNotes.find((n) => n.id === noteId);
+      if (!note) return;
+
+      exportByFormat(format, note);
+    }
+    // Si recibimos un objeto nota completo, usarlo directamente
+    else {
+      exportByFormat(format, noteData);
+    }
+  };
+
+  // Actualizar esta función también
+  const exportByFormat = (format: string, note: SharedNote) => {
+    // Asegurar que content sea un string
+    const content = note.content || "";
+    const title = note.title || "Nota compartida sin título";
+
+    switch (format) {
+      case "pdf":
+        exportAsPDF(title, content, note);
+        break;
+      case "txt":
+        exportAsTXT(title, content);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Funciones auxiliares para exportación
+  const exportAsPDF = (title: string, content: string, note: SharedNote) => {
+    try {
+      showFeedback("Preparando exportación a PDF...");
+
+      // Eliminar iframe existente si hay alguno
+      const existingIframe = document.getElementById("pdf-print-frame");
+      if (existingIframe) {
+        document.body.removeChild(existingIframe);
+      }
+
+      // Crear un iframe oculto
+      const iframe = document.createElement("iframe");
+      iframe.id = "pdf-print-frame";
+      iframe.style.position = "absolute";
+      iframe.style.top = "-9999px";
+      iframe.style.left = "-9999px";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      document.body.appendChild(iframe);
+
+      // Formato simple para el contenido
+      const formattedContent = content
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/__(.*?)__/g, "<u>$1</u>")
+        .replace(/\n/g, "<br>");
+
+      // Esperar a que el iframe esté cargado
+      iframe.onload = () => {
+        // Acceder al documento dentro del iframe
+        const iframeDoc =
+          iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          showFeedback("Error al crear el documento PDF");
+          return;
+        }
+
+        // Escribir el contenido HTML en el iframe
+        iframeDoc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 20px;
+                color: #333;
+              }
+              h1 {
+                color: #333;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 10px;
+              }
+              .content {
+                margin-top: 20px;
+              }
+              .images {
+                margin-top: 30px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                max-width: 20%;
+              }
+              .images img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>${title}</h1>
+            <div class="content">${formattedContent}</div>
+            
+            ${
+              note.images && note.images.length > 0
+                ? `
+              <div class="images">
+                <h2>Imágenes adjuntas</h2>
+                ${note.images
+                  .map(
+                    (img) =>
+                      `<img src="${process.env.REACT_APP_API_URL?.replace(
+                        "/api",
+                        ""
+                      )}${img}" alt="Imagen adjunta">`
+                  )
+                  .join("")}
+              </div>
+            `
+                : ""
+            }
+          </body>
+          </html>
+        `);
+
+        iframeDoc.close();
+
+        // Esperar un momento para que se cargue todo el contenido
+        setTimeout(() => {
+          try {
+            // Imprimir el iframe (esto abrirá el diálogo de impresión)
+            iframe.contentWindow?.print();
+            showFeedback("Documento preparado para descargar como PDF");
+          } catch (err) {
+            console.error("Error al imprimir:", err);
+            showFeedback("Error al generar el PDF");
+          }
+        }, 500);
+      };
+
+      // Iniciar la carga del iframe con un documento en blanco
+      iframe.src = "about:blank";
+    } catch (error) {
+      console.error("Error al exportar como PDF:", error);
+      showFeedback("Error al exportar como PDF");
+    }
+  };
+
+  const exportAsTXT = (title: string, content: string) => {
+    const element = document.createElement("a");
+    const file = new Blob([content], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = `${title}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    showFeedback("Nota exportada como TXT");
+  };
+
   // Verificar notas compartidas al inicio
   useEffect(() => {
     checkSharedNotes();
@@ -127,6 +303,7 @@ export function useSharedNotes() {
     checkSharedNotes,
     handleTabChange,
     handleDeleteSharedImage,
-    handleAddSharedImage
+    handleAddSharedImage,
+    handleExportSharedNote,
   };
 }

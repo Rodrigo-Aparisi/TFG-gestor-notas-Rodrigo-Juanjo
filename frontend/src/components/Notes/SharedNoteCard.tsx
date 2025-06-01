@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { noteService } from "../../services/api";
 import NoteImage from "./NoteImage";
+import NoteActionsMenu from "./NoteActionsMenu";
+import { SharedNote } from "../../types";
 
 interface SharedNoteCardProps {
-  note: any;
+  note: SharedNote;
   focusedNoteId: string | null;
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
   showFeedback?: (message: string) => void;
   insertList?: (noteId: string, type: "bullet" | "number") => void;
-  handleDeleteSharedImage?: (noteId: string,imageIndex: number) => Promise<void>;
+  handleDeleteSharedImage?: (noteId: string, imageIndex: number) => Promise<boolean>;
   handleAddSharedImage?: (noteId: string, file: File) => Promise<string>;
+  handleExportSharedNote?: (format: string, noteData: string | SharedNote) => void;
 }
 
 const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
@@ -23,7 +26,8 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   showFeedback,
   insertList,
   handleDeleteSharedImage,
-  handleAddSharedImage
+  handleAddSharedImage,
+  handleExportSharedNote,
 }) => {
   const [editedTitle, setEditedTitle] = useState(note.title || "");
   const [editedContent, setEditedContent] = useState(note.content || "");
@@ -169,31 +173,40 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
 
   // Función para subir imágenes
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isEditable || !e.target.files || e.target.files.length === 0 || !handleAddSharedImage) return;
-  
+    if (
+      !isEditable ||
+      !e.target.files ||
+      e.target.files.length === 0 ||
+      !handleAddSharedImage
+    )
+      return;
+
     try {
       setIsSaving(true);
       const file = e.target.files[0];
-      
+
       // Usar la función del hook para subir la imagen
       await handleAddSharedImage(note.id, file);
-      
+
       if (showFeedback) {
-        showFeedback('Imagen subida correctamente');
+        showFeedback("Imagen subida correctamente");
       } else {
-        setFeedback({ message: 'Imagen subida correctamente', type: 'success' });
-        setTimeout(() => setFeedback({ message: '', type: '' }), 3000);
+        setFeedback({
+          message: "Imagen subida correctamente",
+          type: "success",
+        });
+        setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
       }
     } catch (error: any) {
-      console.error('Error al subir imagen:', error);
+      console.error("Error al subir imagen:", error);
       if (showFeedback) {
-        showFeedback('Error al subir imagen');
+        showFeedback("Error al subir imagen");
       } else {
-        setFeedback({ message: 'Error al subir imagen', type: 'error' });
+        setFeedback({ message: "Error al subir imagen", type: "error" });
       }
     } finally {
       setIsSaving(false);
-      e.target.value = ''; // Resetear input
+      e.target.value = ""; // Resetear input
     }
   };
 
@@ -220,6 +233,21 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Función para exportar la nota
+  const handleExport = (format: string) => {
+    if (handleExportSharedNote) {
+      // Crear una copia de la nota con los valores editados actuales
+      const currentNoteState = {
+        ...note,
+        title: isEditable ? editedTitle : note.title,
+        content: isEditable ? editedContent : note.content,
+      };
+
+      // Pasar esta versión actualizada de la nota
+      handleExportSharedNote(format, currentNoteState);
     }
   };
 
@@ -291,7 +319,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
                 }
               : undefined
           }
-          onKeyDown={isEditable ? handleSharedKeyDown : undefined} // Usar nuestra nueva función
+          onKeyDown={isEditable ? handleSharedKeyDown : undefined}
           readOnly={!isEditable}
           onBlur={isEditable ? handleUpdateNote : undefined}
           onClick={(e) => e.stopPropagation()}
@@ -305,54 +333,29 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         {/* Opciones de edición solo para notas editables */}
         {isEditable && (
           <div className="note-actions-bottom">
-            <div className="list-buttons">
-              <button
-                className="list-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (insertList) {
-                    insertList(note.id, "bullet");
-                  }
-                }}
-                title="Insertar lista con viñetas"
-              >
-                <i className="fas fa-list-ul"></i>
-              </button>
+            {/* Usar el menú de acciones para notas */}
+            <NoteActionsMenu
+              noteId={String(note.id)}
+              onExport={handleExport}
+              onInsertList={(noteId, type) => {
+                if (insertList) {
+                  insertList(String(noteId), type);
+                }
+              }}
+              onImageUpload={() => {
+                document
+                  .getElementById(`shared-image-input-${note.id}`)
+                  ?.click();
+              }}
+            />
 
-              <button
-                className="list-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (insertList) {
-                    insertList(note.id, "number");
-                  }
-                }}
-                title="Insertar lista numerada"
-              >
-                <i className="fas fa-list-ol"></i>
-              </button>
-
-              <button
-                className="list-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  document
-                    .getElementById(`shared-image-input-${note.id}`)
-                    ?.click();
-                }}
-                title="Insertar imagen"
-              >
-                <i className="fas fa-image"></i>
-              </button>
-
-              <input
-                id={`shared-image-input-${note.id}`}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={handleImageUpload}
-              />
-            </div>
+            <input
+              id={`shared-image-input-${note.id}`}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleImageUpload}
+            />
           </div>
         )}
 
