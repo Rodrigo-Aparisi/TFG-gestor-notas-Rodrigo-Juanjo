@@ -237,6 +237,16 @@ export const noteService = {
     }
   },
 
+  searchGroupUsers: async (groupId: string, query: string) => {
+  try {
+    const response = await api.get(`/groups/${groupId}/search-users?q=${query}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al buscar usuarios para el grupo:', error);
+    return { users: [] };
+  }
+},
+
   uploadNoteImage: async (formData: FormData) => {
     try {
       const response = await api.post("/notes/upload-image", formData, {
