@@ -24,6 +24,7 @@ export interface Note {
 }
 
 export interface SharedNote extends Note {
+  can_edit: boolean;
   shared_by: string;
   content: string | null;
   user_id: string;
