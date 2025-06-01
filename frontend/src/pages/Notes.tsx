@@ -71,7 +71,9 @@ const Notes: React.FC = () => {
     activeTab,
     hasSharedNotes,
     sharedNotes,
-    handleTabChange: handleTabChangeBase
+    handleTabChange: handleTabChangeBase,
+    handleDeleteSharedImage,
+    handleAddSharedImage
   } = useSharedNotes();
 
   const {
@@ -613,6 +615,9 @@ const Notes: React.FC = () => {
             autoResizeTextarea={autoResizeTextarea}
             showFeedback={showFeedback}
             insertList={insertList}
+            handleDeleteSharedImage={handleDeleteSharedImage}
+            handleAddSharedImage={handleAddSharedImage}
+
           />
         )}
 

@@ -10,6 +10,8 @@ interface SharedNotesGridProps {
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
   showFeedback?: (message: string) => void;
   insertList?: (noteId: string, type: 'bullet' | 'number') => void;
+  handleDeleteSharedImage: (noteId: string, imageIndex: number) => Promise<void>;
+  handleAddSharedImage?: (noteId: string, file: File) => Promise<string>;
 }
 
 const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
@@ -19,7 +21,9 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
   handleFocusIndicatorClick,
   autoResizeTextarea,
   showFeedback,
-  insertList
+  insertList,
+  handleDeleteSharedImage,
+  handleAddSharedImage
 }) => {
   const breakpointColumns = {
     default: 5,
@@ -45,6 +49,8 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
             autoResizeTextarea={autoResizeTextarea}
             showFeedback={showFeedback}
             insertList={insertList}
+            handleDeleteSharedImage={handleDeleteSharedImage}
+            handleAddSharedImage={handleAddSharedImage}
           />
         ))
       ) : (
