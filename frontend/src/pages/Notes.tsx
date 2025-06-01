@@ -73,7 +73,8 @@ const Notes: React.FC = () => {
     sharedNotes,
     handleTabChange: handleTabChangeBase,
     handleDeleteSharedImage,
-    handleAddSharedImage
+    handleAddSharedImage,
+    handleExportSharedNote
   } = useSharedNotes();
 
   const {
@@ -617,6 +618,7 @@ const Notes: React.FC = () => {
             insertList={insertList}
             handleDeleteSharedImage={handleDeleteSharedImage}
             handleAddSharedImage={handleAddSharedImage}
+            handleExportSharedNote={handleExportSharedNote}
 
           />
         )}
