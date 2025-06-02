@@ -98,7 +98,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
         </button>
       </div>
       <div className="mini-calendar-weekdays">
-        {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map(day => (
+        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(day => (
           <div key={day} className="mini-weekday">{day}</div>
         ))}
       </div>

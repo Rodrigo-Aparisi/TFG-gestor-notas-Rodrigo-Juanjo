@@ -9,7 +9,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 87px;
+  padding-top: 50px;
   pointer-events: none;
 }
 
@@ -532,13 +532,12 @@
   .week-view-popup {
     width: 100%;
     max-width: none;
-    height: 100%;
     max-height: none;
     border-radius: 0;
   }
   
   .week-view-popup-header {
-    padding: 16px;
+    padding: 25px;
   }
   
   .week-view-popup-title h3 {
