@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
 import { GroupNote } from "../types";
 import UserGroupSidebar from "../components/UserGroups/UserGroupSidebar";
-import GroupNotesGrid from "../components/UserGroups/GroupNotesGrid"; // Corregida la importación
+import GroupNotesGrid from "../components/UserGroups/GroupNotesGrid";
 import GroupOfMembersList from "../components/UserGroups/GroupOfMembersList";
 import CreateGroupModal from "../components/UserGroups/CreateGroupModal";
 import AddMemberModal from "../components/UserGroups/AddMemberModal";
@@ -390,6 +390,14 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
+        // Actualizar la lista de grupos localmente
+        const updatedGroups = userGroups.map(group => 
+          group.id === selectedGroup.id ? { ...group, name: newGroupName } : group
+        );
+        
+        // Forzar la actualización del componente
+        setForceRender(prev => prev + 1);
+        
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
@@ -426,6 +434,14 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
+        // Actualizar la lista de grupos localmente
+        const updatedGroups = userGroups.map(group => 
+          group.id === selectedGroup.id ? { ...group, description: newGroupDescription } : group
+        );
+        
+        // Forzar la actualización del componente
+        setForceRender(prev => prev + 1);
+        
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
