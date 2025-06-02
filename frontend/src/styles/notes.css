@@ -1490,6 +1490,37 @@ html, body {
   padding-left: 8px;
 }
 
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.user-suggestions {
+  color:#000;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+  background-color: #f5f5f5;
+}
+
 /* Estilos para mensajes de estado */
 .no-notes, .loading {
   text-align: center;
