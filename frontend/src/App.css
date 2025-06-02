@@ -543,7 +543,6 @@ body.light-theme,
   left: 0;
   right: 0;
   max-height: calc(100vh - var(--header-height));
-  background-color: var(--background-darker);
   z-index: 999;
   overflow-y: auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -552,6 +551,10 @@ body.light-theme,
 
 @media screen and (max-width: 768px) {
   .week-view-popup-container {
+    padding: 10px;
+  }
+
+  .main-content {
     padding: 10px;
   }
 }

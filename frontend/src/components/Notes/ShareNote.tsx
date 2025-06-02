@@ -148,7 +148,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
             checked={includeImages}
             onChange={(e) => setIncludeImages(e.target.checked)}
           />
-          <span>Incluir imágenes</span>
+          <span>Compartir imágenes</span>
         </label>
 
         <label className="share-option-label">
