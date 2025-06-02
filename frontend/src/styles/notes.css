@@ -920,29 +920,121 @@ html, body {
     color: #333;
   }
   
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
+  /* === FORMULARIO DE GRUPO === */
+.form-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #f1f1f1;
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+.form-group input:focus {
+  border-color: #f1c40f;
+  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
+  outline: none;
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.8;
+}
+
+/* Botones del formulario */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.modal-actions button {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-actions button.cancel-button {
+  background: #333;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-actions button.cancel-button:hover {
+  background: #444;
+}
+
+.modal-actions button.create-button {
+  background: #f1c40f;
+  color: #000;
+}
+
+.modal-actions button.create-button:hover {
+  background: #e5b90f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilo del modal */
+.modal-content {
+  background: #1e1e1e;
+  padding: 25px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  color: #fff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(241, 196, 15, 0.2);
+}
+
+/* Título del modal */
+.modal-content h2 {
+  color: #f1c40f;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+/* Ajustes responsive */
+@media (max-width: 768px) {
   .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
+    font-size: 13px;
   }
   
   .form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 12px;
+    font-size: 16px; /* Evita zoom en iOS */
   }
   
   .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    flex-direction: column;
+    gap: 12px;
   }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
   
   /* Botón de crear grupo */
   .create-group-button {
@@ -2263,6 +2355,7 @@ button.px-4.py-2.bg-red-500:hover {
 
   .note-card.focused input {
     font-size: 1.2em;
+    background: transparent;
   }
 
   .note-card.focused textarea {
