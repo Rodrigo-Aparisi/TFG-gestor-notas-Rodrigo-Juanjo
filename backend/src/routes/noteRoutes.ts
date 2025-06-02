@@ -21,6 +21,7 @@ router.delete('/:id', noteController.deleteNote);
 router.patch('/:id/pin', noteController.togglePin);
 router.patch('/:id/mark', noteController.toggleMark);
 router.post('/unmark-all', noteController.unmarkAllNotes);
+router.get('/users', authenticateToken, noteController.searchUsers);
 
 // Nuevas rutas para permisos de edición
 router.put('/:id/share-permissions', noteController.updateSharedNotePermissions);
@@ -34,13 +35,6 @@ router.delete('/trash/empty', noteController.emptyTrash);
 // Rutas para preferencias de ordenación
 router.get('/sort-preferences', noteController.getUserSortPreferences);
 router.post('/sort-preferences', noteController.saveUserSortPreferences);
-
-router.post(
-    '/upload-image',
-    authenticateToken,
-    upload.single('image'),
-    handleMulterError,
-    noteController.uploadNoteImage
-);
+router.post('/upload-image',authenticateToken, upload.single('image'), handleMulterError, noteController.uploadNoteImage);
 
 export default router;

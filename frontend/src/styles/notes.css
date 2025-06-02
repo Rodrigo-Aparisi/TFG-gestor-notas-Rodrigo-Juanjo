@@ -247,6 +247,7 @@ html, body {
     padding: 8px;
     transition: all 0.2s ease;
     tab-size: 4;
+    margin-top: 10px;
   }
   
   .note-card input {
@@ -286,25 +287,46 @@ html, body {
   }
   
   /* === ESTADOS FOCUSED === */
-  .note-card.focused {
-    position: fixed;
-    width: min(800px, 90vw);
-    height: auto;
-    max-height: 90vh;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 1;
-    z-index: 1000;
-    padding: 40px;
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    pointer-events: auto;
-    will-change: transform;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+.note-card.focused {
+  position: fixed;
+  width: min(800px, 90vw);
+  height: auto;
+  max-height: 90vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  z-index: 1000;
+  padding: 40px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Estilo para el scrollbar de la nota enfocada */
+.note-card.focused::-webkit-scrollbar {
+  width: 8px;
+}
+
+.note-card.focused::-webkit-scrollbar-track{
+  background: rgba(54, 54, 54, 0.8);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.note-card.focused::-webkit-scrollbar-thumb {
+  background: var(--dorado, #f1c40f);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
 
   /* Modificar las animaciones para evitar el movimiento con el cursor */
   @keyframes expandFromLeft {
@@ -324,18 +346,19 @@ html, body {
     transform: translate(-50%, -50%);
   }
   
-  .note-card.focused .note-content {
-    width: 100%;
-    height: auto;
-    max-height: calc(90vh - 140px);
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow: visible;
-    flex: 1;
-    position: relative;
-    z-index: 1;
-  }
+.note-card.focused .note-content {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 20px;
+}
   
   .note-card.focused input {
     text-align: center;
@@ -897,29 +920,121 @@ html, body {
     color: #333;
   }
   
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
+  /* === FORMULARIO DE GRUPO === */
+.form-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #f1f1f1;
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: #1e1e1e;
+  color: #fff;
+}
+
+.form-group input:focus {
+  border-color: #f1c40f;
+  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
+  outline: none;
+}
+
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.8;
+}
+
+/* Botones del formulario */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.modal-actions button {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-actions button.cancel-button {
+  background: #333;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-actions button.cancel-button:hover {
+  background: #444;
+}
+
+.modal-actions button.create-button {
+  background: #f1c40f;
+  color: #000;
+}
+
+.modal-actions button.create-button:hover {
+  background: #e5b90f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilo del modal */
+.modal-content {
+  background: #1e1e1e;
+  padding: 25px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  color: #fff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(241, 196, 15, 0.2);
+}
+
+/* Título del modal */
+.modal-content h2 {
+  color: #f1c40f;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+/* Ajustes responsive */
+@media (max-width: 768px) {
   .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
+    font-size: 13px;
   }
   
   .form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 12px;
+    font-size: 16px; /* Evita zoom en iOS */
   }
   
   .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    flex-direction: column;
+    gap: 12px;
   }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
   
   /* Botón de crear grupo */
   .create-group-button {
@@ -1133,24 +1248,10 @@ html, body {
   border-left: 3px solid #f1c40f;
 }
 
-/* Contenedor principal de compartir nota */
-.share-note-container {
-  margin-top: 15px;
-  padding: 15px;
-  border-top: 1px solid #eee;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Dividido en dos columnas */
-  gap: 10px; /* Reducimos el espacio entre columnas */
-  align-items: start;
-  max-width: 450px; /* Ajustamos el ancho máximo del contenedor */
-}
-
 /* Input de nombre de usuario */
 .share-input-group input {
-  width: 100%; /* Ajustar al tamaño de la columna */
-  padding: 6px 8px; /* Reducimos el relleno */
+  width: 100%;
+  padding: 6px 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
@@ -1180,59 +1281,6 @@ html, body {
   gap: 8px;
   font-weight: 500;
   transition: background-color 0.2s ease;
-}
-
-.share-option-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  font-size: 13px; /* Reducimos el tamaño del texto */
-  color: #333;
-  transition: all 0.2s ease;
-}
-
-.share-option-label:hover {
-  color: #000;
-}
-
-/* Checkbox personalizado */
-.share-option-label input[type="checkbox"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  width: 14px; /* Reducimos el tamaño del checkbox */
-  height: 14px;
-  border: 2px solid #ccc;
-  border-radius: 2px;
-  margin-right: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #fff;
-}
-
-.share-option-label input[type="checkbox"]:checked {
-  background-color: #f1c40f;
-  border-color: #f1c40f;
-}
-
-.share-option-label input[type="checkbox"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 1px;
-  width: 4px;
-  height: 8px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-/* Botón de compartir */
-.share-button {
-  padding: 6px 12px; /* Reducimos el tamaño del botón */
-  background-color: #f1c40f;
-  color: #000;
-  border: none;
 }
 
 .dropdown-button:hover {
@@ -1270,45 +1318,8 @@ html, body {
   box-sizing: border-box;
 }
 
-.share-button:hover {
-  background-color: #e5b90f;
-  transform: translateY(-1px);
-}
-
-.share-button:disabled {
-  background-color: #f7dc6f;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Feedback de compartir */
-.share-feedback {
-  grid-column: span 2; /* Feedback ocupa ambas columnas */
-  margin-top: 10px;
-  padding: 10px;
-  transition: background-color 0.2s ease;
-  z-index: 1000;
-}
-
 .dropdown-content div:hover {
   background-color: #f1f1f1;
-}
-
-
-.share-feedback.success {
-  background-color: #d4edda;
-  color: #155724;
-  border-left: 4px solid #28a745;
-}
-
-.share-feedback.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-left: 4px solid #dc3545;
-}
-
-.share-options {
-  margin-top: 10px;
 }
 
 .note-card:hover .delete-button,
@@ -1317,77 +1328,10 @@ html, body {
   opacity: 1;
 }
 
-/* Estilo para notas editables */
-.note-card.editable-note {
-  border-color: #2ecc71;
-  border-width: 2px;
-}
-
-.edit-indicator {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background-color: #2ecc71;
-  color: white;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 3;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.edit-indicator i {
-  font-size: 12px;
-}
-
-/* Indicador de guardado */
-.saving-indicator {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  animation: fadeInOut 1.5s infinite;
-}
-
 @keyframes fadeInOut {
   0% { opacity: 0.7; }
   50% { opacity: 1; }
   100% { opacity: 0.7; }
-}
-
-/* Feedback de nota */
-.note-feedback {
-  padding: 8px;
-  margin-top: 10px;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.note-feedback.success {
-  background-color: #d4edda;
-  color: #155724;
-  border-left: 4px solid #2ecc71;
-}
-
-.note-feedback.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-left: 4px solid #dc3545;
-}
-
-.note-card.focused .note-image-container:only-child .note-image,
-.note-card.focused .note-image {
-  width: 100%;
-  height: 100%;
-  max-height: 300px;
-  object-fit: contain;
 }
 
 .group-actions-left,
@@ -1436,58 +1380,6 @@ html, body {
 .group-item .action-button svg {
   width: 14px;
   height: 14px;
-}
-
-/* Estilos para las pestañas */
-.tabs-container {
-  margin-bottom: 15px;
-  break-inside: avoid;
-  transition: transform 0.2s ease, border-color 0.3s ease;
-  padding-right: calc(15px + 8px);
-  box-sizing: border-box;
-}
-
-.tabs {
-  display: flex;
-  border-bottom: 1px solid #ccc;
-  width: 100%;
-}
-
-.tab {
-  padding: 12px 24px;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  color: #666;
-}
-
-.tab:hover {
-  color: #000;
-}
-
-.tab.active {
-  color: #000;
-  border-bottom: 3px solid #f1c40f;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  background-color: #ff4757;
-  border-radius: 50%;
-}
-
-/* Estilo para notas compartidas */
-.shared-by {
-  font-size: 12px;
-  color: #666;
-  margin: 5px 0 15px;
-  font-style: italic;
-  padding-left: 8px;
 }
 
 /* Estilos para mensajes de estado */
@@ -1998,4 +1890,996 @@ button.px-4.py-2.bg-red-500:hover {
   height: 2px;
   background-color: #f1c40f;
   border-radius: 1px;
+}
+
+
+/* ===== ESTILOS PARA NOTAS COMPARTIDAS ===== */
+
+/* Contenedor principal de compartir nota */
+.share-note-container {
+  margin-top: 15px;
+  padding: 15px;
+  border-top: 1px solid #eee;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 100%;
+}
+
+/* Input de nombre de usuario y contenedor de autocompletado */
+.share-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-container input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+.autocomplete-container input:focus {
+  border-color: #f1c40f;
+  box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
+  outline: none;
+}
+
+/* Sugerencias de usuario */
+.user-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-suggestions::-webkit-scrollbar,
+.note-card textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-suggestions::-webkit-scrollbar-track,
+.note-card textarea::-webkit-scrollbar-track {
+  background: rgba(54, 54, 54, 0.8);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.user-suggestions::-webkit-scrollbar-thumb,
+.note-card textarea::-webkit-scrollbar-thumb {
+  background: var(--dorado, #f1c40f);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: #333;
+}
+
+.suggestion-item:hover {
+  background-color: #f1f1f1;
+}
+
+/* Opciones de compartir */
+.share-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.share-checkbox-options {
+  display: flex;
+  gap: 16px;
+}
+
+.share-option-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.share-option-label:hover {
+  color: #000;
+}
+
+/* Checkbox personalizado */
+.share-option-label input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 16px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  margin-right: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fff;
+  position: relative;
+}
+
+.share-option-label input[type="checkbox"]:checked {
+  background-color: #f1c40f;
+  border-color: #f1c40f;
+}
+
+.share-option-label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Botón de compartir */
+.share-button {
+  padding: 10px 18px;
+  background-color: #f1c40f;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.share-button:hover {
+  background-color: #e5b90f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.share-button:disabled {
+  background-color: #f7dc6f;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.7;
+}
+
+/* Feedback de compartir */
+.share-feedback {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.share-feedback i {
+  font-size: 16px;
+}
+
+.share-feedback.success {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.share-feedback.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+/* ===== ESTILOS PARA TARJETAS DE NOTAS COMPARTIDAS ===== */
+
+/* Tarjeta de nota compartida */
+.note-card.editable-note {
+  border-color: #2ecc71;
+  border-width: 2px;
+  position: relative;
+}
+
+/* Indicador de edición */
+.edit-indicator {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: #2ecc71;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-left: 30px;
+}
+
+/* Mostrar solo cuando la nota está enfocada */
+.note-card.focused .edit-indicator {
+  opacity: 1;
+}
+
+.edit-indicator i {
+  font-size: 12px;
+}
+
+/* Información de compartido */
+.shared-by {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 12px;
+  padding: 5px 8px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Indicador de guardado */
+.saving-indicator {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  animation: fadeInOut 1.5s infinite;
+  z-index: 5;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Feedback de nota */
+.note-feedback {
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note-feedback.success {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: #155724;
+  border-left: 4px solid #2ecc71;
+}
+
+.note-feedback.error {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #721c24;
+  border-left: 4px solid #e74c3c;
+}
+
+.note-feedback:before {
+  font-weight: 900;
+}
+
+.note-feedback.success:before {
+  content: '\f058';
+  color: #2ecc71;
+}
+
+.note-feedback.error:before {
+  content: '\f057';
+  color: #e74c3c;
+}
+
+/* ===== ESTILOS PARA PESTAÑAS DE NOTAS COMPARTIDAS ===== */
+.tabs-container {
+  margin-bottom: 15px;
+  break-inside: avoid;
+  transition: transform 0.2s ease, border-color 0.3s ease;
+  padding-right: calc(15px + 8px);
+  box-sizing: border-box;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+}
+
+.tab {
+  padding: 12px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #eee !important;
+}
+
+.tab:hover {
+  color: var(--dorado) !important;
+}
+
+.tab.active {
+  color: #000;
+  border-bottom: 3px solid #f1c40f;
+}
+
+.tab.active:after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #f1c40f;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 71, 87, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+}
+
+/* ===== GRID DE NOTAS COMPARTIDAS ===== */
+
+/* Mensaje de no hay notas */
+.no-notes {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  font-size: 16px;
+  margin-top: 20px;
+}
+
+
+/* === MEDIA QUERIES PARA DISPOSITIVOS MÓVILES === */
+
+/* Tablets y dispositivos medianos (hasta 992px) */
+@media (max-width: 992px) {
+  #root {
+    width: 95%;
+  }
+
+  .create-note {
+    width: 100%;
+    min-width: auto;
+    max-width: 100%;
+  }
+
+  .masonry-grid {
+    width: 100%;
+  }
+
+  .note-card.focused {
+    width: 95vw;
+    padding: 20px;
+  }
+}
+
+/* Dispositivos móviles (hasta 768px) */
+@media (max-width: 768px) {
+  .notes-layout {
+    flex-direction: column;
+  }
+
+  .notes-sidebar {
+    width: 100%;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .notes-main {
+    padding: 10px;
+  }
+
+  .bulk-actions-menu {
+    min-width: auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bulk-actions-menu .left-section,
+  .bulk-actions-menu .right-section {
+    width: 100%;
+  }
+
+  .bulk-actions-menu .right-section {
+    justify-content: space-between;
+  }
+
+  .create-note .button-container {
+    flex-direction: column;
+  }
+
+  .create-note .left-actions,
+  .create-note .right-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .tabs-container .tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .note-card.focused {
+    width: 90vw;
+    max-height: 80vh;
+    padding: 15px;
+  }
+
+  .note-card.focused input {
+    font-size: 1.2em;
+    background: transparent;
+  }
+
+  .note-card.focused textarea {
+    font-size: 1em;
+    padding: 10px;
+  }
+}
+
+/* Dispositivos móviles pequeños (hasta 576px) */
+@media (max-width: 576px) {
+  .notes-container {
+    padding: 10px;
+  }
+
+  .create-note {
+    padding: 10px;
+  }
+
+  .masonry-grid_column {
+    padding-left: 10px;
+  }
+
+  .masonry-grid {
+    margin-left: -10px;
+  }
+
+  .note-card {
+    padding: 12px;
+  }
+
+  .note-actions {
+    opacity: 1;
+  }
+
+  .note-actions-bottom {
+    opacity: 1;
+  }
+
+  .note-date {
+    font-size: 11px;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+  }
+
+  .share-options {
+    flex-direction: column;
+  }
+
+  .share-checkbox-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Ajustes para el menú de acciones */
+  .note-actions-menu .menu-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1010;
+  }
+}
+
+/* Ajustes específicos para el grid de notas en móvil */
+@media (max-width: 768px) {
+  .masonry-grid {
+    display: block;
+  }
+
+  .masonry-grid_column {
+    width: 100% !important;
+  }
+
+  .note-card {
+    margin-bottom: 15px;
+  }
+
+
+}
+
+/* === FORMULARIO Y PAPELERA RESPONSIVE === */
+
+/* Reseteo de reglas problemáticas */
+@media (max-width: 768px) {
+  #root {
+    width: 100% !important;
+    padding: 0 10px;
+  }
+  
+  /* Ajuste del contenedor principal */
+  .notes-main {
+    padding: 10px !important;
+    width: 100% !important;
+  }
+  
+  /* Corrección del formulario */
+  .create-note {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 0 15px 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Corrección para el input y textarea del formulario */
+  .create-note input,
+  .create-note textarea {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important; /* Evita zoom en iOS */
+  }
+  
+  /* Ajuste para el contenedor de botones */
+  .create-note .button-container {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  /* Ajuste para grupos de botones */
+  .create-note .left-actions,
+  .create-note .right-actions {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  .create-note .right-actions {
+    justify-content: space-between !important;
+  }
+  
+  /* Aseguramos que los botones tengan el mismo ancho */
+  .create-note .right-actions button {
+    flex: 1 !important;
+    margin: 0 5px !important;
+    text-align: center !important;
+    padding: 12px 0 !important;
+    font-size: 14px !important;
+  }
+  
+  .create-note .right-actions button:first-child {
+    margin-left: 0 !important;
+  }
+  
+  .create-note .right-actions button:last-child {
+    margin-right: 0 !important;
+  }
+}
+
+/* Ajustes específicos para la vista de papelera */
+@media (max-width: 768px) {
+  /* Contenedor de mensaje y botón */
+  .note-tools-container .flex.justify-between {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  /* Mensaje de advertencia */
+  .note-tools-container .text-red-500 {
+    width: 100% !important;
+    padding: 12px !important;
+    background-color: rgba(231, 76, 60, 0.1) !important;
+    border-radius: 6px !important;
+    border-left: none !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+  }
+  
+  /* Contenedor de botones */
+  .note-tools-container .flex.items-center {
+    width: 100% !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  /* Eliminar margen derecho */
+  .note-tools-container .mr-4 {
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Botón de vaciar papelera */
+  button.px-4.py-2.bg-red-500 {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Ajuste para el grid de notas */
+  .masonry-grid {
+    margin-left: 0 !important;
+    width: 100% !important;
+    display: block !important; /* Cambia a bloque en móviles */
+  }
+  
+  .masonry-grid_column {
+    width: 100% !important;
+    padding-left: 0 !important;
+  }
+  
+  /* Tarjetas de papelera */
+  .trash-note-card {
+    width: 100% !important;
+    margin: 0 0 15px 0 !important;
+    padding: 15px !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Contenido de las tarjetas */
+  .trash-note-card .note-content {
+    margin-bottom: 15px !important;
+  }
+  
+  /* Título de la nota */
+  .trash-note-card h3 {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Texto de la nota */
+  .trash-note-card .note-text {
+    max-height: 80px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Fila de fecha y botones */
+  .trash-note-card .flex.justify-between {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  /* Fecha */
+  .trash-note-card .flex.justify-between .text-xs.text-gray-500 {
+    font-size: 12px !important;
+  }
+  
+  /* Contenedor de botones */
+  .trash-note-card .flex.space-x-2 {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+  }
+  
+  /* Botones de acción */
+  .trash-note-card .flex.space-x-2 button {
+    flex: 1 !important;
+    height: 40px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* Ajustes específicos para dispositivos muy pequeños */
+@media (max-width: 480px) {
+  /* Ajuste adicional para formulario */
+  .create-note {
+    padding: 12px !important;
+  }
+  
+  /* Ajuste para botones más pequeños */
+  .create-note .left-actions .menu-toggle-button {
+    padding: 8px !important;
+  }
+  
+  /* Mensaje de advertencia en papelera */
+  .note-tools-container .text-red-500 {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* Botón de vaciar papelera */
+  button.px-4.py-2.bg-red-500 {
+    font-size: 13px !important;
+  }
+  
+  /* Tarjetas de papelera */
+  .trash-note-card {
+    padding: 12px !important;
+  }
+  
+  /* Botones de acción en papelera */
+  .trash-note-card .flex.space-x-2 button {
+    height: 36px !important;
+    font-size: 12px !important;
+  }
+  
+  /* Mensaje de papelera vacía */
+  .no-notes {
+    padding: 30px 15px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Corrección específica para el menú desplegable en móviles */
+@media (max-width: 768px) {
+  .note-actions-menu {
+    position: static !important;
+  }
+  
+  .menu-dropdown {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+    border-radius: 12px 12px 0 0 !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2) !important;
+    z-index: 1010 !important;
+    margin-top: 0 !important;
+  }
+  
+  .menu-section {
+    padding: 12px 0 !important;
+  }
+  
+  .menu-item {
+    padding: 12px 16px !important;
+  }
+}
+
+/* Correcciones para los botones de los formularios */
+@media (max-width: 768px) {
+  .create-note .button-container {
+    margin-top: 15px !important;
+  }
+  
+  .create-note .left-actions,
+  .create-note .right-actions {
+    margin-bottom: 5px !important;
+  }
+  
+  /* Estilos para botones específicos */
+  .cancel-button,
+  .create-button {
+    height: 44px !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Estilo para el botón de menú */
+  .menu-toggle-button {
+    padding: 10px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* Corrección para la vista de papelera cuando está vacía */
+@media (max-width: 768px) {
+  .no-notes {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 20px 0 !important;
+  }
+  
+  /* Ajuste para el texto de advertencia en la papelera */
+  .note-tools-container .flex.justify-between p {
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  /* Ajuste para el mensaje de papelera vacía */
+  .masonry-grid .no-notes {
+    margin: 20px 0 !important;
+    padding: 30px 20px !important;
+  }
+}
+
+/* Asegurar que los botones de la papelera tengan el estilo correcto */
+@media (max-width: 768px) {
+  .trash-note-card .flex.space-x-2 button.px-2.py-1.bg-green-500 {
+    background-color: #10b981 !important;
+    color: white !important;
+  }
+  
+  .trash-note-card .flex.space-x-2 button.px-2.py-1.bg-red-500 {
+    background-color: #ef4444 !important;
+    color: white !important;
+  }
+  
+  .trash-note-card .flex.space-x-2 button:hover {
+    opacity: 0.9 !important;
+  }
+}
+
+
+/* === AJUSTES DE IMÁGENES PARA DISPOSITIVOS MÓVILES === */
+
+/* Ajustes para imágenes en las notas normales */
+@media (max-width: 768px) {
+  /* Contenedor de imágenes en notas normales */
+  .note-card .note-images {
+    gap: 5px !important;
+  }
+  
+  /* Ajustes para el contenedor de imagen */
+  .note-image-container {
+    max-height: 120px !important;
+  }
+  
+  .note-image-container::before {
+    padding-top: 75% !important; /* Relación de aspecto más compacta */
+  }
+  
+  /* Ajustes para imágenes individuales */
+  .note-image {
+    max-height: 120px !important;
+  }
+  
+  /* Ajustes para imágenes en la papelera */
+  .trash-note-card .note-images {
+    gap: 5px !important;
+  }
+  
+  .trash-note-card .note-image {
+    max-height: 100px !important;
+  }
+  
+  /* Botón de eliminar imágenes más visible */
+  .delete-image-button {
+    opacity: 1 !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+/* Ajustes adicionales para dispositivos muy pequeños */
+@media (max-width: 480px) {
+  /* Contenedor de imágenes más compacto */
+  .note-card .note-images {
+    gap: 3px !important;
+  }
+  
+  /* Altura máxima reducida */
+  .note-image-container {
+    max-height: 100px !important;
+  }
+  
+  /* Relación de aspecto más cuadrada */
+  .note-image-container::before {
+    padding-top: 90% !important;
+  }
+  
+  /* Ajuste para el grid de imágenes en notas enfocadas */
+  .note-card.focused .note-images {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+  
+  /* Ajuste para imágenes únicas en notas enfocadas */
+  .note-card.focused .note-image-container:only-child {
+    max-width: 250px !important;
+    max-height: 200px !important;
+  }
+}
+
+/* Ajustes específicos para imágenes en notas enfocadas en móvil */
+@media (max-width: 768px) {
+  .note-card.focused .note-images {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+  
+  .note-card.focused .note-image-container {
+    max-height: 150px !important;
+    margin: 0 !important;
+  }
+  
+  /* Ajustes para imágenes únicas */
+  .note-card.focused .note-images:has(.note-image-container:only-child) {
+    max-width: 300px !important;
+  }
+  
+  .note-card.focused .note-image-container:only-child {
+    max-width: 300px !important;
+    max-height: 200px !important;
+  }
+  
+  .note-card.focused .note-image-container:only-child .note-image {
+    max-height: 200px !important;
+  }
+}
+
+/* Ajustes para el formulario de creación con imágenes */
+@media (max-width: 768px) {
+  .create-note .note-images {
+    gap: 5px !important;
+  }
+  
+  .create-note .note-image-container {
+    max-height: 100px !important;
+  }
+  
+  .create-note .note-image {
+    max-height: 100px !important;
+  }
 }
