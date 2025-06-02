@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Group } from "../../types";
 import { FaEdit, FaInfoCircle } from "react-icons/fa";
-import { on } from "events";
 
 interface UserGroupSidebarProps {
   groups: Group[];
@@ -18,15 +17,23 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
   onEditGroupName,
   onEditGroupDescription,
 }) => {
+  // Mantener una copia local de los grupos para asegurar que los cambios se reflejan
+  const [localGroups, setLocalGroups] = useState<Group[]>(groups);
+  
+  // Actualizar los grupos locales cuando cambian los props
+  useEffect(() => {
+    setLocalGroups(groups);
+  }, [groups]);
+
   return (
     <div className="notes-sidebar">
       <div className="group-list">
         {/* Encabezado del sidebar */}
         <div className="sidebar-header">
-          <h2>Mis Grupos</h2>
+          <h2 onClick={() => onGroupSelect("")}>Mis Grupos</h2>
         </div>
         {/* Grupos */}
-        {groups
+        {localGroups
           .filter((group) => !group.isDefault && group.id !== "trash")
           .map((group) => (
             <div
@@ -49,10 +56,6 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
                 </button>
               </div>
 
-              <div
-                className="group-color"
-                style={{ backgroundColor: group.color || "#3498db" }}
-              />
               <span className="group-name">{group.name}</span>
             </div>
           ))}
