@@ -74,12 +74,8 @@ export const uploadNoteImage = multer({
   }
 }).single('image');
 
-
-// Middleware básico
-app.use(cors({
-  origin: process.env.APP_URL,
-  credentials: true
-}));
+// Desactivar CORS en Express (lo manejará Nginx)
+// app.use(cors({ ... }));
 
 app.use(express.json());
 
