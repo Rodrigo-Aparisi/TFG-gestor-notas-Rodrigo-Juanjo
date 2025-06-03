@@ -1,5 +1,5 @@
 -- Crear la base de datos
-CREATE DATABASE olympus_scribe;
+CREATE DATABASE IF NOT EXISTS olympus_scribe;
 
 -- Conectar a la base de datos
 \c olympus_scribe;

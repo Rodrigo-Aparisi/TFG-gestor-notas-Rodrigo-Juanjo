@@ -58,7 +58,7 @@ api.interceptors.response.use(
 export const noteService = {
   getNotes: async () => {
     try {
-      const response = await api.get("/notes");
+      const response = await api.get("notes");
       return response.data;
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -103,7 +103,7 @@ export const noteService = {
     images?: string[];
   }) => {
     try {
-      const response = await api.post("/notes", noteData);
+      const response = await api.post("notes", noteData);
       return response.data;
     } catch (error) {
       console.error("Error creating note:", error);
@@ -121,7 +121,7 @@ export const noteService = {
         ? { includeImages: options, canEdit: false }
         : { includeImages: true, canEdit: false, ...options };
 
-    const response = await api.post("/notes/share", {
+    const response = await api.post("notes/share", {
       noteId,
       username,
       includeImages: shareOptions.includeImages,
@@ -136,7 +136,7 @@ export const noteService = {
     username: string,
     options: ShareNoteOptions
   ) => {
-    const response = await api.put(`/notes/${noteId}/share-permissions`, {
+    const response = await api.put(`notes/${noteId}/share-permissions`, {
       username,
       ...options,
     });
@@ -145,7 +145,7 @@ export const noteService = {
 
   getSharedNotes: async () => {
     try {
-      const response = await api.get("/notes/shared-notes");
+      const response = await api.get("notes/shared-notes");
 
       return response.data;
     } catch (error) {
@@ -159,7 +159,7 @@ export const noteService = {
     noteData: { title?: string; content?: string }
   ) => {
     try {
-      const response = await api.put(`/notes/${id}`, noteData);
+      const response = await api.put(`notes/${id}`, noteData);
       if (!response.data) {
         throw new Error("No se recibieron datos del servidor");
       }
@@ -184,7 +184,7 @@ export const noteService = {
     noteData: { title?: string; content?: string }
   ) => {
     try {
-      const response = await api.put(`/notes/shared-notes/${id}`, noteData);
+      const response = await api.put(`notes/shared-notes/${id}`, noteData);
       if (!response.data) {
         throw new Error("No se recibieron datos del servidor");
       }
@@ -206,7 +206,7 @@ export const noteService = {
 
   updateSharedNoteImages: async (id: string, images: string[]) => {
     try {
-      const response = await api.put(`/notes/shared-notes/${id}`, { images });
+      const response = await api.put(`notes/shared-notes/${id}`, { images });
       if (!response.data) {
         throw new Error("No se recibieron datos del servidor");
       }
@@ -229,7 +229,7 @@ export const noteService = {
 
   searchUsers: async (query: string) => {
     try {
-      const response = await api.get(`/notes/users?query=${query}`);
+      const response = await api.get(`notes/users?query=${query}`);
       return response.data;
     } catch (error) {
       console.error("Error al buscar usuarios:", error);
@@ -249,7 +249,7 @@ export const noteService = {
 
   uploadNoteImage: async (formData: FormData) => {
     try {
-      const response = await api.post("/notes/upload-image", formData, {
+      const response = await api.post("notes/upload-image", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -263,7 +263,7 @@ export const noteService = {
 
   deleteNote: async (id: string) => {
     try {
-      await api.delete(`/notes/${id}`);
+      await api.delete(`notes/${id}`);
     } catch (error) {
       console.error("Error deleting note:", error);
       throw error;
@@ -271,17 +271,17 @@ export const noteService = {
   },
 
   togglePin: async (id: string) => {
-    const response = await api.patch(`/notes/${id}/pin`);
+    const response = await api.patch(`notes/${id}/pin`);
     return response.data;
   },
 
   toggleMark: async (id: string) => {
-    const response = await api.patch(`/notes/${id}/mark`);
+    const response = await api.patch(`notes/${id}/mark`);
     return response.data;
   },
 
   unmarkAllNotes: async () => {
-    const response = await api.post("/notes/unmark-all");
+    const response = await api.post("notes/unmark-all");
     return response.data;
   },
 
@@ -344,7 +344,7 @@ export const noteService = {
 
   removeNoteFromGroup: async (groupId: string, noteId: string) => {
     try {
-      const response = await api.delete(`/groups/${groupId}/notes/${noteId}`);
+      const response = await api.delete(`/groups/${groupId}notes/${noteId}`);
       return response.data;
     } catch (error) {
       console.error("Error removing note from group:", error);
@@ -364,7 +364,7 @@ export const noteService = {
 
   getUserSortPreferences: async () => {
     try {
-      const response = await api.get("/notes/sort-preferences");
+      const response = await api.get("notes/sort-preferences");
       return response.data;
     } catch (error) {
       console.error("Error al obtener preferencias de ordenación:", error);
@@ -386,7 +386,7 @@ export const noteService = {
 
   saveUserSortPreferences: async (sortType: string, sortDirection: string) => {
     try {
-      const response = await api.post("/notes/sort-preferences", {
+      const response = await api.post("notes/sort-preferences", {
         sortType,
         sortDirection,
       });
