@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { pool } from '../../database';
 import schedule from 'node-schedule';
 
 // Función para eliminar notas que llevan más de 30 días en la papelera

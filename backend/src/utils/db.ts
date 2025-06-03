@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { pool } from '../../database';
 
 export const executeQuery = async (query: string, params?: any[]) => {
   try {

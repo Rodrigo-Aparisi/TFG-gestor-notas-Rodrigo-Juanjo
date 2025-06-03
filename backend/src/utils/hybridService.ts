@@ -3,7 +3,7 @@ import axios from 'axios';
 import { createWorker } from 'tesseract.js';
 import path from 'path';
 import fs from 'fs';
-import { pool } from '../config/database';
+import { pool } from '../../database';
 import { dateUtils } from './dateUtils';
 
 // URL de la API local de Ollama

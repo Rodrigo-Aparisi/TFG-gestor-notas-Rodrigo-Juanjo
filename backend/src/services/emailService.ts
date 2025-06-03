@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import ejs from 'ejs';
 import path from 'path';
 import fs from 'fs';
-import { pool } from '../config/database';
+import { pool } from '../../database';
 
 // Configuración del transporte de correo
 const transporter = nodemailer.createTransport({

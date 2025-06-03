@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { pool } from '../config/database';
+import { pool } from '../../database';
 
 // Función de registro
 export const register = async (req: Request, res: Response): Promise<void> => {
