@@ -33,8 +33,12 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
   // Función para obtener la URL completa de la imagen
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
-    const filename = url.split('/').pop();
-    return `${config.BASE_URL}${config.UPLOAD_PATH}${filename}`;
+    // Si la URL ya es una ruta completa, devuélvela tal cual
+    if (url.startsWith('http') || url.startsWith('/uploads/')) {
+      return url;
+    }
+    // Si solo es un nombre de archivo, construye la ruta completa
+    return `/uploads/profile-images/${url.split('/').pop()}`;
   };
   
   // Verificar si el usuario actual es propietario

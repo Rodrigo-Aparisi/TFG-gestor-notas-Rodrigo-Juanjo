@@ -10,6 +10,6 @@
     "rootDir": "./src",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "database.ts", "prepare-resources.js", "start-backend.js"],
   "exclude": ["node_modules"]
 }
