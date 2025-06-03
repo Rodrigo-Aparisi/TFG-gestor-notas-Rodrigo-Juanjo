@@ -3,19 +3,13 @@
     "target": "ES2020",
     "module": "CommonJS",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/@types/*", "src/types/*"]
-    },
-    "noUnusedLocals": true
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "database.ts", "prepare-resources.js", "start-backend.js"],
   "exclude": ["node_modules"]
 }

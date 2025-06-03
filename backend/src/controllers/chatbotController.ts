@@ -1,7 +1,7 @@
 // chatbotController.ts
 import { Request, Response } from 'express';
 import { hybridService } from '../utils/hybridService';
-import { pool } from '../config/database';
+import { pool } from '../../database';
 import path from 'path';
 import { NoteController } from '../controllers/noteController';
 import { dateUtils } from '../utils/dateUtils';

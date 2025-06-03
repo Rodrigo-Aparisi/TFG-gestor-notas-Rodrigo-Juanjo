@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/database";
+import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
 import multer from "multer";

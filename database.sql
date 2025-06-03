@@ -1,8 +1,8 @@
 -- Crear la base de datos
-CREATE DATABASE gestor_notas;
+CREATE DATABASE IF NOT EXISTS olympus_scribe;
 
 -- Conectar a la base de datos
-\c gestor_notas;
+\c olympus_scribe;
 
 -- Habilitar la extensión UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
