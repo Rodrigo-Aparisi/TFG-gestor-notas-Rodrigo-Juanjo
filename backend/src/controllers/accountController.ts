@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pool } from "../config/database";
+import { pool } from "../../database";
 import bcrypt from "bcrypt";
 import { QueryResult } from "pg";
 import fs from "fs";
