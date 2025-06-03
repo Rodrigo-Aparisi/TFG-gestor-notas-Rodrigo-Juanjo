@@ -8,7 +8,8 @@ const config = {
   // API URLs
   API_URL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
   BASE_URL: process.env.API_URL || 'http://localhost:3001',
-  
+  FRONT_URL: process.env.FRONT_URL || 'http://localhost:3000',
+
   // Rutas para imágenes
   UPLOAD_PATH: '/uploads/profile-images/',
   
