@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { pool } from '../../database';
 
 interface ReminderData {
   id?: string;
