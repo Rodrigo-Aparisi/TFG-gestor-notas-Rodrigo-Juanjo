@@ -96,7 +96,7 @@ const Home: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch(`${config.BASE_URL}/api/contact`, {
+      const response = await fetch(`${config.API_URL}/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
