@@ -35,11 +35,7 @@ const Settings = () => {
   // Función helper para construir la URL completa de la imagen
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
-    // Si la URL ya es una ruta completa, devuélvela tal cual
-    if (url.startsWith('http') || url.startsWith('/uploads/')) {
-      return url;
-    }
-    // Si solo es un nombre de archivo, construye la ruta completa
+
     return `/uploads/profile-images/${url.split('/').pop()}`;
   };
 
