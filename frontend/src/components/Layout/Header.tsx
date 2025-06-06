@@ -32,7 +32,12 @@ const Header: React.FC = () => {
 
   const getFullImageUrl = (url: string | undefined): string => {
     if (!url) return '';
-
+    /* Si la URL ya es una ruta completa, devuélvela tal cual /**
+    if (url.startsWith('http') || url.startsWith('/uploads/')) {
+      return url;
+    } 
+    /**/
+    // Si solo es un nombre de archivo, construye la ruta completa
     return `/uploads/profile-images/${url.split('/').pop()}`;
   };
 
