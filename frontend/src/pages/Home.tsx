@@ -266,7 +266,7 @@ const Home: React.FC = () => {
             <div className="contact-methods">
               <div className="contact-method">
                 <i className="fas fa-envelope" aria-hidden="true"></i>
-                <span>gestor.notas.prueba@gmail.com</span>
+                <span>olympus.scribe@gmail.com</span>
               </div>
               {/*}
               <div className="contact-method">

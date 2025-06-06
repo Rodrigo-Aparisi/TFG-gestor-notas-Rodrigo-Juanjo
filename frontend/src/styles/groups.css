@@ -163,7 +163,7 @@ html, body {
   flex: 1;
   padding: 30px;
   overflow-y: auto;
-  background-color: #1e1e1e;
+  background-color: var(--background-darker);
   display: flex;
   flex-direction: column;
 }

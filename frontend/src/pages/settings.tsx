@@ -844,7 +844,7 @@ const Settings = () => {
                     <strong>Datos personales:</strong> Los datos personales y contenidos almacenados (notas, recordatorios y otra información) son responsabilidad exclusiva del usuario.
                   </li>
                   <li>
-                    <strong>Recopilación de información:</strong> La Aplicación recopila únicamente la información necesaria para proporcionar sus servicios, incluyendo correo electrónico y credenciales de acceso. La información de sus notas podrá ser procesada por nuestros sistemas de IA para ofrecer funcionalidades como búsqueda y organización, pero no será compartida con terceros.
+                    <strong>Recopilación de información:</strong> La Aplicación recopila únicamente la información necesaria para proporcionar sus servicios, incluyendo correo electrónico y credenciales de acceso. La información de sus notas podrá ser procesada por sistemas de IA como Ollama y Tesseract para ofrecer funcionalidades como búsqueda y organización.
                   </li>
                   <li>
                     <strong>Seguridad de la cuenta:</strong> El usuario es responsable de mantener la confidencialidad de su contraseña y cuenta.

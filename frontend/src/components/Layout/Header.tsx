@@ -151,7 +151,7 @@ const Header: React.FC = () => {
                   <span className="icon-label">Grupos</span>
                 </button>
                 <button
-                  className="icon-button week-view-button"
+                  className={`icon-button week-view-button ${showWeekView ? 'active' : ''}`}
                   onClick={(e) => {
                     handleWeekViewClick(e);
                     setMobileMenuOpen(false);
