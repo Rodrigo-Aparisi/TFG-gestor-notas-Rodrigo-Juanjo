@@ -61,7 +61,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const user = result.rows[0];
     if (!user) {
-      res.status(400).json({ error: 'Usuario no encontrado' });
+      res.status(400).json({ error: 'Correo no encontrado' });
       return;
     }
 
