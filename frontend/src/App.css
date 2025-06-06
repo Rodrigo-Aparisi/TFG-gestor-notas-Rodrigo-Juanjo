@@ -549,6 +549,27 @@ body.light-theme,
   border-bottom: 2px solid var(--dorado);
 }
 
+.week-view-button {
+  position: relative;
+  padding-right: 28px; /* Espacio para la flecha */
+}
+
+.week-view-button::after {
+  content: "\f107"; /* Código del icono de flecha hacia abajo de Font Awesome */
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.3s ease;
+}
+
+/* Clase para cuando el popup está abierto */
+.week-view-button.active::after {
+  transform: translateY(-50%) rotate(180deg); /* Rota la flecha hacia arriba */
+}
+
 @media screen and (max-width: 768px) {
   .week-view-popup-container {
     padding: 10px;

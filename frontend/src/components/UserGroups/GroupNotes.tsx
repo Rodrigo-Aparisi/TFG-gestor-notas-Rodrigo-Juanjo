@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { GroupNote } from "../../types";
 
 interface GroupNoteProps {
@@ -9,6 +9,7 @@ interface GroupNoteProps {
   onDeleteNote: (noteId: string) => void;
   handleNoteChange?: (id: string, field: keyof GroupNote, value: any) => void;
   updateGroupNote?: (id: string, field?: keyof GroupNote) => Promise<boolean>;
+  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
 }
 
 const GroupNotes: React.FC<GroupNoteProps> = ({
@@ -19,11 +20,34 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
   onDeleteNote,
   handleNoteChange = () => {},
   updateGroupNote = async () => false,
+  autoResizeTextarea,
 }) => {
   const [localTitle, setLocalTitle] = useState(note?.title || "");
   const [localContent, setLocalContent] = useState(note?.content || "");
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Implementación interna de autoResizeTextarea si no se proporciona como prop
+  const resizeTextarea = (element: HTMLTextAreaElement) => {
+    if (!element) return;
+    
+    // Guarda la posición actual del scroll
+    const scrollPos = element.scrollTop;
+    
+    // Resetea la altura para obtener la altura real del contenido
+    element.style.height = 'auto';
+    
+    // Establece la nueva altura basada en el contenido
+    const newHeight = element.scrollHeight;
+    element.style.height = `${newHeight}px`;
+    
+    // Restaura la posición del scroll
+    element.scrollTop = scrollPos;
+  };
+
+  // Usar la función proporcionada como prop o la implementación interna
+  const resizeTextareaFn = autoResizeTextarea || resizeTextarea;
 
   // Actualizar los estados locales cuando cambia la nota
   useEffect(() => {
@@ -32,6 +56,27 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
       setLocalContent(note.content || "");
     }
   }, [note]);
+
+  // Aplicar resize cuando el componente se monta o cuando cambia el contenido
+  useEffect(() => {
+    if (textareaRef.current) {
+      resizeTextareaFn(textareaRef.current);
+    }
+  }, [localContent]);
+
+  // Añadir listener para el resize de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        resizeTextareaFn(textareaRef.current);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Manejar cambio de título
   const onTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +98,9 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
     if (handleNoteChange && note) {
       handleNoteChange(note.id, "content", newContent);
     }
+    
+    // Ajustar la altura del textarea cuando cambia el contenido
+    resizeTextareaFn(e.target);
   };
 
   // Manejar actualización al perder el foco
@@ -150,11 +198,13 @@ const GroupNotes: React.FC<GroupNoteProps> = ({
         />
 
         <textarea
+          ref={textareaRef}
           value={localContent}
           onChange={onContentChange}
           onBlur={onContentBlur}
           placeholder="Escribe aquí tu nota..."
           onFocus={() => setIsEditing(true)}
+          onInput={(e) => resizeTextareaFn(e.target as HTMLTextAreaElement)}
           data-note-id={note.id}
           className="note-content-textarea"
         />

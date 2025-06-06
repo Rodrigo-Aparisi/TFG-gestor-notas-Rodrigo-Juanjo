@@ -107,14 +107,14 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="member-username">Nombre de usuario o email</label>
+            <label htmlFor="member-username">Nombre de usuario</label>
             <div className="autocomplete-container" ref={suggestionsRef}>
               <input
                 id="member-username"
                 type="text"
                 value={username}
                 onChange={handleInputChange}
-                placeholder="Ingresa un nombre de usuario o email"
+                placeholder="Ingresa un nombre de usuario"
                 required
                 disabled={isSubmitting}
                 autoComplete="off"

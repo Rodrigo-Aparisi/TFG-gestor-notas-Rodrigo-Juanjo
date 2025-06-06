@@ -419,6 +419,11 @@
   text-decoration: underline;
 }
 
+
+.week-view-popup-content .week-view-container {
+  width:fit-content;
+}
+
 /* Mejoras para la vista de semana dentro del popup */
 .week-view-popup-content .weekdays-header {
   margin: 0;
@@ -427,7 +432,6 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 12px;
   border-radius: 12px;
-  overflow: hidden;
 }
 
 .week-view-popup-content .weekday-header-item:hover {
@@ -634,6 +638,7 @@
 /* Estilizar scrollbar */
 .week-view-popup-content::-webkit-scrollbar {
   width: 3px;
+  height: 8px;
 }
 
 .week-view-popup-content::-webkit-scrollbar-track {
