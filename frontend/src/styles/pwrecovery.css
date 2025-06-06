@@ -7,11 +7,12 @@
   border-radius: 8px;
   border: 2px solid var(--dorado);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  width: 90%;
 }
 
 .password-recovery-container h1 {
   color: var(--dorado);
-  font-size: 28px;
+  font-size: clamp(20px, 5vw, 28px);
   margin-bottom: 24px;
   text-align: center;
   font-weight: bold;
@@ -27,22 +28,25 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .form-group label {
   color: var(--dorado);
-  font-size: 16px;
+  font-size: clamp(14px, 4vw, 16px);
   font-weight: 500;
 }
 
 .form-group input {
-  padding: 12px 16px;
+  padding: clamp(10px, 3vw, 12px) clamp(12px, 4vw, 16px);
   border-radius: 4px;
   border: 1px solid rgba(255, 198, 0, 0.3);
   background-color: var(--background-black);
   color: var(--white);
-  font-size: 16px;
+  font-size: clamp(14px, 4vw, 16px);
   transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group input:focus {
@@ -52,16 +56,17 @@
 }
 
 .recovery-button {
-  padding: 14px;
+  padding: clamp(12px, 3vw, 14px);
   border: none;
   border-radius: 4px;
   background-color: var(--dorado);
   color: var(--background-dark);
   font-weight: bold;
-  font-size: 16px;
+  font-size: clamp(14px, 4vw, 16px);
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-top: 10px;
+  width: 100%;
 }
 
 .recovery-button:hover {
@@ -75,13 +80,15 @@
 }
 
 .alert {
-  padding: 12px 16px;
+  padding: clamp(10px, 3vw, 12px) clamp(12px, 4vw, 16px);
   border-radius: 4px;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: clamp(12px, 3.5vw, 14px);
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .alert-success {
@@ -100,16 +107,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: clamp(15px, 4vw, 20px);
   color: var(--dorado);
-  font-size: 16px;
+  font-size: clamp(14px, 4vw, 16px);
   gap: 10px;
 }
 
 .loading-indicator::before {
   content: "";
-  width: 20px;
-  height: 20px;
+  width: clamp(16px, 5vw, 20px);
+  height: clamp(16px, 5vw, 20px);
   border: 3px solid rgba(255, 198, 0, 0.3);
   border-radius: 50%;
   border-top-color: var(--dorado);
@@ -123,7 +130,7 @@
   margin-top: 16px;
   color: var(--dorado);
   text-decoration: none;
-  font-size: 14px;
+  font-size: clamp(12px, 3.5vw, 14px);
   transition: color 0.3s ease;
 }
 
@@ -141,7 +148,7 @@
 .back-to-login a {
   color: var(--dorado);
   text-decoration: none;
-  font-size: 14px;
+  font-size: clamp(12px, 3.5vw, 14px);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -153,7 +160,7 @@
 
 .error {
   color: #e74c3c;
-  font-size: 12px;
+  font-size: clamp(10px, 3vw, 12px);
   margin-top: 4px;
 }
 
@@ -166,11 +173,63 @@
 /* Estilos para dispositivos móviles */
 @media screen and (max-width: 600px) {
   .password-recovery-container {
-    margin: 20px;
-    padding: 20px;
+    margin: 20px auto;
+    padding: 20px 15px;
+    width: calc(100% - 30px);
+    max-width: none;
+  }
+
+  .form-group {
+    gap: 6px;
+  }
+
+  .recovery-button {
+    margin-top: 15px;
+  }
+
+  .alert {
+    flex-direction: column;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .back-to-login {
+    margin-top: 25px;
+  }
+}
+
+/* Estilos para pantallas muy pequeñas */
+@media screen and (max-width: 350px) {
+  .password-recovery-container {
+    padding: 15px 10px;
+    margin: 10px auto;
   }
 
   .password-recovery-container h1 {
-    font-size: 24px;
+    margin-bottom: 15px;
+  }
+
+  .password-recovery-form {
+    gap: 15px;
+  }
+}
+
+/* Estilos para tablets */
+@media screen and (min-width: 601px) and (max-width: 900px) {
+  .password-recovery-container {
+    max-width: 600px;
+    padding: 25px;
+  }
+}
+
+/* Ajustes para orientación horizontal en móviles */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .password-recovery-container {
+    margin: 10px auto;
+    padding: 15px;
+  }
+
+  .password-recovery-form {
+    gap: 15px;
   }
 }

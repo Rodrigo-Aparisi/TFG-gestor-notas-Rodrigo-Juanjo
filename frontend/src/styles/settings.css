@@ -724,14 +724,14 @@ section p {
   background-color: rgba(255, 59, 48, 0.05);
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  border: 1px solid rgba(255, 59, 48, 0.4);
 }
 
 .delete-confirm-input {
   width: 100%;
   padding: 10px;
   margin: 10px 0 15px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 59, 48, 0.4);
   border-radius: 6px;
   background-color: var(--input-bg);
   color: var(--text-color);
