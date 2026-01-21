@@ -5,6 +5,7 @@ import { QueryResult } from "pg";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
 
 dotenv.config();
 
@@ -51,19 +52,24 @@ export const accountController = {
         [userId]
       );
 
-      // Ahora puedes usar previousImageResult
+      // Safely delete previous profile image if exists
       if (previousImageResult.rows[0]?.profile_image) {
         const previousImagePath = previousImageResult.rows[0].profile_image;
-        const fullPreviousPath = path.join(
-          __dirname,
-          "..",
-          "..",
-          previousImagePath.replace(/^\/uploads\//, "")
-        );
-        console.log("Intentando eliminar imagen anterior:", fullPreviousPath);
-        if (fs.existsSync(fullPreviousPath)) {
-          fs.unlinkSync(fullPreviousPath);
-          console.log("Imagen anterior eliminada con éxito");
+
+        // Extract safe relative path from DB
+        const safePath = extractSafeRelativePath(previousImagePath, '/uploads/');
+
+        if (safePath) {
+          const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+          const success = safeDeleteFile(safePath, uploadsDir);
+
+          if (success) {
+            console.log("Imagen anterior eliminada con éxito");
+          } else {
+            console.log("No se pudo eliminar la imagen anterior");
+          }
+        } else {
+          console.warn(`Path inseguro detectado en DB: ${previousImagePath}`);
         }
       }
 

@@ -11,11 +11,12 @@ import groupRoutes from './routes/noteGroupRoutes';
 import userGroupRoutes from './routes/userGroupsRoutes';
 import accountRoutes from './routes/accountRoutes';
 import reminderRoutes from './routes/reminderRoutes';
-import chatbotRoutes from './routes/chatbotRoutes';
 import contactRoutes from './routes/contact';
 import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks';
+import { generalApiLimiter } from './middleware/rateLimiter';
+import helmet from 'helmet';
 import fs from 'fs';
 
 // Configurar variables de entorno
@@ -23,6 +24,25 @@ dotenv.config();
 
 // Crear aplicación Express
 const app = express();
+
+// Security headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding images
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
+}));
 
 // Crear directorios necesarios si no existen
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -84,6 +104,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Apply rate limiting to all API routes
+app.use('/api', generalApiLimiter);
+
 app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err && err.code === 'EACCES') {
     console.error('Error de permisos en el sistema de archivos:', err);
@@ -134,7 +157,6 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/user-groups', userGroupRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/reminders', reminderRoutes);
-app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/password', passwordRoutes);
 

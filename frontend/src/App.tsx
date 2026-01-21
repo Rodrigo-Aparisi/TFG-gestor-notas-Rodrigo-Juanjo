@@ -13,11 +13,9 @@ import Notes from './pages/Notes';
 import Trash from './pages/Trash';
 import Settings from './pages/settings';
 import Reminders from './pages/Reminders';
-import ChatbotPage from './pages/ChatbotPage';
 import Groups from './pages/Groups';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import ChatbotFloatingButton from './components/Chatbot/ChatbotFloatingButton';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -54,19 +52,6 @@ const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, [user]);
 
   return <>{children}</>;
-};
-
-// Componente para controlar la visibilidad del botón flotante
-const FloatingButtonController: React.FC = () => {
-  const location = useLocation();
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  
-  // No mostrar el botón flotante en la página de login, en la página del chatbot o si no está autenticado
-  if (location.pathname === '/login' || location.pathname === '/chatbot' || !isAuthenticated) {
-    return null;
-  }
-  
-  return <ChatbotFloatingButton />;
 };
 
 function App() {
@@ -108,13 +93,7 @@ function App() {
                     <Settings />
                   </PrivateRoute>
                 } />
-                
-                <Route path="/chatbot" element={
-                  <PrivateRoute>
-                    <ChatbotPage />
-                  </PrivateRoute>
-                } />
-                
+
                 <Route path="/groups" element={
                   <PrivateRoute>
                     <Groups />
@@ -125,8 +104,6 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
-            
-            <FloatingButtonController />
           </div>
         </ThemeLoader>
       </Router>

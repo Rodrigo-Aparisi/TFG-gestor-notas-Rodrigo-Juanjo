@@ -3,6 +3,7 @@ import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import { buildOrderByClause } from "../utils/queryHelpers";
 
 // Configurar multer para el almacenamiento de imágenes
 const storage = multer.diskStorage({
@@ -83,25 +84,27 @@ export class NoteController {
 
       let orderBy = "updated_at DESC";
 
-      // Si hay preferencias, las aplicamos
+      // Si hay preferencias, las aplicamos de forma segura
       if (settingsResult.rows.length > 0) {
         const { default_note_sort, default_note_sort_direction } =
           settingsResult.rows[0];
-        const direction =
-          default_note_sort_direction === "asc" ? "ASC" : "DESC";
 
-        if (default_note_sort === "title") {
-          orderBy = `title ${direction}, is_pinned DESC`;
-        } else if (default_note_sort === "date") {
-          orderBy = `updated_at ${direction}, is_pinned DESC`;
-        } else if (default_note_sort === "pinned") {
-          orderBy = `is_pinned DESC, updated_at ${direction}`;
-        }
+        // Map 'date' to 'updated_at' and 'pinned' to 'is_pinned' for compatibility
+        const fieldMapping: { [key: string]: string } = {
+          'date': 'updated_at',
+          'pinned': 'is_pinned',
+          'title': 'title'
+        };
+
+        const mappedField = fieldMapping[default_note_sort] || default_note_sort;
+
+        // Use secure helper to build ORDER BY clause
+        orderBy = buildOrderByClause(mappedField, default_note_sort_direction);
       }
 
       // Modificar esta consulta para excluir notas en papelera
       const result = await pool.query(
-        `SELECT * FROM notes 
+        `SELECT * FROM notes
         WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)
         ORDER BY ${orderBy}`,
         [userId]

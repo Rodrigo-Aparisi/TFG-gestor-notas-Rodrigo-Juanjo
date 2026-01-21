@@ -7,7 +7,6 @@ import { FaCalendar, FaUsers, FaBars } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
-import { GiCaduceus } from "react-icons/gi";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
 import config from "../../config/config";
 
@@ -172,17 +171,6 @@ const Header: React.FC = () => {
                 >
                   <FaCalendar />
                   <span className="icon-label">Recordatorios</span>
-                </button>
-                <button
-                  className="icon-button"
-                  onClick={() => {
-                    navigate("/chatbot");
-                    setMobileMenuOpen(false);
-                  }}
-                  aria-label="Olymp.ia"
-                >
-                  <GiCaduceus size={20} />
-                  <span className="icon-label">Olymp.IA</span>
                 </button>
               </div>
             )}
