@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Provider, useSelector } from 'react-redux';
-import { store } from './store/index';
-import { RootState } from './store';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { accountService } from './services/accountService';
 import themeService from './services/themeService';
 import themeConfig from './config/themeConfig.json';
@@ -22,7 +22,7 @@ import './App.css';
 type ThemeType = keyof typeof themeConfig.themes;
 
 const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadUserTheme = async () => {
@@ -56,58 +56,86 @@ const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function App() {
   return (
-    <Provider store={store}>
-      <Router>
-        <ThemeLoader>
-          <div className="app">
-            <Header />
-            <main className="main-content">
-              <Routes>
-                {/* Ruta principal accesible sin autenticación */}
-                <Route path="/" element={<Home />} />
-                
-                <Route path="/login" element={<Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
-                                
-                <Route path="/notes" element={
-                  <PrivateRoute>
-                    <Notes />
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/trash" element={
-                  <PrivateRoute>
-                    <Trash />
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/Reminders" element={
-                  <PrivateRoute>
-                    <Reminders />
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/settings" element={
-                  <PrivateRoute>
-                    <Settings />
-                  </PrivateRoute>
-                } />
+    <AuthProvider>
+      <SettingsProvider>
+        <Router>
+          <ThemeLoader>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  border: '1px solid rgba(255, 198, 0, 0.3)',
+                  borderRadius: '8px',
+                  padding: '16px'
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#ffc600',
+                    secondary: '#000'
+                  }
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ff4444',
+                    secondary: '#fff'
+                  },
+                  duration: 5000
+                }
+              }}
+            />
+            <div className="app">
+              <Header />
+              <main className="main-content">
+                <Routes>
+                  {/* Ruta principal accesible sin autenticación */}
+                  <Route path="/" element={<Home />} />
 
-                <Route path="/groups" element={
-                  <PrivateRoute>
-                    <Groups />
-                  </PrivateRoute>
-                } />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-                {/* Ruta por defecto */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
-        </ThemeLoader>
-      </Router>
-    </Provider>
+                  <Route path="/notes" element={
+                    <PrivateRoute>
+                      <Notes />
+                    </PrivateRoute>
+                  } />
+
+                  <Route path="/trash" element={
+                    <PrivateRoute>
+                      <Trash />
+                    </PrivateRoute>
+                  } />
+
+                  <Route path="/Reminders" element={
+                    <PrivateRoute>
+                      <Reminders />
+                    </PrivateRoute>
+                  } />
+
+                  <Route path="/settings" element={
+                    <PrivateRoute>
+                      <Settings />
+                    </PrivateRoute>
+                  } />
+
+                  <Route path="/groups" element={
+                    <PrivateRoute>
+                      <Groups />
+                    </PrivateRoute>
+                  } />
+
+                  {/* Ruta por defecto */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </div>
+          </ThemeLoader>
+        </Router>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 

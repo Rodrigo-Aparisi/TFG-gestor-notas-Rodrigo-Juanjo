@@ -1,44 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../../store";
-import { logout } from "../../store/slices/authSlice";
+import { useAuth } from "../../contexts/AuthContext";
 import { FaCalendar, FaUsers, FaBars } from "react-icons/fa";
 import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
-import config from "../../config/config";
-
-interface User {
-  id: string;
-  username: string;
-  profile_image?: string;
-}
+import { getFullImageUrl } from "../../utils/imageHelpers";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user, isAuthenticated, logout: authLogout } = useAuth();
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [profileImage, setProfileImage] = useState<string>("");
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWeekView, setShowWeekView] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const getFullImageUrl = (url: string | undefined): string => {
-    if (!url) return '';
-    /* Si la URL ya es una ruta completa, devuélvela tal cual /**
-    if (url.startsWith('http') || url.startsWith('/uploads/')) {
-      return url;
-    } 
-    /**/
-    // Si solo es un nombre de archivo, construye la ruta completa
-    return `/uploads/profile-images/${url.split('/').pop()}`;
-  };
 
   // Efecto para manejar la carga inicial y la imagen
   useEffect(() => {
@@ -57,7 +35,6 @@ const Header: React.FC = () => {
       };
       img.src = fullUrl;
     }
-    setIsLoaded(true);
   }, [user?.profile_image]);
 
   // Efecto para manejar el click fuera del dropdown
@@ -69,7 +46,7 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    dispatch(logout());
+    authLogout();
     navigate("/login");
   };
 

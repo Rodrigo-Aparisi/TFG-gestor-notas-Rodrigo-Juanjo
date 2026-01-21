@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { store } from '../store';
-import { setUser, setToken, logout as logoutAction, updateUserProfile } from '../store/slices/authSlice';
 import { User } from '../types';
 import { themeService } from './themeService';
 
@@ -43,18 +41,17 @@ export const authService = {
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       if (response.data && response.data.token) {
         const { token, user } = response.data;
-        
+
         // Guardar datos en localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
-        
-        // Actualizar estado global
-        store.dispatch(setUser(user));
-        store.dispatch(setToken(token));
       }
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error en el inicio de sesión');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error ?
+        (error as any).response?.data?.error || 'Error en el inicio de sesión' :
+        'Error en el inicio de sesión';
+      throw new Error(errorMessage);
     }
   },
 
@@ -62,8 +59,11 @@ export const authService = {
     try {
       const response = await api.post<AuthResponse>('/auth/register', userData);
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error en el registro');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error ?
+        (error as any).response?.data?.error || 'Error en el registro' :
+        'Error en el registro';
+      throw new Error(errorMessage);
     }
   },
 
@@ -74,26 +74,28 @@ export const authService = {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.data.user) {
-        // Actualizar localStorage y estado global
+        // Actualizar localStorage (Context API actualizará el estado)
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        store.dispatch(setUser(response.data.user));
       }
-      
+
       return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error ?
+        (error as any).response?.data?.error || 'Error al actualizar el usuario' :
+        'Error al actualizar el usuario';
+      throw new Error(errorMessage);
     }
   },
 
   updateUserProfile: async (profileData: Partial<User>): Promise<void> => {
     try {
-      const currentUser = store.getState().auth.user;
-      if (currentUser) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const currentUser = JSON.parse(userStr) as User;
         const updatedUser = { ...currentUser, ...profileData };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        store.dispatch(updateUserProfile(profileData));
       }
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -105,21 +107,15 @@ export const authService = {
     themeService.resetToDefault();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    store.dispatch(logoutAction());
   },
 
   isAuthenticated: (): boolean => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-    
+
     if (token && userStr) {
       try {
-        const user = JSON.parse(userStr) as User;
-        const state = store.getState();
-        if (!state.auth.user) {
-          store.dispatch(setUser(user));
-          store.dispatch(setToken(token));
-        }
+        JSON.parse(userStr) as User; // Validate JSON
         return true;
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -143,17 +139,8 @@ export const authService = {
   initializeAuth: () => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-    
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr) as User;
-        store.dispatch(setUser(user));
-        store.dispatch(setToken(token));
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        themeService.resetToDefault();
-      }
-    } else {
+
+    if (!token || !userStr) {
       themeService.resetToDefault();
     }
   }

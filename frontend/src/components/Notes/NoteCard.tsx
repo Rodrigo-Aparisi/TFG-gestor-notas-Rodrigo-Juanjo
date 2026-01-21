@@ -3,6 +3,7 @@ import { Note, Group } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
 import NoteActionsMenu from './NoteActionsMenu';
+import { getTimeAgo } from '../../utils/dateFormatter';
 
 interface NoteCardProps {
   note: Note;
@@ -27,57 +28,6 @@ interface NoteCardProps {
   handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
   handleExportNote: (format: string, noteId?: string) => void;
 }
-
-// Función para formatear la fecha
-const formatDate = (dateString: string) => {
-  if (!dateString) return '';
-  
-  const date = new Date(dateString);
-  
-  // Verificar si es una fecha válida
-  if (isNaN(date.getTime())) return '';
-  
-  // Opciones de formato para español
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  };
-  
-  return date.toLocaleDateString('es-ES', options);
-};
-
-// Función para mostrar tiempo relativo (hace X tiempo)
-const getTimeAgo = (dateString: string) => {
-  if (!dateString) return '';
-  
-  const date = new Date(dateString);
-  
-  // Verificar si es una fecha válida
-  if (isNaN(date.getTime())) return '';
-  
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.round(diffMs / 1000);
-  const diffMin = Math.round(diffSec / 60);
-  const diffHour = Math.round(diffMin / 60);
-  const diffDay = Math.round(diffHour / 24);
-  
-  if (diffSec < 60) {
-    return 'hace un momento';
-  } else if (diffMin < 60) {
-    return `hace ${diffMin} minuto${diffMin === 1 ? '' : 's'}`;
-  } else if (diffHour < 24) {
-    return `hace ${diffHour} hora${diffHour === 1 ? '' : 's'}`;
-  } else if (diffDay < 30) {
-    return `hace ${diffDay} día${diffDay === 1 ? '' : 's'}`;
-  } else {
-    // Para fechas más antiguas, mostrar la fecha completa
-    return formatDate(dateString);
-  }
-};
 
 const NoteCard: React.FC<NoteCardProps> = ({
   note,
@@ -104,55 +54,13 @@ const NoteCard: React.FC<NoteCardProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
-  
-  // Implementación interna de autoResizeTextarea si no se proporciona como prop
-  const resizeTextarea = (element: HTMLTextAreaElement) => {
-    if (!element) return;
-    
-    // Guarda la posición actual del scroll
-    const scrollPos = element.scrollTop;
-    
-    // Resetea la altura para obtener la altura real del contenido
-    element.style.height = 'auto';
-    
-    const parentNote = element.closest('.note-card');
-    const isFocused = parentNote?.classList.contains('focused');
-    
-    if (isFocused) {
-      // Para notas enfocadas
-      element.style.height = `\${maxHeight}px`;
-    } else {
-      // Para notas normales
-      element.style.height = `\${newHeight}px`;
-    }
-    
-    // Restaura la posición del scroll
-    element.scrollTop = scrollPos;
-  };
-
-  // Usar la función proporcionada como prop o la implementación interna
-  const resizeTextareaFn = autoResizeTextarea || resizeTextarea;
 
   // Aplicar resize cuando el componente se monta o cuando cambia el contenido o el estado de foco
   useEffect(() => {
-    if (textareaRef.current) {
-      resizeTextareaFn(textareaRef.current);
+    if (textareaRef.current && autoResizeTextarea) {
+      autoResizeTextarea(textareaRef.current);
     }
-  }, [note.content, focusedNoteId === note.id]);
-
-  // Añadir listener para el resize de la ventana
-  useEffect(() => {
-    const handleResize = () => {
-      if (textareaRef.current) {
-        resizeTextareaFn(textareaRef.current);
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
+  }, [note.content, focusedNoteId === note.id, autoResizeTextarea]);
   
   return (
     <div 

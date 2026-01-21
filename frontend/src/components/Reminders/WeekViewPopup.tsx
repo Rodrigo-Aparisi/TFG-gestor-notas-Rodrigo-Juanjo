@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { calendarService } from '../../services/api';
 import WeekView from './WeekView';
 import { Reminder, NewReminder } from '../../types';
-import { getWeekStart, formatDate, formatTime, formatDateForInput } from './ReminderUtils';
+import { getWeekStart, formatDate, formatTime } from './ReminderUtils';
 import ReminderForm from './ReminderForm';
 import '../../styles/weekViewPopup.css';
 

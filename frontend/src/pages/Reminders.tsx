@@ -11,7 +11,7 @@ import MiniCalendar from '../components/Reminders/MiniCalendar';
 import CalendarGrid from '../components/Reminders/CalendarGrid';
 import WeekView from '../components/Reminders/WeekView';
 import ReminderDashboard from '../components/Reminders/ReminderDashboard';
-import { formatDateForInput, getWeekStart } from '../components/Reminders/ReminderUtils';
+import { getWeekStart } from '../components/Reminders/ReminderUtils';
 
 
 const Reminders: React.FC = () => {
@@ -34,8 +34,6 @@ const Reminders: React.FC = () => {
     sendEmail: false
   });
 
-  const [isLoading, setIsLoading] = useState(true);
-  
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -44,8 +42,6 @@ const Reminders: React.FC = () => {
   useEffect(() => {
     const loadReminders = async () => {
       try {
-        setIsLoading(true);
-        
         // Obtener el primer día de la semana actual
         const weekStart = getWeekStart(selectedDate);
         const weekEnd = new Date(weekStart);
@@ -82,8 +78,6 @@ const Reminders: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading reminders:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
   

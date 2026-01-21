@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
+import { useAuth } from '../contexts/AuthContext';
 import { accountService } from '../services/accountService';
 import themeService from '../services/themeService';
 import themeConfig from '../config/themeConfig.json';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadUserTheme = async () => {

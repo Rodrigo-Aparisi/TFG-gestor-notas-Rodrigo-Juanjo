@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { register, login, refreshAccessToken, logout } from '../controllers/auth.controller';
-import { validateRegister } from '../middleware/validation';
 import { authenticateToken } from '../middleware/auth';
 import { loginLimiter, registerLimiter } from '../middleware/rateLimiter';
+import { validate } from '../middleware/validate';
+import { registerSchema, loginSchema } from '../validation/schemas/user.schema';
 
 const router = Router();
 
-// Public routes with rate limiting
-router.post('/register', registerLimiter, validateRegister, register);
-router.post('/login', loginLimiter, login);
+// Public routes with rate limiting and Zod validation
+router.post('/register', registerLimiter, validate(registerSchema), register);
+router.post('/login', loginLimiter, validate(loginSchema), login);
 router.post('/refresh', refreshAccessToken);
 
 // Protected routes

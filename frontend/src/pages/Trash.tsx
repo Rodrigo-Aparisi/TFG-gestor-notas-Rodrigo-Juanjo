@@ -2,10 +2,7 @@ import React, { useEffect } from 'react';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
 import { useGroups } from '../hooks/useNoteGroups';
-import { useSharedNotes } from '../hooks/useSharedNotes';
-import { useTextareaResize } from '../hooks/useTextareaResize';
 import GroupSidebar from '../components/Notes/GroupSidebar';
-import NoteTabs from '../components/Notes/NoteTabs';
 import { FaTrash } from 'react-icons/fa';
 import Masonry from 'react-masonry-css';
 import NoteSort from '../components/Notes/NoteSort';
@@ -28,21 +25,6 @@ const Trash: React.FC = () => {
     handleGroupSelect,
     handleDeleteGroup
   } = useGroups();
-
-  const {
-    activeTab,
-    hasSharedNotes,
-    handleTabChange: handleTabChangeBase
-  } = useSharedNotes();
-
-  const {
-    autoResizeTextarea
-  } = useTextareaResize();
-
-  // Función para manejar cambio de pestañas
-  const handleTabChange = (tabId: string) => {
-    handleTabChangeBase(tabId, loadTrashNotes);
-  };
 
   // Cargar las notas de la papelera cuando se monta el componente
   useEffect(() => {

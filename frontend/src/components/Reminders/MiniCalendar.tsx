@@ -28,7 +28,6 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({
     const prevMonthLastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0);
     for (let i = 0; i < startingDayIndex; i++) {
       const day = prevMonthLastDay.getDate() - (startingDayIndex - i - 1);
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, day);
       days.push(
         <div key={`prev-${i}`} className="mini-day other-month">
           {day}

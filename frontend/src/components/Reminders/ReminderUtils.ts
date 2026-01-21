@@ -1,4 +1,5 @@
 import { Reminder } from '../../types';
+import { formatDateForInput as formatDateForInputUtil } from '../../utils/dateFormatter';
 
 export const formatDate = (date: Date): string => {
   return date.toLocaleDateString('es-ES', {
@@ -16,11 +17,8 @@ export const formatTime = (date: Date): string => {
   });
 };
 
-export const formatDateForInput = (date: Date) => {
-  const offset = date.getTimezoneOffset();
-  const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
-  return adjustedDate.toISOString().split('T')[0];
-};
+// Use centralized utility for formatDateForInput
+export const formatDateForInput = formatDateForInputUtil;
 
 export const getWeekStart = (date: Date) => {
   const start = new Date(date);

@@ -86,7 +86,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
 
     try {
       setIsSharing(true);
-      const response = await noteService.shareNote(noteId, username, {
+      await noteService.shareNote(noteId, username, {
         includeImages,
         canEdit,
       });

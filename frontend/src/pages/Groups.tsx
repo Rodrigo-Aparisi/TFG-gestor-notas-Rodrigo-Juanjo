@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/groups.css";
 import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
@@ -12,7 +12,6 @@ import CreateGroupNoteForm from "../components/UserGroups/CreateGroupNoteForm";
 import GroupTabs from "../components/UserGroups/GroupTabs";
 import { useTextareaResize } from "../hooks/useTextareaResize";
 import api from "../services/api";
-import config from "../config/config";
 
 const Groups: React.FC = () => {
   const { user } = useAuth();
@@ -163,12 +162,7 @@ const Groups: React.FC = () => {
       );
 
       if (response.data.success) {
-        // Actualizar la lista de notas
-        const updatedNotes = groupNotes.map((n) =>
-          n.id === noteId ? { ...n, is_marked: !n.is_marked } : n
-        );
-        // Aquí necesitarías una función para actualizar las notas en el estado
-        // setGroupNotes(updatedNotes);
+        // La actualización de la lista de notas se maneja a través de la recarga
       }
 
       return true;
@@ -318,14 +312,8 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
-        // Actualizar el grupo seleccionado con el nuevo rol
-        const updatedMembers = selectedGroup.members.map((member) =>
-          member.id === memberId ? { ...member, role: newRole } : member
-        );
-
-        // Actualizar el grupo en useUserGroups
-        const updatedGroup = { ...selectedGroup, members: updatedMembers };
-        selectGroup(selectedGroup.id); // Recargar el grupo para obtener los datos actualizados
+        // Recargar el grupo para obtener los datos actualizados
+        selectGroup(selectedGroup.id);
 
         showFeedback("Permisos actualizados correctamente");
       }
@@ -391,13 +379,9 @@ const Groups: React.FC = () => {
 
       if (response.status === 200 || response.data.success) {
         // Actualizar la lista de grupos localmente
-        const updatedGroups = userGroups.map(group => 
-          group.id === selectedGroup.id ? { ...group, name: newGroupName } : group
-        );
-        
         // Forzar la actualización del componente
         setForceRender(prev => prev + 1);
-        
+
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
@@ -434,14 +418,9 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
-        // Actualizar la lista de grupos localmente
-        const updatedGroups = userGroups.map(group => 
-          group.id === selectedGroup.id ? { ...group, description: newGroupDescription } : group
-        );
-        
         // Forzar la actualización del componente
         setForceRender(prev => prev + 1);
-        
+
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 

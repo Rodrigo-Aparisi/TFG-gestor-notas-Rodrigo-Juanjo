@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom"; // Corregido el import de Link
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { authService } from "../services/auth";
 import { AiOutlineEye, AiOutlineEyeInvisible, AiOutlineMail, AiOutlineUser } from "react-icons/ai";
+import PasswordStrengthIndicator from "../components/Auth/PasswordStrengthIndicator";
 import "../styles/login.css";
 
 interface LocationState {
@@ -110,23 +112,62 @@ const Login: React.FC = () => {
     try {
       const response = await authService.login(loginData);
       if (response && response.token && response.user) {
+        toast.success(`¡Bienvenido ${response.user.username}!`, {
+          duration: 3000,
+          icon: '👋'
+        });
         // Asegurarnos de que tenemos la imagen de perfil
         console.log('Usuario logueado:', response.user);
         navigate("/notes", { replace: true });
       }
     } catch (error: any) {
       console.error("Error en el login:", error);
+      toast.error(error.message || "Error en el inicio de sesión", {
+        duration: 4000
+      });
       setError(error.message || "Error en el inicio de sesión");
     }
+  };
+
+  // Validar fortaleza de contraseña
+  const validatePasswordStrength = (password: string): boolean => {
+    const requirements = [
+      { test: password.length >= 8, message: "Mínimo 8 caracteres" },
+      { test: /[A-Z]/.test(password), message: "Al menos una mayúscula" },
+      { test: /[a-z]/.test(password), message: "Al menos una minúscula" },
+      { test: /[0-9]/.test(password), message: "Al menos un número" }
+    ];
+
+    const failedRequirements = requirements.filter(req => !req.test);
+
+    if (failedRequirements.length > 0) {
+      const errors = failedRequirements.map(req => req.message).join('\n');
+      toast.error(`Contraseña inválida:\n${errors}`, {
+        duration: 5000,
+        icon: '🔒'
+      });
+      return false;
+    }
+
+    return true;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    // Validar fortaleza de contraseña antes de enviar
+    if (!validatePasswordStrength(registerData.password)) {
+      return;
+    }
+
     try {
       const response = await authService.register(registerData);
       if (response) {
+        toast.success("¡Registro exitoso! Ahora puedes iniciar sesión", {
+          duration: 4000,
+          icon: '✅'
+        });
         setSuccessMessage("Registro exitoso");
         setRegisterData({
           username: "",
@@ -139,6 +180,11 @@ const Login: React.FC = () => {
         }
       }
     } catch (error: any) {
+      console.error("Error en el registro:", error);
+      // Mostrar toast con el error
+      toast.error(error.message || "Error en el registro", {
+        duration: 5000
+      });
       setError(error.message || "Error en el registro");
     }
   };
@@ -319,6 +365,17 @@ const Login: React.FC = () => {
                   <AiOutlineEye />
                 )}
               </span>
+            </div>
+
+            {/* Indicador de fortaleza de contraseña */}
+            <div
+              className="animation"
+              style={{ "--i": 21, "--j": 4 } as React.CSSProperties}
+            >
+              <PasswordStrengthIndicator
+                password={registerData.password}
+                show={registerData.password.length > 0}
+              />
             </div>
 
             {error && (

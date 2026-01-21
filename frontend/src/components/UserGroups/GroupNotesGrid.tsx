@@ -10,6 +10,7 @@ interface GroupNotesGridProps {
   onDeleteNote: (noteId: string) => void;
   handleNoteChange?: (id: string, field: keyof GroupNote, value: any) => void;
   updateGroupNote?: (id: string, field?: keyof GroupNote) => Promise<boolean>;
+  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
 }
 
 const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
@@ -19,12 +20,9 @@ const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
   onEditNote,
   onDeleteNote,
   handleNoteChange,
-  updateGroupNote
+  updateGroupNote,
+  autoResizeTextarea
 }) => {
-  // Separar notas fijadas y no fijadas
-  const pinnedNotes = notes.filter(note => note.is_pinned);
-  const unpinnedNotes = notes.filter(note => !note.is_pinned);
-
   return (
     <div className="notes-grid">
       {/* Renderizar todas las notas */}
@@ -38,6 +36,7 @@ const GroupNotesGrid: React.FC<GroupNotesGridProps> = ({
           onDeleteNote={onDeleteNote}
           handleNoteChange={handleNoteChange}
           updateGroupNote={updateGroupNote}
+          autoResizeTextarea={autoResizeTextarea}
         />
       ))}
       

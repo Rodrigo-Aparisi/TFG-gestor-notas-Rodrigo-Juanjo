@@ -7,12 +7,6 @@ export function useSharedNotes() {
   const [hasSharedNotes, setHasSharedNotes] = useState<boolean>(false);
   const [sharedNotes, setSharedNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [feedback, setFeedback] = useState("");
-
-  const showFeedback = useCallback((message: string) => {
-    setFeedback(message);
-    setTimeout(() => setFeedback(""), 3000);
-  }, []);
 
   const loadSharedNotes = useCallback(async () => {
     try {
@@ -158,7 +152,6 @@ export function useSharedNotes() {
   // Funciones auxiliares para exportación
   const exportAsPDF = (title: string, content: string, note: SharedNote) => {
     try {
-      showFeedback("Preparando exportación a PDF...");
 
       // Eliminar iframe existente si hay alguno
       const existingIframe = document.getElementById("pdf-print-frame");
@@ -189,7 +182,7 @@ export function useSharedNotes() {
         const iframeDoc =
           iframe.contentDocument || iframe.contentWindow?.document;
         if (!iframeDoc) {
-          showFeedback("Error al crear el documento PDF");
+          console.error("Error al crear el documento PDF");
           return;
         }
 
@@ -261,10 +254,8 @@ export function useSharedNotes() {
           try {
             // Imprimir el iframe (esto abrirá el diálogo de impresión)
             iframe.contentWindow?.print();
-            showFeedback("Documento preparado para descargar como PDF");
           } catch (err) {
             console.error("Error al imprimir:", err);
-            showFeedback("Error al generar el PDF");
           }
         }, 500);
       };
@@ -273,7 +264,6 @@ export function useSharedNotes() {
       iframe.src = "about:blank";
     } catch (error) {
       console.error("Error al exportar como PDF:", error);
-      showFeedback("Error al exportar como PDF");
     }
   };
 
@@ -285,7 +275,6 @@ export function useSharedNotes() {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    showFeedback("Nota exportada como TXT");
   };
 
   // Verificar notas compartidas al inicio

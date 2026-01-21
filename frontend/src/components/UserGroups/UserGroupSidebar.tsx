@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Group } from "../../types";
-import { FaEdit, FaInfoCircle } from "react-icons/fa";
+import { FaEdit } from "react-icons/fa";
 
 interface UserGroupSidebarProps {
   groups: Group[];

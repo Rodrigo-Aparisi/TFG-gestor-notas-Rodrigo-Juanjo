@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GroupMember } from '../../types';
-import config from '../../config/config';
+import { getFullImageUrl } from '../../utils/imageHelpers';
 
 interface GroupOfMembersListProps {
   members: GroupMember[];
@@ -29,18 +29,7 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
       setLocalMembers(members);
     }
   }, [members]);
-  
-  // Función para obtener la URL completa de la imagen
-  const getFullImageUrl = (url: string | undefined): string => {
-    if (!url) return '';
-    // Si la URL ya es una ruta completa, devuélvela tal cual
-    if (url.startsWith('http') || url.startsWith('/uploads/')) {
-      return url;
-    }
-    // Si solo es un nombre de archivo, construye la ruta completa
-    return `/uploads/profile-images/${url.split('/').pop()}`;
-  };
-  
+
   // Verificar si el usuario actual es propietario
   const isCurrentUserOwner = localMembers.some(
     member => member.user_id === currentUserId && member.role === 'owner'

@@ -7,7 +7,6 @@ import { useGroups } from '../hooks/useNoteGroups';
 import { useSharedNotes } from '../hooks/useSharedNotes';
 import { useUIEffects } from '../hooks/useUIEffects';
 import { useTextareaResize } from '../hooks/useTextareaResize';
-import { noteService } from '../services/api';
 import NoteTabs from '../components/Notes/NoteTabs';
 import GroupSidebar from '../components/Notes/GroupSidebar';
 import BulkActionsMenu from '../components/Notes/BulkActionsMenu';
@@ -16,7 +15,6 @@ import GroupModal from '../components/Notes/GroupModal';
 import NotesGrid from '../components/Notes/NotesGrid';
 import SharedNotesGrid from '../components/Notes/SharedNotesGrid';
 import NoteSort from '../components/Notes/NoteSort';
-import { useLocation } from 'react-router-dom';
 
 const Notes: React.FC = () => {
   // Hooks personalizados
@@ -63,8 +61,7 @@ const Notes: React.FC = () => {
     handleMoveGroup,
     handleAddNoteToGroup,
     handleRemoveNoteFromGroup,
-    handleUpdateGroup,
-    removeNoteFromAllGroups
+    handleUpdateGroup
   } = useGroups(showFeedback);
 
   const {
@@ -88,8 +85,6 @@ const Notes: React.FC = () => {
     setIsExpanded
   } = useUIEffects();
 
-  const [showGroupOptions, setShowGroupOptions] = useState(false);
-  const [shouldSyncMarkedNotes, setShouldSyncMarkedNotes] = useState(true);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 
   // Función para manejar cambio de pestañas
@@ -103,24 +98,6 @@ const Notes: React.FC = () => {
         handleBlur();
       }
     }
-  };
-
-  const getNotesForActiveGroup = () => {
-    // Si estamos en "Todas las notas"
-    if (activeGroup === 'main') {
-      return notes;
-    }
-    
-    // Si estamos en un grupo específico
-    const currentGroup = groups.find(g => g.id === activeGroup);
-    if (!currentGroup || !Array.isArray(currentGroup.noteIds) || currentGroup.noteIds.length === 0) {
-      return []; // Grupo vacío o inválido - retornar array vacío
-    }
-    
-    // Filtrar las notas que pertenecen al grupo
-    return notes.filter(note => 
-      currentGroup.noteIds.includes(note.id.toString())
-    );
   };
 
   // Función para manejar la creación de grupos con notas marcadas
@@ -181,16 +158,6 @@ const Notes: React.FC = () => {
       console.error('Error al eliminar notas marcadas:', error);
     }
   };
-
-  const handleDeleteNoteWithGroupUpdate = async (noteId: string) => {
-  try {
-    await handleDeleteNote(noteId);
-    // Después de eliminar la nota, también la eliminamos de todos los grupos
-    removeNoteFromAllGroups(noteId);
-  } catch (error) {
-    console.error("Error al eliminar nota:", error);
-  }
-};
 
   // Función para añadir notas marcadas a un grupo
   const handleAddNotesToGroup = async (groupId: string) => {
@@ -280,13 +247,11 @@ const Notes: React.FC = () => {
       const lines = content.split('\n');
       let currentLine = '';
       let charCount = 0;
-      let indentLevel = 0;
-      
-      // Encontrar la línea actual y su nivel de indentación
+
+      // Encontrar la línea actual
       for (const line of lines) {
         if (charCount + line.length + 1 >= selectionStart) {
           currentLine = line;
-          indentLevel = (line.match(/^\s*/) || [''])[0].length;
           break;
         }
         charCount += line.length + 1;

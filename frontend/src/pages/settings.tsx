@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { RootState } from "../store";
+import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { accountService } from "../services/accountService";
 import themeService from "../services/themeService";
-import { SettingsState, updateSettings } from "../store/slices/settingsSlice";
+import { SettingsState } from "../contexts/SettingsContext";
 import themeConfig from "../config/themeConfig.json";
 import {
   AiOutlineEye,
@@ -13,36 +13,22 @@ import {
   AiOutlineUser,
 } from "react-icons/ai";
 import "../styles/settings.css";
-import { logout, updateUserProfile } from "../store/slices/authSlice";
-import config from "../config/config";
+import { getFullImageUrl } from "../utils/imageHelpers";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
 const Settings = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector((state: RootState) => state.auth.user);
-  const reduxSettings = useSelector((state: RootState) => state.settings);
+  const { user, logout: authLogout, updateUserProfile } = useAuth();
+  const { settings: contextSettings, updateSettings } = useSettings();
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  
+
   // Mueve estos estados dentro del componente
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-  // Función helper para construir la URL completa de la imagen
-  const getFullImageUrl = (url: string | undefined): string => {
-    if (!url) return '';
-    /* Si la URL ya es una ruta completa, devuélvela tal cual /**
-    if (url.startsWith('http') || url.startsWith('/uploads/')) {
-      return url;
-    } 
-    /**/
-    // Si solo es un nombre de archivo, construye la ruta completa
-    return `/uploads/profile-images/${url.split('/').pop()}`;
-  };
 
   const [profileImage, setProfileImage] = useState<string>(
     user?.profile_image ? getFullImageUrl(user.profile_image) : ""
@@ -64,7 +50,7 @@ const Settings = () => {
         setProfileImage(fullUrl);
 
         if (user) {
-          dispatch(updateUserProfile({ profile_image: response }));
+          updateUserProfile({ profile_image: response });
         }
 
         // Precargar la imagen
@@ -104,9 +90,9 @@ const Settings = () => {
       await accountService.deleteUserAccount(user?.id, userData.currentPassword);
       
       showMessage("Cuenta eliminada correctamente", "success");
-      
+
       // Cerrar sesión y redirigir al login
-      dispatch(logout());
+      authLogout();
       setTimeout(() => {
         navigate("/login", { replace: true });
       }, 2000);
@@ -119,7 +105,9 @@ const Settings = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [theme, setTheme] = useState<ThemeType>("dark");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -137,11 +125,12 @@ const Settings = () => {
     ],
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [settings, setSettings] = useState<SettingsState>({
-    theme: reduxSettings?.theme || "dark",
-    defaultPage: reduxSettings?.defaultPage || "notes",
-    defaultNoteSort: reduxSettings?.defaultNoteSort || "date",
-    confirmDelete: reduxSettings?.confirmDelete ?? true,
+    theme: contextSettings?.theme || "dark",
+    defaultPage: contextSettings?.defaultPage || "notes",
+    defaultNoteSort: contextSettings?.defaultNoteSort || "date",
+    confirmDelete: contextSettings?.confirmDelete ?? true,
   });
 
   const [activeMainTab, setActiveMainTab] = useState<string>("cuenta");
@@ -212,38 +201,6 @@ const Settings = () => {
     }
   }, [user]);
 
-  const handleSettingsChange = async (
-    newSettings: Partial<typeof settings>
-  ) => {
-    try {
-      // Actualizar estado local
-      setSettings((prev) => ({
-        ...prev,
-        ...newSettings,
-      }));
-
-      // Actualizar Redux
-      dispatch(updateSettings(newSettings));
-
-      // Guardar en localStorage
-      const updatedSettings = {
-        ...settings,
-        ...newSettings,
-      };
-      localStorage.setItem("userSettings", JSON.stringify(updatedSettings));
-
-      // Actualizar en el backend
-      if (user?.id) {
-        await accountService.updateUserSettings(user.id, newSettings);
-      }
-
-      showMessage("Configuración actualizada correctamente", "success");
-    } catch (error) {
-      console.error("Error al actualizar la configuración:", error);
-      showMessage("Error al actualizar la configuración", "error");
-    }
-  };
-
   // Efecto para manejar la imagen de perfil
   useEffect(() => {
     if (user?.profile_image) {
@@ -279,7 +236,7 @@ const Settings = () => {
         if (savedSettings) {
           const parsedSettings = JSON.parse(savedSettings) as SettingsState;
           setSettings(parsedSettings);
-          dispatch(updateSettings(parsedSettings));
+          updateSettings(parsedSettings);
         } else if (user?.id) {
           const userSettings = await accountService.getUserSettings(user.id);
           if (userSettings) {
@@ -298,7 +255,7 @@ const Settings = () => {
               confirmDelete: Boolean(userSettings.confirmDelete),
             };
             setSettings(settingsToSave);
-            dispatch(updateSettings(settingsToSave));
+            updateSettings(settingsToSave);
             localStorage.setItem(
               "userSettings",
               JSON.stringify(settingsToSave)
@@ -312,7 +269,7 @@ const Settings = () => {
     };
 
     initializeSettings();
-  }, [user, navigate, loadTheme, dispatch]);
+  }, [user, navigate, loadTheme, updateSettings]);
 
   const handleMainTabClick = (tab: string) => {
     if (subMenus[tab]) {
@@ -374,7 +331,7 @@ const Settings = () => {
             "Datos actualizados correctamente. Por seguridad, deberás iniciar sesión nuevamente.",
             "success"
           );
-          dispatch(logout());
+          authLogout();
           setTimeout(() => {
             navigate("/login", { replace: true });
           }, 2000);
@@ -394,13 +351,15 @@ const Settings = () => {
           });
         }
       }
-    } catch (error: any) {
-      showMessage(error.message || "Error al actualizar los datos", "error");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Error al actualizar los datos";
+      showMessage(errorMessage, "error");
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleThemeChange = async (newTheme: ThemeType) => {
     if (!user?.id) return;
 
