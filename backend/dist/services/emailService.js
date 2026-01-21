@@ -8,7 +8,7 @@ const nodemailer_1 = __importDefault(require("nodemailer"));
 const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const database_1 = require("../../database");
+const database_1 = require("../database");
 // Configuración del transporte de correo
 const transporter = nodemailer_1.default.createTransport({
     service: 'gmail',

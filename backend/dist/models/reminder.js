@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Reminder = void 0;
-const database_1 = require("../../database");
+const database_1 = require("../database");
 class Reminder {
     static async find(conditions) {
         console.log('Condiciones de búsqueda:', conditions); // Debug

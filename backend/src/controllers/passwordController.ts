@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { pool } from '../../database';
+import { pool } from '../database';
 import { emailService } from '../services/emailService';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';

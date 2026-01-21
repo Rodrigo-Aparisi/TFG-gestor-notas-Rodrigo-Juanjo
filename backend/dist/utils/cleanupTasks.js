@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupTrashCleanup = void 0;
-const database_1 = require("../../database");
+const database_1 = require("../database");
 const node_schedule_1 = __importDefault(require("node-schedule"));
 // Función para eliminar notas que llevan más de 30 días en la papelera
 const setupTrashCleanup = () => {
