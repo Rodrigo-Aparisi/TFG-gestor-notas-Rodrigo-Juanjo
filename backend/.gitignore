@@ -27,3 +27,6 @@ yarn-error.log*
 !**/uploads/.gitkeep
 !**/uploads/note-images/.gitkeep
 
+# Env files
+.env
+.env.production
