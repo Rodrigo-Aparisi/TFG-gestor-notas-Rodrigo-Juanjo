@@ -1,55 +1,63 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../database';
 import { getProfileImageUrl } from '../utils/urlHelpers';
+import { BadRequestError, NotFoundError, UnauthorizedError, ForbiddenError } from '../errors';
+import { logger, log } from '../config/logger';
 
-// Función de registro
-export const register = async (req: Request, res: Response): Promise<void> => {
+/**
+ * User Registration
+ * POST /api/auth/register
+ */
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { username, email, password } = req.body;
 
-    // Validaciones
+    // Validations (Zod middleware handles most, this is backup)
     if (!username || !email || !password) {
-      res.status(400).json({ error: 'Todos los campos son requeridos' });
-      return;
+      throw new BadRequestError('Todos los campos son requeridos', 'MISSING_FIELDS');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const result = await pool.query(
       'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email, profile_image, created_at',
       [username, email, hashedPassword]
     );
 
-    // Construir URL completa de la imagen si existe
     const userResponse = {
       ...result.rows[0],
       profile_image: getProfileImageUrl(result.rows[0].profile_image)
     };
 
+    log.auth('Registro exitoso', userResponse.id, { username, email });
+
     res.status(201).json({
+      success: true,
       message: 'Usuario creado exitosamente',
       user: userResponse
     });
   } catch (error) {
-    console.error('Error en registro:', error);
-    res.status(500).json({ 
-      error: 'Error en el servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
-    });
+    // Handle unique constraint violations
+    if ((error as Error & { code?: string }).code === '23505') {
+      return next(new BadRequestError('El usuario o correo ya existe', 'USER_EXISTS'));
+    }
+    next(error);
   }
 };
 
-// Función de login
-export const login = async (req: Request, res: Response): Promise<void> => {
+/**
+ * User Login
+ * POST /api/auth/login
+ */
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    // Validaciones
+    // Validations
     if (!email || !password) {
-      res.status(400).json({ error: 'Todos los campos son requeridos' });
-      return;
+      throw new BadRequestError('Todos los campos son requeridos', 'MISSING_FIELDS');
     }
 
     const result = await pool.query(
@@ -59,14 +67,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const user = result.rows[0];
     if (!user) {
-      res.status(400).json({ error: 'Correo no encontrado' });
-      return;
+      throw new NotFoundError('Correo no encontrado', 'USER_NOT_FOUND');
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      res.status(400).json({ error: 'Contraseña incorrecta' });
-      return;
+      log.security('Intento de login fallido', { email, reason: 'password_incorrect' });
+      throw new UnauthorizedError('Contraseña incorrecta', 'INVALID_PASSWORD');
     }
 
     // Generate access token (1 hour expiration)
@@ -84,13 +91,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     );
 
     // Store refresh token in database
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await pool.query(
       'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
       [user.id, refreshToken, expiresAt]
     );
 
-    // Construir URL completa de la imagen si existe
     const userResponse = {
       id: user.id,
       username: user.username,
@@ -99,7 +105,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       created_at: user.created_at
     };
 
-    // Obtener configuración del usuario
+    // Get user settings
     const settingsResult = await pool.query(
       'SELECT theme, notifications_enabled, language FROM settings WHERE user_id = $1',
       [user.id]
@@ -111,12 +117,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       language: 'es'
     };
 
-    console.log('Login exitoso:', {
-      user: userResponse,
-      settings
-    });
+    log.auth('Login exitoso', user.id, { email });
 
     res.json({
+      success: true,
       message: 'Login exitoso',
       token: accessToken,
       refreshToken,
@@ -124,26 +128,29 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       settings
     });
   } catch (error) {
-    console.error('Error en login:', error);
-    res.status(500).json({
-      error: 'Error en el servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
-    });
+    next(error);
   }
 };
 
-// Función de refresh token
-export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
+/**
+ * Refresh Access Token
+ * POST /api/auth/refresh
+ */
+export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      res.status(401).json({ error: 'Refresh token requerido' });
-      return;
+      throw new UnauthorizedError('Refresh token requerido', 'MISSING_REFRESH_TOKEN');
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as any;
+    let decoded: { id: string; type: string };
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as { id: string; type: string };
+    } catch {
+      throw new ForbiddenError('Refresh token inválido', 'INVALID_REFRESH_TOKEN');
+    }
 
     // Check if refresh token exists in database and is not expired
     const tokenResult = await pool.query(
@@ -152,8 +159,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     );
 
     if (tokenResult.rows.length === 0) {
-      res.status(403).json({ error: 'Refresh token inválido o expirado' });
-      return;
+      throw new ForbiddenError('Refresh token inválido o expirado', 'EXPIRED_REFRESH_TOKEN');
     }
 
     // Get user data
@@ -163,8 +169,7 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
     );
 
     if (userResult.rows.length === 0) {
-      res.status(404).json({ error: 'Usuario no encontrado' });
-      return;
+      throw new NotFoundError('Usuario no encontrado', 'USER_NOT_FOUND');
     }
 
     const user = userResult.rows[0];
@@ -176,29 +181,31 @@ export const refreshAccessToken = async (req: Request, res: Response): Promise<v
       { expiresIn: '1h' }
     );
 
+    logger.debug('Token renovado', { userId: user.id });
+
     res.json({
+      success: true,
       message: 'Token renovado exitosamente',
       token: newAccessToken
     });
   } catch (error) {
-    console.error('Error al renovar token:', error);
-    res.status(403).json({
-      error: 'Refresh token inválido',
-      details: error instanceof Error ? error.message : 'Error desconocido'
-    });
+    next(error);
   }
 };
 
-// Función de logout
-export const logout = async (req: Request, res: Response): Promise<void> => {
+/**
+ * User Logout
+ * POST /api/auth/logout
+ */
+export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { refreshToken } = req.body;
     const token = req.headers.authorization?.split(' ')[1];
 
     // Revoke access token (add to blacklist)
     if (token) {
-      const decoded = jwt.decode(token) as any;
-      if (decoded && decoded.exp) {
+      const decoded = jwt.decode(token) as { id?: string; exp?: number } | null;
+      if (decoded && decoded.exp && decoded.id) {
         const expiresAt = new Date(decoded.exp * 1000);
         await pool.query(
           'INSERT INTO revoked_tokens (token, user_id, expires_at, reason) VALUES ($1, $2, $3, $4)',
@@ -209,18 +216,16 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 
     // Delete refresh token from database
     if (refreshToken) {
-      await pool.query(
-        'DELETE FROM refresh_tokens WHERE token = $1',
-        [refreshToken]
-      );
+      await pool.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
     }
 
-    res.json({ message: 'Logout exitoso' });
-  } catch (error) {
-    console.error('Error en logout:', error);
-    res.status(500).json({
-      error: 'Error en el servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+    log.auth('Logout exitoso', (req as Request & { user?: { id: string } }).user?.id);
+
+    res.json({
+      success: true,
+      message: 'Logout exitoso'
     });
+  } catch (error) {
+    next(error);
   }
 };

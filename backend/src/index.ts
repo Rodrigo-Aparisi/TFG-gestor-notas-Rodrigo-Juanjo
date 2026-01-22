@@ -16,6 +16,8 @@ import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks';
 import { generalApiLimiter } from './middleware/rateLimiter';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { logger } from './config/logger';
 import helmet from 'helmet';
 import fs from 'fs';
 
@@ -107,23 +109,21 @@ app.use(express.json());
 // Apply rate limiting to all API routes
 app.use('/api', generalApiLimiter);
 
-app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use('/uploads', (err: Error & { code?: string }, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err && err.code === 'EACCES') {
-    console.error('Error de permisos en el sistema de archivos:', err);
+    logger.error('Error de permisos en el sistema de archivos', { error: err.message });
     return res.status(500).json({
-      error: 'Error de permisos al acceder a los archivos'
+      success: false,
+      error: { message: 'Error de permisos al acceder a los archivos' }
+    });
+  }
+  if (err && err.code === 'ENOENT') {
+    return res.status(404).json({
+      success: false,
+      error: { message: 'Imagen no encontrada' }
     });
   }
   next(err);
-});
-
-app.use('/uploads', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error serving image:', err);
-  if (err.code === 'ENOENT') {
-    res.status(404).json({ error: 'Imagen no encontrada' });
-  } else {
-    res.status(500).json({ error: 'Error al cargar la imagen' });
-  }
 });
 
 // Configurar conexión a base de datos
@@ -135,16 +135,18 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || '5432')
 });
 
-// Middleware para manejar errores de archivos
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Middleware para manejar errores de archivos (Multer)
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
-        error: 'Archivo demasiado grande. Máximo 5MB'
+        success: false,
+        error: { message: 'Archivo demasiado grande. Máximo 5MB', code: 'FILE_TOO_LARGE' }
       });
     }
     return res.status(400).json({
-      error: 'Error al subir el archivo: ' + err.message
+      success: false,
+      error: { message: 'Error al subir el archivo: ' + err.message, code: 'UPLOAD_ERROR' }
     });
   }
   next(err);
@@ -160,54 +162,47 @@ app.use('/api/reminders', reminderRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/password', passwordRoutes);
 
-// Añadir un middleware de logging para depuración
-app.use((req, res, next) => {
-    console.log('Ruta solicitada:', req.method, req.url);
+// Middleware de logging para depuración (solo en desarrollo)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    logger.debug(`${req.method} ${req.url}`);
     next();
-});
+  });
+}
 
 // Ruta de prueba para la base de datos
-app.get('/test-db', async (req, res) => {
+app.get('/test-db', async (req, res, next) => {
   try {
     const result = await pool.query('SELECT NOW()');
-    res.json({ 
-      message: 'Conexión exitosa', 
-      timestamp: result.rows[0].now 
+    res.json({
+      success: true,
+      message: 'Conexión exitosa',
+      timestamp: result.rows[0].now
     });
   } catch (error) {
-    res.status(500).json({ 
-      error: 'Error conectando a la base de datos' 
-    });
+    next(error);
   }
 });
 
-// Middleware para manejar rutas no encontradas
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Ruta no encontrada'
-  });
-});
+// Middleware para manejar rutas no encontradas (404)
+app.use(notFoundHandler);
 
-// Agregar manejo de errores global
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Error interno del servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
+// Centralized error handler (MUST be last middleware)
+app.use(errorHandler);
 
 // Configurar puerto
 const PORT = process.env.PORT || 3001;
 
 async function cleanupExpiredTokens() {
   try {
-    await pool.query(
+    const result = await pool.query(
       'DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = TRUE'
     );
-    console.log('Tokens expirados o usados eliminados');
+    if (result.rowCount && result.rowCount > 0) {
+      logger.info(`Tokens expirados eliminados: ${result.rowCount}`);
+    }
   } catch (error) {
-    console.error('Error al limpiar tokens:', error);
+    logger.error('Error al limpiar tokens', { error: error instanceof Error ? error.message : 'Unknown' });
   }
 }
 
@@ -216,9 +211,10 @@ setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en el puerto ${PORT}`);
-  console.log(`Directorio de uploads: ${uploadsDir}`);
-  
+  logger.info(`Servidor ejecutándose en el puerto ${PORT}`);
+  logger.info(`Directorio de uploads: ${uploadsDir}`);
+  logger.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+
   // Iniciar tareas programadas
   setupTrashCleanup();
   setupEmailScheduler();
