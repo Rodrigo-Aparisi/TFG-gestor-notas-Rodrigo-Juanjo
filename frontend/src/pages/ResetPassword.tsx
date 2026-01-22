@@ -57,9 +57,10 @@ const ResetPassword: React.FC = () => {
         });
       }, 3000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsSuccess(false);
-      setMessage(error.response?.data?.error || 'Error al restablecer la contraseña');
+      const apiError = error as { response?: { data?: { error?: string } } };
+      setMessage(apiError.response?.data?.error || 'Error al restablecer la contraseña');
       setIsSubmitting(false);
     }
   };

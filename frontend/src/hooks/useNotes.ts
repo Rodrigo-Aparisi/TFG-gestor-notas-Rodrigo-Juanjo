@@ -91,9 +91,10 @@ export function useNotes() {
         forceReorder();
         showFeedback('Nota creada exitosamente');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating note:', error);
-      showFeedback(error.response?.data?.error || 'Error al crear la nota');
+      const apiError = error as { response?: { data?: { error?: string } } };
+      showFeedback(apiError.response?.data?.error || 'Error al crear la nota');
     } finally {
       setIsLoading(false);
     }

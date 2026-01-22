@@ -1,58 +1,43 @@
 import React, { useEffect, useRef } from 'react';
-import { Note, Group } from '../../types';
+import { Note } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
 import NoteActionsMenu from './NoteActionsMenu';
 import { getTimeAgo } from '../../utils/dateFormatter';
+import { useNotesContext } from '../../contexts/NotesContext';
 
+// Simplified interface - only note data needed, everything else from context
 interface NoteCardProps {
   note: Note;
-  editingNote: { [key: string]: { title: string; content: string } };
-  focusedNoteId: string | null;
-  sharingNoteId: string | null;
-  isMarked: boolean;
-  activeGroup: string;
-  groups: Group[];
-  handleNoteChange: (id: string, field: 'title' | 'content', value: string) => void;
-  handleUpdateNote: (id: string, field: 'title' | 'content') => Promise<void>;
-  handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
-  handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
-  handleToggleMark: (id: string, event: React.MouseEvent) => Promise<void>;
-  handleTogglePin: (id: string, event: React.MouseEvent) => Promise<void>;
-  setSharingNoteId: React.Dispatch<React.SetStateAction<string | null>>;
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string) => void;
-  insertList: (noteId: string, type: 'bullet' | 'number') => void;
-  handleDeleteNote: (id: string) => Promise<void>;
-  autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, noteId: string) => Promise<void>;
-  handleDeleteImage: (noteId: string, imageIndex: number) => Promise<void>;
-  handleExportNote: (format: string, noteId?: string) => void;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({
-  note,
-  editingNote,
-  focusedNoteId,
-  sharingNoteId,
-  isMarked,
-  activeGroup,
-  groups,
-  handleNoteChange,
-  handleUpdateNote,
-  handleFocus,
-  handleFocusIndicatorClick,
-  handleToggleMark,
-  handleTogglePin,
-  setSharingNoteId,
-  handleKeyDown,
-  insertList,
-  handleDeleteNote,
-  autoResizeTextarea,
-  handleImageUpload,
-  handleDeleteImage,
-  handleExportNote
-}) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
+  // Get all handlers and state from context
+  const {
+    editingNote,
+    markedNotes,
+    activeGroup,
+    groups,
+    focusedNoteId,
+    sharingNoteId,
+    setSharingNoteId,
+    handleNoteChange,
+    handleUpdateNote,
+    handleFocus,
+    handleFocusIndicatorClick,
+    handleToggleMark,
+    handleTogglePin,
+    handleKeyDown,
+    insertList,
+    handleDeleteNote,
+    autoResizeTextarea,
+    handleImageUpload,
+    handleDeleteImage,
+    handleExportNote
+  } = useNotesContext();
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMarked = markedNotes.includes(note.id);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
 
   // Aplicar resize cuando el componente se monta o cuando cambia el contenido o el estado de foco
@@ -145,10 +130,10 @@ const NoteCard: React.FC<NoteCardProps> = ({
           value={editingNote[note.id]?.content ?? note.content}
           onChange={(e) => {
             handleNoteChange(note.id, 'content', e.target.value);
-            resizeTextareaFn(e.target as HTMLTextAreaElement);
+            autoResizeTextarea && autoResizeTextarea(e.target as HTMLTextAreaElement);
           }}
           onKeyDown={(e) => handleKeyDown(e, note.id)}
-          onInput={(e) => resizeTextareaFn(e.target as HTMLTextAreaElement)}
+          onInput={(e) => autoResizeTextarea && autoResizeTextarea(e.target as HTMLTextAreaElement)}
           onBlur={() => handleUpdateNote(note.id, 'content')}
           onClick={(e) => e.stopPropagation()}
         />

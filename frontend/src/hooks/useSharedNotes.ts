@@ -5,7 +5,7 @@ import { SharedNote } from "../types";
 export function useSharedNotes() {
   const [activeTab, setActiveTab] = useState<string>("my-notes");
   const [hasSharedNotes, setHasSharedNotes] = useState<boolean>(false);
-  const [sharedNotes, setSharedNotes] = useState<any[]>([]);
+  const [sharedNotes, setSharedNotes] = useState<SharedNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadSharedNotes = useCallback(async () => {
@@ -13,7 +13,7 @@ export function useSharedNotes() {
       setIsLoading(true);
       const data = await noteService.getSharedNotes();
 
-      const transformedNotes = data.sharedNotes.map((note: any) => ({
+      const transformedNotes = data.sharedNotes.map((note: SharedNote) => ({
         ...note,
         shared_note_id: note.id,
         id: note.id,

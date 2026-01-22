@@ -120,12 +120,13 @@ const Login: React.FC = () => {
         console.log('Usuario logueado:', response.user);
         navigate("/notes", { replace: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en el login:", error);
-      toast.error(error.message || "Error en el inicio de sesión", {
+      const errorMessage = error instanceof Error ? error.message : "Error en el inicio de sesión";
+      toast.error(errorMessage, {
         duration: 4000
       });
-      setError(error.message || "Error en el inicio de sesión");
+      setError(errorMessage);
     }
   };
 
@@ -179,13 +180,14 @@ const Login: React.FC = () => {
           wrapper.classList.remove("active");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en el registro:", error);
+      const errorMessage = error instanceof Error ? error.message : "Error en el registro";
       // Mostrar toast con el error
-      toast.error(error.message || "Error en el registro", {
+      toast.error(errorMessage, {
         duration: 5000
       });
-      setError(error.message || "Error en el registro");
+      setError(errorMessage);
     }
   };
 

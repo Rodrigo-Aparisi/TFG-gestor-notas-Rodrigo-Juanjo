@@ -8,7 +8,7 @@ interface GroupNotesGridProps {
   editingNote?: Record<string, GroupNote>;
   onEditNote: (note: GroupNote) => void;
   onDeleteNote: (noteId: string) => void;
-  handleNoteChange?: (id: string, field: keyof GroupNote, value: any) => void;
+  handleNoteChange?: (id: string, field: keyof GroupNote, value: string | boolean | string[] | null) => void;
   updateGroupNote?: (id: string, field?: keyof GroupNote) => Promise<boolean>;
   autoResizeTextarea?: (element: HTMLTextAreaElement) => void;
 }

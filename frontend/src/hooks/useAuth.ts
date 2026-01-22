@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth';
 import { useState, useEffect } from 'react';
-import { User } from '../types';
+import { User, getErrorMessage } from '../types';
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -31,8 +31,8 @@ export const useAuth = () => {
         setUser(authService.getCurrentUser());
         navigate('/notes');
         return response;
-      } catch (error: any) {
-        setError(error.message);
+      } catch (error: unknown) {
+        setError(getErrorMessage(error));
         throw error;
       }
     },
@@ -42,8 +42,8 @@ export const useAuth = () => {
         setError('');
         const response = await authService.register(userData);
         return response;
-      } catch (error: any) {
-        setError(error.message);
+      } catch (error: unknown) {
+        setError(getErrorMessage(error));
         throw error;
       }
     },

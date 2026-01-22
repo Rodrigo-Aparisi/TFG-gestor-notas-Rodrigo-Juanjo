@@ -1,5 +1,6 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import config from "../config/config";
+import { User } from "../types";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
@@ -22,8 +23,13 @@ interface UpdateUserData {
 }
 
 interface UpdateResponse {
-  user: any;
+  user: User;
   message?: string;
+}
+
+interface ApiErrorData {
+  message?: string;
+  error?: string;
 }
 
 export const accountService = {
@@ -36,10 +42,11 @@ export const accountService = {
       }
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al obtener la configuración:", error);
+      const axiosError = error as AxiosError<ApiErrorData>;
 
-      if (error.response?.status === 404) {
+      if (axiosError.response?.status === 404) {
         try {
           const defaultSettings: UserSettings = {
             theme: "dark",
@@ -95,10 +102,11 @@ export const accountService = {
       }
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al actualizar la configuración:", error);
+      const axiosError = error as AxiosError<ApiErrorData>;
       throw new Error(
-        error.response?.data?.message ||
+        axiosError.response?.data?.message ||
           "Error al actualizar la configuración del usuario"
       );
     }
@@ -112,13 +120,14 @@ export const accountService = {
 
         console.log('Respuesta del servidor:', response.data); // Para depuración
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<ApiErrorData>;
         console.error("Error detallado:", {
-            config: error.config,
-            response: error.response,
-            message: error.message
+            config: axiosError.config,
+            response: axiosError.response,
+            message: axiosError.message
         });
-        
+
         if (axios.isAxiosError(error)) {
             if (error.response?.status === 401) {
                 throw new Error('Contraseña actual incorrecta');

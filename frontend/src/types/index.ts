@@ -97,7 +97,50 @@ export interface UpdateNoteData {
   title?: string;
   content?: string;
   images?: string[];
-  [key: string]: any;
+  is_pinned?: boolean;
+  is_marked?: boolean;
+  color?: string | null;
+}
+
+// Error types for proper error handling
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+}
+
+export interface ApiErrorResponse {
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+    };
+    status?: number;
+  };
+  message?: string;
+}
+
+// Helper function to extract error message
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null) {
+    const apiError = error as ApiErrorResponse;
+    return apiError.response?.data?.error ||
+           apiError.response?.data?.message ||
+           apiError.message ||
+           'Error desconocido';
+  }
+  return 'Error desconocido';
+}
+
+// Settings type
+export interface UserSettings {
+  defaultNoteSort?: SortType;
+  theme?: 'light' | 'dark';
+  defaultPage?: string;
+  confirmDelete?: boolean;
 }
 
 export type SortType = 'title' | 'date' | 'pinned';

@@ -1,7 +1,13 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { Note } from '../types';
+import { Group } from '../types';
 
 interface NotesContextType {
+  // Shared state needed by NoteCard
+  editingNote: { [key: string]: { title: string; content: string } };
+  markedNotes: string[];
+  activeGroup: string;
+  groups: Group[];
+
   // Note manipulation functions
   handleNoteChange: (id: string, field: 'title' | 'content', value: string) => void;
   handleUpdateNote: (id: string, field: 'title' | 'content') => Promise<void>;

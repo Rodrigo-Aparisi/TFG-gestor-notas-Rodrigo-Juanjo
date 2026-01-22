@@ -67,12 +67,13 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         setFeedback({ message: "Cambios guardados", type: "success" });
         setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al actualizar la nota compartida:", error);
+      const apiError = error as { response?: { data?: unknown; status?: number } };
 
       if (error && typeof error === "object" && "response" in error) {
-        console.error("Error response:", error.response?.data);
-        console.error("Error status:", error.response?.status);
+        console.error("Error response:", apiError.response?.data);
+        console.error("Error status:", apiError.response?.status);
       }
 
       if (showFeedback) {
@@ -197,7 +198,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         });
         setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al subir imagen:", error);
       if (showFeedback) {
         showFeedback("Error al subir imagen");
@@ -224,7 +225,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         setFeedback({ message: "Imagen eliminada", type: "success" });
         setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al eliminar imagen:", error);
       if (showFeedback) {
         showFeedback("Error al eliminar imagen");

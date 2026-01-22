@@ -6,6 +6,7 @@ import {
   CreateGroupData,
   AddGroupMemberData,
   CreateGroupNoteData,
+  getErrorMessage,
 } from "../types";
 
 export const useUserGroups = () => {
@@ -56,9 +57,9 @@ export const useUserGroups = () => {
       // Asegúrate de que siempre sea un array, incluso si la API devuelve algo inesperado
       const groups = response.data?.groups || [];
       setUserGroups(Array.isArray(groups) ? groups : []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error al cargar los grupos:", err);
-      setError(err.message || "Error al cargar los grupos");
+      setError(getErrorMessage(err));
       showFeedback("Error al cargar los grupos");
       setUserGroups([]); // Siempre establece un array vacío en caso de error
     } finally {
@@ -79,9 +80,9 @@ export const useUserGroups = () => {
         // Asegúrate de que siempre sea un array
         const notes = response.data?.notes || [];
         setGroupNotes(Array.isArray(notes) ? notes : []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error al cargar las notas del grupo:", err);
-        setError(err.message || "Error al cargar las notas del grupo");
+        setError(getErrorMessage(err));
         showFeedback("Error al cargar las notas del grupo");
         setGroupNotes([]);
       } finally {
@@ -107,8 +108,8 @@ export const useUserGroups = () => {
       setShowCreateGroupModal(false);
       showFeedback("Grupo creado correctamente");
       return true;
-    } catch (err: any) {
-      setError(err.message || "Error al crear el grupo");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       showFeedback("Error al crear el grupo");
       return false;
     } finally {
@@ -156,8 +157,8 @@ export const useUserGroups = () => {
 
         showFeedback("Miembro añadido correctamente");
         return true;
-      } catch (err: any) {
-        setError(err.message || "Error al añadir miembro al grupo");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
         showFeedback("Error al añadir miembro al grupo");
         return false;
       } finally {
@@ -205,8 +206,8 @@ export const useUserGroups = () => {
 
         showFeedback("Miembro eliminado correctamente");
         return true;
-      } catch (err: any) {
-        setError(err.message || "Error al eliminar miembro del grupo");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
         showFeedback("Error al eliminar miembro del grupo");
         return false;
       } finally {
@@ -235,8 +236,8 @@ export const useUserGroups = () => {
       setNewNote({ title: "", content: "" });
       showFeedback("Nota creada correctamente");
       return true;
-    } catch (err: any) {
-      setError(err.message || "Error al crear la nota en el grupo");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       showFeedback("Error al crear la nota en el grupo");
       return false;
     } finally {
@@ -245,7 +246,7 @@ export const useUserGroups = () => {
   }, [selectedGroup, newNote, showFeedback]);
 
   // Manejar cambios en una nota
-  const handleNoteChange = useCallback((noteId: string, field: keyof GroupNote, value: any) => {
+  const handleNoteChange = useCallback((noteId: string, field: keyof GroupNote, value: string | boolean | string[] | null) => {
     setEditingNote(prev => {
       const note = prev[noteId] || groupNotes.find(n => n.id === noteId);
       if (!note) return prev;
@@ -347,9 +348,9 @@ export const useUserGroups = () => {
       }
       
       return false;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al actualizar nota:', err);
-      setError(err.message || 'Error al actualizar la nota del grupo');
+      setError(getErrorMessage(err));
       showFeedback('Error al actualizar la nota del grupo');
       return false;
     } finally {
@@ -470,8 +471,8 @@ export const useUserGroups = () => {
 
       showFeedback("Nota marcada/desmarcada correctamente");
       return response.data;
-    } catch (err: any) {
-      setError(err.message || "Error al actualizar la nota");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       showFeedback("Error al actualizar la nota");
       return false;
     } finally {
@@ -491,8 +492,8 @@ export const useUserGroups = () => {
         setGroupNotes((prev) => prev.filter((note) => note.id !== noteId));
         showFeedback("Nota eliminada correctamente");
         return true;
-      } catch (err: any) {
-        setError(err.message || "Error al eliminar la nota del grupo");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
         showFeedback("Error al eliminar la nota del grupo");
         return false;
       } finally {
@@ -521,8 +522,8 @@ export const useUserGroups = () => {
 
         showFeedback("Nota actualizada correctamente");
         return response.data;
-      } catch (err: any) {
-        setError(err.message || "Error al actualizar la nota");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err));
         showFeedback("Error al actualizar la nota");
         return false;
       } finally {

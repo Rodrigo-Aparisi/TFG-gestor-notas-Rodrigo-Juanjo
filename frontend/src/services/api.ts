@@ -571,7 +571,7 @@ export const accountService = {
     }
   },
 
-  updateUserSettings: async (userId: string, settings: any) => {
+  updateUserSettings: async (userId: string, settings: Record<string, string | boolean | number>) => {
     try {
       const response = await api.put("/account/settings", settings);
       return response.data;

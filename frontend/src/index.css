@@ -1,3 +1,14 @@
+@import "tailwindcss";
+
+/* Custom theme variables */
+@theme {
+  --color-gold: #ffc600;
+  --color-gold-hover: #e6b400;
+  --color-dark-bg: #282c34;
+  --color-dark-surface: #1a1a1a;
+  --color-dark-border: #3a3a3a;
+}
+
 body {
   background-color: #282c34;
   margin: 0;

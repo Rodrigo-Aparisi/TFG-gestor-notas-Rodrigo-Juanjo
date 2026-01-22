@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "../styles/groups.css";
 import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
-import { GroupNote } from "../types";
+import { GroupNote, ApiErrorResponse } from "../types";
 import UserGroupSidebar from "../components/UserGroups/UserGroupSidebar";
 import GroupNotesGrid from "../components/UserGroups/GroupNotesGrid";
 import GroupOfMembersList from "../components/UserGroups/GroupOfMembersList";
@@ -317,13 +317,14 @@ const Groups: React.FC = () => {
 
         showFeedback("Permisos actualizados correctamente");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al actualizar permisos:", error);
+      const apiError = error as ApiErrorResponse;
 
       // Verificar si el error es específicamente por intentar editar los propios permisos
       if (
-        error.response?.data?.message?.includes("own permissions") ||
-        error.response?.data?.error?.includes("own permissions")
+        apiError.response?.data?.message?.includes("own permissions") ||
+        apiError.response?.data?.error?.includes("own permissions")
       ) {
         showFeedback("No puedes editar tus propios permisos");
       } else {
@@ -391,10 +392,11 @@ const Groups: React.FC = () => {
       }
 
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al cambiar el nombre del grupo:", error);
+      const apiError = error as ApiErrorResponse;
 
-      if (error.response?.status === 403) {
+      if (apiError.response?.status === 403) {
         showFeedback("No tienes permisos para cambiar el nombre del grupo");
       } else {
         showFeedback("Error al cambiar el nombre del grupo");
@@ -430,10 +432,11 @@ const Groups: React.FC = () => {
       }
 
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al cambiar la descripción del grupo:", error);
+      const apiError = error as ApiErrorResponse;
 
-      if (error.response?.status === 403) {
+      if (apiError.response?.status === 403) {
         showFeedback(
           "No tienes permisos para cambiar la descripción del grupo"
         );

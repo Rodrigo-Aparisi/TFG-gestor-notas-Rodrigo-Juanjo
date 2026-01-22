@@ -1,20 +1,16 @@
-import React from 'react';
-import { useEffect, useState } from 'react';
-import { Group } from '../types';
+import React, { useMemo } from 'react';
+import { useEffect } from 'react';
 import '../styles/notes.css';
 import { useNotes } from '../hooks/useNotes';
 import { useGroups } from '../hooks/useNoteGroups';
 import { useSharedNotes } from '../hooks/useSharedNotes';
 import { useUIEffects } from '../hooks/useUIEffects';
 import { useTextareaResize } from '../hooks/useTextareaResize';
-import NoteTabs from '../components/Notes/NoteTabs';
+import { useTextEditor } from '../hooks/useTextEditor';
+import { useGroupActions } from '../hooks/useGroupActions';
+import { NotesProvider } from '../contexts/NotesContext';
 import GroupSidebar from '../components/Notes/GroupSidebar';
-import BulkActionsMenu from '../components/Notes/BulkActionsMenu';
-import CreateNoteForm from '../components/Notes/CreateNoteForm';
-import GroupModal from '../components/Notes/GroupModal';
-import NotesGrid from '../components/Notes/NotesGrid';
-import SharedNotesGrid from '../components/Notes/SharedNotesGrid';
-import NoteSort from '../components/Notes/NoteSort';
+import NotesContent from '../components/Notes/NotesContent';
 
 const Notes: React.FC = () => {
   // Hooks personalizados
@@ -85,127 +81,47 @@ const Notes: React.FC = () => {
     setIsExpanded
   } = useUIEffects();
 
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  // Custom hooks for text editing and group actions
+  const { handleKeyDown, insertList } = useTextEditor({
+    setNewNote,
+    handleNoteChange,
+    showFeedback
+  });
 
-  // Función para manejar cambio de pestañas
+  const {
+    editingGroup,
+    setEditingGroup,
+    handleEditGroup,
+    handleSaveGroup,
+    handleDeleteMarkedNotesWithClear,
+    handleAddNotesToGroup,
+    handleRemoveNotesFromGroup
+  } = useGroupActions({
+    markedNotes,
+    setMarkedNotes,
+    showFeedback,
+    loadNotes,
+    handleCreateGroup,
+    handleUpdateGroup,
+    handleAddNoteToGroup,
+    handleRemoveNoteFromGroup,
+    setShowGroupModal,
+    setNoteNewGroup,
+    newNoteGroup,
+    handleDeleteMarkedNotes
+  });
+
+  // Tab change handler
   const handleTabChange = (tabId: string) => {
     handleTabChangeBase(tabId, loadNotes);
   };
 
+  // Overlay click handler for closing focused notes
   const handleOverlayClick = (event: React.MouseEvent) => {
     if (focusedNoteId) {
       if (event.target === event.currentTarget) {
         handleBlur();
       }
-    }
-  };
-
-  // Función para manejar la creación de grupos con notas marcadas
-  const handleCreateGroupWithMarkedNotes = async () => {
-    const result = await handleCreateGroup(markedNotes);
-    if (result) {
-      setMarkedNotes([]); // Desmarcar todas las notas después de crear el grupo
-      return true;
-    }
-    return false;
-  };
-
-  // Función para manejar la edición de grupos
-  const handleEditGroup = (group: Group, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setEditingGroup(group);
-    setNoteNewGroup({ name: group.name, color: group.color });
-    setShowGroupModal(true);
-  };
-
-  //Funcion para manejar la creación o actualización de grupos
-  const handleSaveGroup = async () => {
-    if (editingGroup) {
-      // Si estamos editando un grupo existente
-      try {
-        const result = await handleUpdateGroup(editingGroup.id, {
-          name: newNoteGroup.name,
-          color: newNoteGroup.color
-        });
-        
-        if (result) {
-          // Cerrar el modal y limpiar el estado después de una actualización exitosa
-          setEditingGroup(null);
-          setShowGroupModal(false);
-          setNoteNewGroup({ name: '', color: '#f1c40f' });
-        }
-      } catch (error) {
-        console.error('Error al actualizar grupo:', error);
-        showFeedback('Error al actualizar el grupo');
-      }
-    } else {
-      // Si estamos creando un nuevo grupo
-      const result = await handleCreateGroupWithMarkedNotes();
-      if (result) {
-        // Cerrar el modal solo si la creación fue exitosa
-        setShowGroupModal(false);
-        setNoteNewGroup({ name: '', color: '#f1c40f' });
-      }
-    }
-  };
-
-  // Función para manejar la eliminación de notas marcadas
-  const handleDeleteMarkedNotesWithClear = async () => {
-    try {
-      await handleDeleteMarkedNotes();
-      setMarkedNotes([]); // Forzar el reseteo de las notas marcadas
-    } catch (error) {
-      console.error('Error al eliminar notas marcadas:', error);
-    }
-  };
-
-  // Función para añadir notas marcadas a un grupo
-  const handleAddNotesToGroup = async (groupId: string) => {
-    try {
-      // Crear un array de promesas para añadir cada nota al grupo
-      const addPromises = markedNotes.map(noteId => 
-        handleAddNoteToGroup(groupId, noteId)
-      );
-      
-      // Esperar a que todas las promesas se resuelvan
-      await Promise.all(addPromises);
-      
-      // Mostrar feedback
-      showFeedback(`Notas añadidas al grupo exitosamente`);
-      
-      // Importante: limpiar las notas marcadas
-      setMarkedNotes([]);
-      
-      // Recargar las notas para actualizar la UI
-      loadNotes();
-    } catch (error) {
-      console.error('Error al añadir notas al grupo:', error);
-      showFeedback('Error al añadir notas al grupo');
-    }
-  };
-
-  // Eliminar notas de un grupo
-  const handleRemoveNotesFromGroup = async (groupId: string) => {
-    try {
-      // Crear un array de promesas para eliminar cada nota del grupo
-      const removePromises = markedNotes.map(noteId => 
-        handleRemoveNoteFromGroup(groupId, noteId)
-      );
-      
-      // Esperar a que todas las promesas se resuelvan
-      await Promise.all(removePromises);
-      
-      // Mostrar feedback
-      showFeedback(`Notas eliminadas del grupo exitosamente`);
-      
-      // Limpiar las notas marcadas
-      setMarkedNotes([]);
-      
-      // Recargar notas para actualizar la vista
-      loadNotes();
-    } catch (error) {
-      console.error('Error al eliminar notas del grupo:', error);
-      showFeedback('Error al eliminar notas del grupo');
     }
   };
 
@@ -238,374 +154,116 @@ const Notes: React.FC = () => {
     }
   }, [activeGroup, groups, notes]);
 
-  // Función para manejar teclas en textareas
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, noteId: string, isNewNote = false) => {
-    if (e.key === 'Enter') {
-      const textarea = e.currentTarget;
-      const { selectionStart } = textarea;
-      const content = textarea.value;
-      const lines = content.split('\n');
-      let currentLine = '';
-      let charCount = 0;
-
-      // Encontrar la línea actual
-      for (const line of lines) {
-        if (charCount + line.length + 1 >= selectionStart) {
-          currentLine = line;
-          break;
-        }
-        charCount += line.length + 1;
-      }
-  
-      // Detectar si estamos en una lista
-      const bulletMatch = currentLine.match(/^(\s*)([•\-*]|\d+\.)\s*/);
-      if (bulletMatch) {
-        e.preventDefault();
-        
-        const [, indent, bullet] = bulletMatch;
-        
-        // Si la línea está vacía (excepto por el marcador), terminar la lista
-        if (currentLine.trim() === bullet.trim()) {
-          const newContent = content.slice(0, selectionStart - bulletMatch[0].length) + 
-                           '\n' + content.slice(selectionStart);
-          
-          if (isNewNote) {
-            setNewNote(prev => ({ ...prev, content: newContent }));
-          } else {
-            handleNoteChange(noteId, 'content', newContent);
-          }
-          return;
-        }
-  
-        // Continuar la lista con la misma indentación
-        const newBullet = bullet.match(/\d+\./) 
-          ? `${parseInt(bullet) + 1}.` 
-          : '•';
-        
-        const newContent = content.slice(0, selectionStart) + 
-                          '\n' + indent + newBullet + ' ' + 
-                          content.slice(selectionStart);
-        
-        if (isNewNote) {
-          setNewNote(prev => ({ ...prev, content: newContent }));
-        } else {
-          handleNoteChange(noteId, 'content', newContent);
-        }
-      }
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const { selectionStart } = textarea;
-      const content = textarea.value;
-      
-      // Insertar tabulación
-      const newContent = content.slice(0, selectionStart) + 
-                        '    ' + // 4 espacios para la tabulación
-                        content.slice(selectionStart);
-      
-      if (isNewNote) {
-        setNewNote(prev => ({ ...prev, content: newContent }));
-      } else {
-        handleNoteChange(noteId, 'content', newContent);
-      }
-      
-      // Mover el cursor después de la tabulación
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = selectionStart + 4;
-      });
-    }
-  };
-
-  // Función para insertar listas
- const insertList = (noteId: string, type: 'bullet' | 'number', isNewNote = false) => {
-  // Primero, intentamos obtener el textarea directamente por ID
-  let textarea: HTMLTextAreaElement | null = null;
-  
-  if (isNewNote) {
-    textarea = document.querySelector('.create-note textarea') as HTMLTextAreaElement;
-  } else {
-    // 1. Para notas compartidas, el textarea podría estar en un elemento con el ID de la nota compartida
-    // o con el ID de la nota original (note_id)
-    
-    // Intentar encontrar por data-note-id
-    textarea = document.querySelector(`textarea[data-note-id="${noteId}"]`) as HTMLTextAreaElement;
-    
-    // Si no lo encontramos, buscar en cualquier contenedor con data-note-id
-    if (!textarea) {
-      const noteContainer = document.querySelector(`[data-note-id="${noteId}"]`);
-      if (noteContainer) {
-        textarea = noteContainer.querySelector('textarea') as HTMLTextAreaElement;
-      }
-    }
-    
-    // 2. Si aún no lo encontramos, buscar en la nota actualmente enfocada
-    if (!textarea) {
-      const focusedNote = document.querySelector('.note-card.focused');
-      if (focusedNote) {
-        textarea = focusedNote.querySelector('textarea') as HTMLTextAreaElement;
-      }
-    }
-    
-    // 3. Último recurso: buscar cualquier textarea visible en la página
-    if (!textarea) {
-      const visibleTextareas = document.querySelectorAll('textarea:not([style*="display: none"])');
-      if (visibleTextareas.length === 1) {
-        // Si solo hay un textarea visible, usarlo
-        textarea = visibleTextareas[0] as HTMLTextAreaElement;
-      }
-    }
-  }
-  
-  if (!textarea) {
-    console.error(`No se pudo encontrar el textarea para la nota ${noteId}`);
-    showFeedback('Error al insertar lista');
-    return;
-  }
-  
-  // El resto de la función se mantiene igual...
-  const content = textarea.value;
-  const selectionStart = textarea.selectionStart;
-  
-  // Encontrar la línea actual
-  const textBeforeCursor = content.substring(0, selectionStart);
-  const lines = textBeforeCursor.split('\n');
-  const currentLineIndex = lines.length - 1;
-  const currentLine = lines[currentLineIndex] || '';
-  
-  // Determinar si estamos al principio del textarea o al inicio de una línea
-  const isAtBeginning = selectionStart === 0;
-  const isAtLineStart = currentLine.trim() === '';
-  
-  // Decidir si añadir un salto de línea o no
-  let insertText = '';
-  
-  // Solo añadir salto de línea si no estamos al principio del textarea ni al inicio de una línea
-  if (!isAtBeginning && !isAtLineStart) {
-    insertText += '\n';
-  }
-  
-  if (type === 'bullet') {
-    insertText += '• ';
-  } else if (type === 'number') {
-    // Buscar en todas las líneas anteriores, no solo la inmediata
-    let lastNumberedLine = -1;
-    let lastNumber = 0;
-    
-    for (let i = currentLineIndex; i >= 0; i--) {
-      const line = lines[i];
-      const numberMatch = line.match(/^(\s*)(\d+)\.(\s+)/);
-      
-      if (numberMatch) {
-        lastNumberedLine = i;
-        lastNumber = parseInt(numberMatch[2]);
-        break;
-      }
-    }
-    
-    // Si encontramos una línea numerada
-    if (lastNumberedLine !== -1) {
-      // Calcular el número correcto basado en la posición relativa
-      const nextNumber = lastNumber + (currentLineIndex - lastNumberedLine);
-      insertText += `${nextNumber + 1}. `;
-    } else {
-      // Si no hay línea numerada previa, comenzar en 1
-      insertText += '1. ';
-    }
-  }
-  
-  const newContent = content.substring(0, selectionStart) + insertText + content.substring(selectionStart);
-  
-  // Determinar si estamos en una nota compartida
-  const isSharedNote = document.querySelector('.note-card.focused.editable-note') !== null;
-  
-  // Para notas compartidas, necesitamos actualizar directamente el valor y disparar eventos
-  if (isSharedNote) {
-    // Actualizar el valor del textarea
-    textarea.value = newContent;
-    
-    // Disparar un evento de input para que React detecte el cambio
-    const inputEvent = new Event('input', { bubbles: true });
-    textarea.dispatchEvent(inputEvent);
-    
-    // También disparar un evento change
-    const changeEvent = new Event('change', { bubbles: true });
-    textarea.dispatchEvent(changeEvent);
-    
-    // Para componentes controlados por React, intentar actualizar el estado
-    // Esto es un intento de hacer que funcione con diferentes implementaciones
-    const reactInstance = (textarea as any)._reactProps;
-    if (reactInstance && reactInstance.onChange) {
-      const syntheticEvent = {
-        target: textarea,
-        currentTarget: textarea,
-        preventDefault: () => {},
-        stopPropagation: () => {}
-      };
-      reactInstance.onChange(syntheticEvent);
-    }
-  } else {
-    // Para notas normales o nuevas, usar el flujo normal
-    if (isNewNote) {
-      setNewNote(prev => ({ ...prev, content: newContent }));
-    } else {
-      handleNoteChange(noteId, 'content', newContent);
-    }
-  }
-  
-  // Mover el cursor después del texto insertado
-  const newPosition = selectionStart + insertText.length;
-  setTimeout(() => {
-    textarea?.focus();
-    textarea?.setSelectionRange(newPosition, newPosition);
-  }, 0);
-};
-
+  // Create context value for NotesProvider - eliminates prop drilling
+  const notesContextValue = useMemo(() => ({
+    // Shared state
+    editingNote,
+    markedNotes,
+    activeGroup,
+    groups,
+    // Note manipulation
+    handleNoteChange,
+    handleUpdateNote,
+    handleDeleteNote,
+    handleToggleMark,
+    handleTogglePin,
+    // Image functions
+    handleImageUpload,
+    handleDeleteImage,
+    // Export
+    handleExportNote,
+    // Text editing
+    handleKeyDown,
+    insertList,
+    autoResizeTextarea,
+    // UI state
+    focusedNoteId,
+    sharingNoteId,
+    setSharingNoteId,
+    handleFocus,
+    handleFocusIndicatorClick,
+    handleBlur
+  }), [
+    editingNote, markedNotes, activeGroup, groups,
+    handleNoteChange, handleUpdateNote, handleDeleteNote, handleToggleMark, handleTogglePin,
+    handleImageUpload, handleDeleteImage, handleExportNote,
+    handleKeyDown, insertList, autoResizeTextarea,
+    focusedNoteId, sharingNoteId, setSharingNoteId, handleFocus, handleFocusIndicatorClick, handleBlur
+  ]);
 
   return (
-    <div className="notes-layout">
-      {/* Sidebar */}
-      <GroupSidebar 
-        groups={groups}
-        activeGroup={activeGroup}
-        onGroupSelect={handleGroupSelect}
-        onDeleteGroup={handleDeleteGroup}
-        onMoveGroup={handleMoveGroup}
-        onEditGroup={handleEditGroup}
-      />
+    <NotesProvider value={notesContextValue}>
+      <div className="notes-layout">
+        {/* Sidebar */}
+        <GroupSidebar
+          groups={groups}
+          activeGroup={activeGroup}
+          onGroupSelect={handleGroupSelect}
+          onDeleteGroup={handleDeleteGroup}
+          onMoveGroup={handleMoveGroup}
+          onEditGroup={handleEditGroup}
+        />
 
-      <div 
-        className={`overlay ${focusedNoteId ? 'active' : ''}`} 
-        onClick={handleOverlayClick}
-      />
+        {/* Overlay for focused notes */}
+        <div
+          className={`overlay ${focusedNoteId ? 'active' : ''}`}
+          onClick={handleOverlayClick}
+        />
 
-      {/* Contenido principal */}
-      <div className="notes-main">
-        <NoteTabs 
+        {/* Main content */}
+        <NotesContent
+          // Tab state
           activeTab={activeTab}
           hasSharedNotes={hasSharedNotes}
           onTabChange={handleTabChange}
-        />
-        
-        {feedback && <div className="feedback-message">{feedback}</div>}
-        
-        {/* Encabezado del grupo activo */}
-        {activeGroup && (
-          <div className="active-group-header" style={{
-            color: groups.find(g => g.id === activeGroup)?.color || '#f1c40f'
-          }}>
-            {groups.find(g => g.id === activeGroup)?.name || 'Todas las notas'}
-          </div>
-        )}
-
-        {/* Menú de acciones en masa */}
-        <BulkActionsMenu 
-          markedNotes={markedNotes}
-          groups={groups}
+          // Feedback
+          feedback={feedback}
+          // Group state
           activeGroup={activeGroup}
+          groups={groups}
+          // Marked notes
+          markedNotes={markedNotes}
           onShowGroupModal={() => setShowGroupModal(true)}
           onDeleteMarkedNotes={handleDeleteMarkedNotesWithClear}
           onAddToGroup={handleAddNotesToGroup}
           onRemoveFromGroup={handleRemoveNotesFromGroup}
+          // Note creation
+          newNote={newNote}
+          isExpanded={isExpanded}
+          isLoading={notesLoading}
+          setNewNote={setNewNote}
+          setIsExpanded={setIsExpanded}
+          handleCreateNote={handleCreateNote}
+          handleKeyDown={handleKeyDown}
+          insertList={insertList}
+          handleImageUpload={handleImageUpload}
+          autoResizeTextarea={autoResizeTextarea}
+          handleExportNote={handleExportNote}
+          // Notes data
+          notes={notes}
+          filteredNotes={filteredNotes}
+          sortKey={sortKey}
+          onNotesFiltered={handleFilteredNotes}
+          // Shared notes
+          sharedNotes={sharedNotes}
+          focusedNoteId={focusedNoteId}
+          handleFocus={handleFocus}
+          handleFocusIndicatorClick={handleFocusIndicatorClick}
+          showFeedback={showFeedback}
+          handleDeleteSharedImage={handleDeleteSharedImage}
+          handleAddSharedImage={handleAddSharedImage}
+          handleExportSharedNote={handleExportSharedNote}
+          // Modal
+          showGroupModal={showGroupModal}
+          editingGroup={editingGroup}
+          newNoteGroup={newNoteGroup}
+          setNoteNewGroup={setNoteNewGroup}
+          setEditingGroup={setEditingGroup}
+          setShowGroupModal={setShowGroupModal}
+          onSaveGroup={handleSaveGroup}
         />
-
-        {/* Crear nota */}
-        {activeTab === 'my-notes' && (
-          <div className="note-tools-container">
-            <CreateNoteForm 
-              newNote={newNote}
-              isExpanded={isExpanded}
-              isLoading={notesLoading}
-              setNewNote={setNewNote}
-              setIsExpanded={setIsExpanded}
-              handleCreateNote={handleCreateNote}
-              handleKeyDown={handleKeyDown}
-              insertList={insertList}
-              handleImageUpload={handleImageUpload}
-              autoResizeTextarea={autoResizeTextarea}
-              handleExportNote={handleExportNote}
-            />
-            
-            <NoteSort 
-              key={`note-sort-${sortKey}`}
-              notes={activeGroup === 'main' ? 
-                notes : 
-                notes.filter(note => {
-                  const currentGroup = groups.find(g => g.id === activeGroup);
-                  return currentGroup && Array.isArray(currentGroup.noteIds) && 
-                    currentGroup.noteIds.includes(note.id.toString());
-                })
-              }
-              onNotesFiltered={handleFilteredNotes}
-            />
-          </div>
-        )}
-
-        {/* Grid de notas */}
-        {activeTab === 'my-notes' ? (
-          <NotesGrid
-            notes={activeGroup === 'main' ? 
-              filteredNotes : 
-              filteredNotes.filter(note => {
-                const currentGroup = groups.find(g => g.id === activeGroup);
-                return currentGroup && Array.isArray(currentGroup.noteIds) && 
-                  currentGroup.noteIds.includes(note.id.toString());
-              })
-            }
-            editingNote={editingNote}
-            focusedNoteId={focusedNoteId}
-            sharingNoteId={sharingNoteId}
-            markedNotes={markedNotes}
-            activeGroup={activeGroup}
-            groups={groups}
-            handleNoteChange={handleNoteChange}
-            handleUpdateNote={handleUpdateNote}
-            handleFocus={handleFocus}
-            handleFocusIndicatorClick={handleFocusIndicatorClick}
-            handleToggleMark={handleToggleMark}
-            handleTogglePin={handleTogglePin}
-            setSharingNoteId={setSharingNoteId}
-            handleKeyDown={handleKeyDown}
-            insertList={insertList}
-            handleDeleteNote={handleDeleteNote}
-            autoResizeTextarea={autoResizeTextarea}
-            handleImageUpload={handleImageUpload}
-            handleDeleteImage={handleDeleteImage}
-            handleExportNote={handleExportNote}
-          />
-        ) : (
-          <SharedNotesGrid
-            sharedNotes={sharedNotes}
-            focusedNoteId={focusedNoteId}
-            handleFocus={handleFocus}
-            handleFocusIndicatorClick={handleFocusIndicatorClick}
-            autoResizeTextarea={autoResizeTextarea}
-            showFeedback={showFeedback}
-            insertList={insertList}
-            handleDeleteSharedImage={handleDeleteSharedImage}
-            handleAddSharedImage={handleAddSharedImage}
-            handleExportSharedNote={handleExportSharedNote}
-
-          />
-        )}
-
-        {/* Modal de creación de grupo */}
-        {showGroupModal && (
-          <GroupModal
-            isEdit={!!editingGroup}
-            group={editingGroup || undefined}
-            newGroup={newNoteGroup}
-            setNewGroup={setNoteNewGroup}
-            onClose={() => {
-              setShowGroupModal(false);
-              setEditingGroup(null);
-              setNoteNewGroup({ name: '', color: '#f1c40f' });
-            }}
-            onCreateGroup={handleSaveGroup}
-            onUpdateGroup={undefined}
-          />
-        )}
       </div>
-    </div>
+    </NotesProvider>
   );
 };
 

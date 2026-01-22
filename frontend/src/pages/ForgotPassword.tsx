@@ -20,9 +20,10 @@ const ForgotPassword: React.FC = () => {
       const response = await api.post('/password/request-reset', data);
       setIsSuccess(true);
       setMessage(response.data.message);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsSuccess(false);
-      setMessage(error.response?.data?.error || 'Error al procesar tu solicitud');
+      const apiError = error as { response?: { data?: { error?: string } } };
+      setMessage(apiError.response?.data?.error || 'Error al procesar tu solicitud');
     } finally {
       setIsSubmitting(false);
     }
