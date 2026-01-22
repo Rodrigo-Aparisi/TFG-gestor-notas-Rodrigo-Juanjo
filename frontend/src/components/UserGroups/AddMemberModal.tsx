@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { noteService } from '../../services/api';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface UserSuggestion {
   id: string;
@@ -24,20 +25,10 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  
-  // Efecto para manejar clics fuera del dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+
+  // Hook para cerrar dropdown al hacer clic fuera
+  const closeSuggestions = useCallback(() => setShowSuggestions(false), []);
+  useClickOutside(suggestionsRef, closeSuggestions);
 
   // Manejar cambios en el input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

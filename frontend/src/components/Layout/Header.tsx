@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FaCalendar, FaUsers, FaBars } from "react-icons/fa";
@@ -7,6 +7,7 @@ import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
 import { getFullImageUrl } from "../../utils/imageHelpers";
+import { useClickOutside } from "../../hooks/useClickOutside";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Header: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWeekView, setShowWeekView] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
 
   // Efecto para manejar la carga inicial y la imagen
   useEffect(() => {
@@ -37,13 +39,9 @@ const Header: React.FC = () => {
     }
   }, [user?.profile_image]);
 
-  // Efecto para manejar el click fuera del dropdown
-  useEffect(() => {
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
+  // Hook para cerrar dropdown al hacer clic fuera
+  const closeDropdown = useCallback(() => setShowDropdown(false), []);
+  useClickOutside(menuContainerRef, closeDropdown, showDropdown);
 
   const handleLogout = () => {
     authLogout();
@@ -53,14 +51,6 @@ const Header: React.FC = () => {
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDropdown(!showDropdown);
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    const dropdown = document.getElementById("user-dropdown");
-    const menuContainer = document.querySelector(".user-menu-container");
-    if (dropdown && menuContainer && !menuContainer.contains(event.target as Node)) {
-      setShowDropdown(false);
-    }
   };
 
   const handleWeekViewClick = (e: React.MouseEvent) => {
@@ -155,6 +145,7 @@ const Header: React.FC = () => {
           <div className="auth-container">
             {isAuthenticated && user ? (
               <div
+                ref={menuContainerRef}
                 className={`user-menu-container ${showDropdown ? "active" : ""}`}
                 onClick={handleMenuClick}
               >

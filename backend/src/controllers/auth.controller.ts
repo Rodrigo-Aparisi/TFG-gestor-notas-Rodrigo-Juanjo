@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../database';
+import { getProfileImageUrl } from '../utils/urlHelpers';
 
 // Función de registro
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -22,12 +23,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     );
 
     // Construir URL completa de la imagen si existe
-    const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
     const userResponse = {
       ...result.rows[0],
-      profile_image: result.rows[0].profile_image ? 
-        `${baseUrl}${result.rows[0].profile_image}` : 
-        null
+      profile_image: getProfileImageUrl(result.rows[0].profile_image)
     };
 
     res.status(201).json({
@@ -93,14 +91,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     );
 
     // Construir URL completa de la imagen si existe
-    const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
     const userResponse = {
       id: user.id,
       username: user.username,
       email: user.email,
-      profile_image: user.profile_image ? 
-        `${baseUrl}${user.profile_image}` : 
-        null,
+      profile_image: getProfileImageUrl(user.profile_image),
       created_at: user.created_at
     };
 

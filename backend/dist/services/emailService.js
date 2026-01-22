@@ -9,6 +9,7 @@ const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const database_1 = require("../database");
+const urlHelpers_1 = require("../utils/urlHelpers");
 // Configuración del transporte de correo
 const transporter = nodemailer_1.default.createTransport({
     service: 'gmail',
@@ -104,7 +105,7 @@ exports.emailService = {
     // Función para enviar correo de recuperación de contraseña
     async sendPasswordResetEmail(email, resetToken, username) {
         try {
-            const resetLink = `${process.env.APP_URL}/reset-password/${resetToken}`;
+            const resetLink = (0, urlHelpers_1.getPasswordResetUrl)(resetToken);
             const subject = 'Recuperación de contraseña - Olympus Scribe';
             const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Note } from '../../types';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface DateFilterProps {
   notes: Note[];
@@ -16,22 +17,9 @@ const DateFilter: React.FC<DateFilterProps> = ({ notes, onDateFilter, onClearFil
   
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Cerrar el calendario al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        setShowCalendar(false);
-      }
-    };
-
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showCalendar]);
+  // Hook para cerrar el calendario al hacer clic fuera
+  const closeCalendar = useCallback(() => setShowCalendar(false), []);
+  useClickOutside(calendarRef, closeCalendar, showCalendar);
 
   // Función para manejar la selección de fechas
   const handleDateSelect = (date: Date) => {

@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
+import { getBaseServerUrl, getProfileImageUrl } from "../utils/urlHelpers";
 
 dotenv.config();
 
@@ -38,9 +39,9 @@ export const accountController = {
       });
 
     const userId = req.user.id;
-    const baseUrl = process.env.API_URL;
+    const baseUrl = getBaseServerUrl();
     const imageUrl = `/uploads/profile-images/${req.file.filename}`;
-    const fullImageUrl = `${baseUrl}${imageUrl}`;
+    const fullImageUrl = getProfileImageUrl(imageUrl) || `${baseUrl}${imageUrl}`;
 
       console.log("URL base:", baseUrl);
       console.log("URL relativa:", imageUrl);
@@ -212,15 +213,9 @@ export const accountController = {
       console.log("11. Resultado de la actualización:", result.rows[0]);
 
       // Construir respuesta con URL completa de la imagen si existe
-      const baseUrl = (process.env.API_URL || "http://localhost:3001").replace(
-        "/api",
-        ""
-      );
       const userResponse = {
         ...result.rows[0],
-        profile_image: result.rows[0].profile_image
-          ? `${baseUrl}${result.rows[0].profile_image}`
-          : null,
+        profile_image: getProfileImageUrl(result.rows[0].profile_image),
       };
 
       res.json({
@@ -255,15 +250,9 @@ export const accountController = {
       }
 
       // Construir respuesta con URL completa de la imagen si existe
-      const baseUrl = (process.env.API_URL || "http://localhost:3001").replace(
-        "/api",
-        ""
-      );
       const userResponse = {
         ...result.rows[0],
-        profile_image: result.rows[0].profile_image
-          ? `${baseUrl}${result.rows[0].profile_image}`
-          : null,
+        profile_image: getProfileImageUrl(result.rows[0].profile_image),
       };
 
       res.json({ user: userResponse });
@@ -296,16 +285,12 @@ export const accountController = {
         return;
       }
 
-      // Eliminar la imagen de perfil si existe
+      // Eliminar la imagen de perfil si existe usando safeDeleteFile
       if (user.profile_image) {
-        const fullImagePath = path.join(
-          __dirname,
-          "..",
-          "..",
-          user.profile_image.replace(/^\/uploads\//, "")
-        );
-        if (fs.existsSync(fullImagePath)) {
-          fs.unlinkSync(fullImagePath);
+        const safePath = extractSafeRelativePath(user.profile_image, '/uploads/');
+        if (safePath) {
+          const uploadsDir = path.join(__dirname, "..", "uploads");
+          safeDeleteFile(safePath, uploadsDir);
         }
       }
 

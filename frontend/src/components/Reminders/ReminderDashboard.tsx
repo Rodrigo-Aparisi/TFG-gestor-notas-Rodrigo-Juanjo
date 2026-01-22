@@ -1,7 +1,8 @@
 // src/components/Reminders/ReminderDashboard.tsx
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Reminder } from '../../types';
 import { formatDate, formatTime } from './ReminderUtils';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface ReminderDashboardProps {
   reminders: Reminder[];
@@ -51,22 +52,9 @@ const ReminderDashboard: React.FC<ReminderDashboardProps> = ({
     };
   }, []);
 
-  // Cerrar el calendario al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-        setShowCalendar(false);
-      }
-    };
-
-    if (showCalendar) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showCalendar]);
+  // Hook para cerrar el calendario al hacer clic fuera
+  const closeCalendar = useCallback(() => setShowCalendar(false), []);
+  useClickOutside(calendarRef, closeCalendar, showCalendar);
 
   const handleSort = (newSortBy: 'date' | 'title' | 'status') => {
     if (sortBy === newSortBy) {

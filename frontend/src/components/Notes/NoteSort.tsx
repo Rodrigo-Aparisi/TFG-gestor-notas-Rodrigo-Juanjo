@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Note, SortType, SortDirection } from '../../types';
 import { noteService } from '../../services/api';
+import { useClickOutside } from '../../hooks/useClickOutside';
 import '../../styles/noteSort.css';
 import DateFilter from './DateFilter';
 
@@ -98,22 +99,9 @@ const NoteSort: React.FC<NoteSortProps> = ({ notes, onNotesFiltered }) => {
     localStorage.setItem('notesShowSearch', showSearch.toString());
   }, [showSearch]);
 
-  // Cerrar menú al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMenuOpen]);
+  // Hook para cerrar menú al hacer clic fuera
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
+  useClickOutside(dropdownRef, closeMenu, isMenuOpen);
 
   const handleSort = async (type: SortType) => {
     let newDirection: SortDirection;

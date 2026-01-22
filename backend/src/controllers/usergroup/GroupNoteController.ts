@@ -3,6 +3,7 @@ import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
 import { groupNoteImageUpload, deleteImage, handleMulterError } from "../../config/multerConfig";
+import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
 
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
@@ -316,7 +317,7 @@ export class GroupNoteController {
       const images = noteResult.rows[0].images || [];
 
       for (const imagePath of images) {
-        if (imagePath && imagePath.startsWith(`${process.env.APP_URL_2}/uploads/group-note-images/`)) {
+        if (imagePath && isGroupNoteImageUrl(imagePath)) {
           const fullPath = path.join(__dirname, "..", "..", imagePath);
           if (fs.existsSync(fullPath)) {
             fs.unlinkSync(fullPath);
@@ -430,7 +431,7 @@ export class GroupNoteController {
       }
 
       // Build relative URL for the image
-      const imageUrl = `${process.env.APP_URL_2}/uploads/group-note-images/${req.file.filename}`;
+      const imageUrl = getGroupNoteImageUrl(req.file.filename);
 
       res.json({
         message: "Imagen subida correctamente",
@@ -498,7 +499,7 @@ export class GroupNoteController {
 
       // Delete file if it exists on server
       const imageUrl = images[index];
-      if (imageUrl && imageUrl.startsWith(`${process.env.APP_URL_2}/uploads/group-note-images/`)) {
+      if (imageUrl && isGroupNoteImageUrl(imageUrl)) {
         const fullPath = path.join(__dirname, '..', '..', imageUrl);
         if (fs.existsSync(fullPath)) {
           fs.unlinkSync(fullPath);

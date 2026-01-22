@@ -7,6 +7,7 @@ exports.logout = exports.refreshAccessToken = exports.login = exports.register =
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../database");
+const urlHelpers_1 = require("../utils/urlHelpers");
 // Función de registro
 const register = async (req, res) => {
     try {
@@ -19,12 +20,9 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt_1.default.hash(password, 10);
         const result = await database_1.pool.query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email, profile_image, created_at', [username, email, hashedPassword]);
         // Construir URL completa de la imagen si existe
-        const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
         const userResponse = {
             ...result.rows[0],
-            profile_image: result.rows[0].profile_image ?
-                `${baseUrl}${result.rows[0].profile_image}` :
-                null
+            profile_image: (0, urlHelpers_1.getProfileImageUrl)(result.rows[0].profile_image)
         };
         res.status(201).json({
             message: 'Usuario creado exitosamente',
@@ -68,14 +66,11 @@ const login = async (req, res) => {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
         await database_1.pool.query('INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)', [user.id, refreshToken, expiresAt]);
         // Construir URL completa de la imagen si existe
-        const baseUrl = (process.env.API_URL || 'http://localhost:3001').replace('/api', '');
         const userResponse = {
             id: user.id,
             username: user.username,
             email: user.email,
-            profile_image: user.profile_image ?
-                `${baseUrl}${user.profile_image}` :
-                null,
+            profile_image: (0, urlHelpers_1.getProfileImageUrl)(user.profile_image),
             created_at: user.created_at
         };
         // Obtener configuración del usuario

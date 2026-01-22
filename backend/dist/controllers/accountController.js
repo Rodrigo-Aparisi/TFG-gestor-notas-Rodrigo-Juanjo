@@ -10,6 +10,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const pathHelpers_1 = require("../utils/pathHelpers");
+const urlHelpers_1 = require("../utils/urlHelpers");
 dotenv_1.default.config();
 exports.accountController = {
     uploadProfileImage: async (req, res) => {
@@ -27,9 +28,9 @@ exports.accountController = {
                 path: req.file.path,
             });
             const userId = req.user.id;
-            const baseUrl = process.env.API_URL;
+            const baseUrl = (0, urlHelpers_1.getBaseServerUrl)();
             const imageUrl = `/uploads/profile-images/${req.file.filename}`;
-            const fullImageUrl = `${baseUrl}${imageUrl}`;
+            const fullImageUrl = (0, urlHelpers_1.getProfileImageUrl)(imageUrl) || `${baseUrl}${imageUrl}`;
             console.log("URL base:", baseUrl);
             console.log("URL relativa:", imageUrl);
             console.log("URL completa:", fullImageUrl);
@@ -154,12 +155,9 @@ exports.accountController = {
             const result = await database_1.pool.query(query, values);
             console.log("11. Resultado de la actualización:", result.rows[0]);
             // Construir respuesta con URL completa de la imagen si existe
-            const baseUrl = (process.env.API_URL || "http://localhost:3001").replace("/api", "");
             const userResponse = {
                 ...result.rows[0],
-                profile_image: result.rows[0].profile_image
-                    ? `${baseUrl}${result.rows[0].profile_image}`
-                    : null,
+                profile_image: (0, urlHelpers_1.getProfileImageUrl)(result.rows[0].profile_image),
             };
             res.json({
                 message: "Usuario actualizado exitosamente",
@@ -187,12 +185,9 @@ exports.accountController = {
                 return;
             }
             // Construir respuesta con URL completa de la imagen si existe
-            const baseUrl = (process.env.API_URL || "http://localhost:3001").replace("/api", "");
             const userResponse = {
                 ...result.rows[0],
-                profile_image: result.rows[0].profile_image
-                    ? `${baseUrl}${result.rows[0].profile_image}`
-                    : null,
+                profile_image: (0, urlHelpers_1.getProfileImageUrl)(result.rows[0].profile_image),
             };
             res.json({ user: userResponse });
         }
@@ -216,11 +211,12 @@ exports.accountController = {
                 res.status(401).json({ error: "Contraseña incorrecta" });
                 return;
             }
-            // Eliminar la imagen de perfil si existe
+            // Eliminar la imagen de perfil si existe usando safeDeleteFile
             if (user.profile_image) {
-                const fullImagePath = path_1.default.join(__dirname, "..", "..", user.profile_image.replace(/^\/uploads\//, ""));
-                if (fs_1.default.existsSync(fullImagePath)) {
-                    fs_1.default.unlinkSync(fullImagePath);
+                const safePath = (0, pathHelpers_1.extractSafeRelativePath)(user.profile_image, '/uploads/');
+                if (safePath) {
+                    const uploadsDir = path_1.default.join(__dirname, "..", "uploads");
+                    (0, pathHelpers_1.safeDeleteFile)(safePath, uploadsDir);
                 }
             }
             await database_1.pool.query("DELETE FROM users WHERE id = $1", [userId]);
