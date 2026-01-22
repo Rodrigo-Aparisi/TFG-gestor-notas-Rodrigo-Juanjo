@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { noteService } from "../../services/api";
 import NoteImage from "./NoteImage";
 import NoteActionsMenu from "./NoteActionsMenu";
@@ -374,4 +374,12 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   );
 };
 
-export default SharedNoteCard;
+// Memoize to prevent re-renders when other notes change
+export default memo(SharedNoteCard, (prevProps, nextProps) => {
+  return prevProps.note.id === nextProps.note.id &&
+         prevProps.note.title === nextProps.note.title &&
+         prevProps.note.content === nextProps.note.content &&
+         prevProps.note.updated_at === nextProps.note.updated_at &&
+         prevProps.focusedNoteId === nextProps.focusedNoteId &&
+         JSON.stringify(prevProps.note.images) === JSON.stringify(nextProps.note.images);
+});

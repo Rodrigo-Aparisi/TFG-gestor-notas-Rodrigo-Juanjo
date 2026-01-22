@@ -45,6 +45,12 @@ export class NoteCrudController {
     try {
       const userId = req.user.id;
 
+      // Pagination parameters
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+      const offset = (page - 1) * limit;
+      const paginate = req.query.paginate !== 'false'; // Default to true, can disable with ?paginate=false
+
       // Get user sort preferences
       const settingsResult = await pool.query(
         "SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1",
@@ -66,14 +72,38 @@ export class NoteCrudController {
         orderBy = buildOrderByClause(mappedField, default_note_sort_direction);
       }
 
-      const result = await pool.query(
-        `SELECT * FROM notes
-        WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)
-        ORDER BY ${orderBy}`,
+      // Get total count for pagination
+      const countResult = await pool.query(
+        `SELECT COUNT(*) FROM notes WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)`,
         [userId]
       );
+      const totalNotes = parseInt(countResult.rows[0].count);
+      const totalPages = Math.ceil(totalNotes / limit);
 
-      res.json({ notes: result.rows });
+      // Get notes with optional pagination
+      let query = `SELECT * FROM notes
+        WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)
+        ORDER BY ${orderBy}`;
+
+      const queryParams: (string | number)[] = [userId];
+
+      if (paginate) {
+        query += ` LIMIT $2 OFFSET $3`;
+        queryParams.push(limit, offset);
+      }
+
+      const result = await pool.query(query, queryParams);
+
+      res.json({
+        notes: result.rows,
+        pagination: {
+          page,
+          limit,
+          totalNotes,
+          totalPages,
+          hasMore: page < totalPages
+        }
+      });
     } catch (error) {
       console.error("Error al obtener notas:", error);
       res.status(500).json({ error: "Error al obtener las notas" });

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Note } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
@@ -178,4 +178,13 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
   );
 };
 
-export default NoteCard;
+// Memoize to prevent re-renders when other notes change
+// Only re-render when this specific note's data changes
+export default memo(NoteCard, (prevProps, nextProps) => {
+  return prevProps.note.id === nextProps.note.id &&
+         prevProps.note.title === nextProps.note.title &&
+         prevProps.note.content === nextProps.note.content &&
+         prevProps.note.updated_at === nextProps.note.updated_at &&
+         prevProps.note.is_pinned === nextProps.note.is_pinned &&
+         JSON.stringify(prevProps.note.images) === JSON.stringify(nextProps.note.images);
+});

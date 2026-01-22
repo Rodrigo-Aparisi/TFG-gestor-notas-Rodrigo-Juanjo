@@ -39,6 +39,11 @@ class NoteCrudController {
     async getNotes(req, res) {
         try {
             const userId = req.user.id;
+            // Pagination parameters
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+            const offset = (page - 1) * limit;
+            const paginate = req.query.paginate !== 'false'; // Default to true, can disable with ?paginate=false
             // Get user sort preferences
             const settingsResult = await database_1.pool.query("SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1", [userId]);
             let orderBy = "updated_at DESC";
@@ -52,10 +57,30 @@ class NoteCrudController {
                 const mappedField = fieldMapping[default_note_sort] || default_note_sort;
                 orderBy = (0, queryHelpers_1.buildOrderByClause)(mappedField, default_note_sort_direction);
             }
-            const result = await database_1.pool.query(`SELECT * FROM notes
+            // Get total count for pagination
+            const countResult = await database_1.pool.query(`SELECT COUNT(*) FROM notes WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)`, [userId]);
+            const totalNotes = parseInt(countResult.rows[0].count);
+            const totalPages = Math.ceil(totalNotes / limit);
+            // Get notes with optional pagination
+            let query = `SELECT * FROM notes
         WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL)
-        ORDER BY ${orderBy}`, [userId]);
-            res.json({ notes: result.rows });
+        ORDER BY ${orderBy}`;
+            const queryParams = [userId];
+            if (paginate) {
+                query += ` LIMIT $2 OFFSET $3`;
+                queryParams.push(limit, offset);
+            }
+            const result = await database_1.pool.query(query, queryParams);
+            res.json({
+                notes: result.rows,
+                pagination: {
+                    page,
+                    limit,
+                    totalNotes,
+                    totalPages,
+                    hasMore: page < totalPages
+                }
+            });
         }
         catch (error) {
             console.error("Error al obtener notas:", error);

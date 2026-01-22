@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -7,19 +7,31 @@ import { accountService } from './services/accountService';
 import themeService from './services/themeService';
 import themeConfig from './config/themeConfig.json';
 import Header from './components/Layout/Header';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Notes from './pages/Notes';
-import Trash from './pages/Trash';
-import Settings from './pages/settings';
-import Reminders from './pages/Reminders';
-import Groups from './pages/Groups';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
+// Lazy load pages for better initial bundle size
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Notes = lazy(() => import('./pages/Notes'));
+const Trash = lazy(() => import('./pages/Trash'));
+const Settings = lazy(() => import('./pages/settings'));
+const Reminders = lazy(() => import('./pages/Reminders'));
+const Groups = lazy(() => import('./pages/Groups'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+
 type ThemeType = keyof typeof themeConfig.themes;
+
+/**
+ * Loading fallback component for Suspense
+ */
+const PageLoader: React.FC = () => (
+  <div className="page-loader">
+    <div className="loader-spinner" />
+    <p>Cargando...</p>
+  </div>
+);
 
 const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -89,47 +101,49 @@ function App() {
             <div className="app">
               <Header />
               <main className="main-content">
-                <Routes>
-                  {/* Ruta principal accesible sin autenticación */}
-                  <Route path="/" element={<Home />} />
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    {/* Ruta principal accesible sin autenticación */}
+                    <Route path="/" element={<Home />} />
 
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-                  <Route path="/notes" element={
-                    <PrivateRoute>
-                      <Notes />
-                    </PrivateRoute>
-                  } />
+                    <Route path="/notes" element={
+                      <PrivateRoute>
+                        <Notes />
+                      </PrivateRoute>
+                    } />
 
-                  <Route path="/trash" element={
-                    <PrivateRoute>
-                      <Trash />
-                    </PrivateRoute>
-                  } />
+                    <Route path="/trash" element={
+                      <PrivateRoute>
+                        <Trash />
+                      </PrivateRoute>
+                    } />
 
-                  <Route path="/Reminders" element={
-                    <PrivateRoute>
-                      <Reminders />
-                    </PrivateRoute>
-                  } />
+                    <Route path="/Reminders" element={
+                      <PrivateRoute>
+                        <Reminders />
+                      </PrivateRoute>
+                    } />
 
-                  <Route path="/settings" element={
-                    <PrivateRoute>
-                      <Settings />
-                    </PrivateRoute>
-                  } />
+                    <Route path="/settings" element={
+                      <PrivateRoute>
+                        <Settings />
+                      </PrivateRoute>
+                    } />
 
-                  <Route path="/groups" element={
-                    <PrivateRoute>
-                      <Groups />
-                    </PrivateRoute>
-                  } />
+                    <Route path="/groups" element={
+                      <PrivateRoute>
+                        <Groups />
+                      </PrivateRoute>
+                    } />
 
-                  {/* Ruta por defecto */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                    {/* Ruta por defecto */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
               </main>
             </div>
           </ThemeLoader>
