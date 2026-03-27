@@ -20,7 +20,7 @@ type ThemeType = keyof typeof themeConfig.themes;
 const Settings = () => {
   const navigate = useNavigate();
   const { user, logout: authLogout, updateUserProfile } = useAuth();
-  const { settings: contextSettings, updateSettings } = useSettings();
+  const { updateSettings } = useSettings();
 
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -105,10 +105,6 @@ const Settings = () => {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [theme, setTheme] = useState<ThemeType>("dark");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isSavingTheme, setIsSavingTheme] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Menú lateral y tabs
@@ -124,14 +120,6 @@ const Settings = () => {
       { key: "eliminar", label: "Eliminar cuenta" },
     ],
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [settings, setSettings] = useState<SettingsState>({
-    theme: contextSettings?.theme || "dark",
-    defaultPage: contextSettings?.defaultPage || "notes",
-    defaultNoteSort: contextSettings?.defaultNoteSort || "date",
-    confirmDelete: contextSettings?.confirmDelete ?? true,
-  });
 
   const [activeMainTab, setActiveMainTab] = useState<string>("cuenta");
   const [activeSubTab, setActiveSubTab] = useState<string>("informacion");
@@ -168,13 +156,12 @@ const Settings = () => {
     confirmNewPassword: "",
   });
 
-  // Carga la configuración del tema desde la BBDD
+  // Carga y aplica la configuración del tema desde la BBDD
   const loadTheme = useCallback(async () => {
     try {
       if (user?.id) {
         const savedTheme = localStorage.getItem("userTheme") as ThemeType;
         if (savedTheme && savedTheme in themeConfig.themes) {
-          setTheme(savedTheme);
           themeService.setTheme(savedTheme);
         }
 
@@ -182,20 +169,17 @@ const Settings = () => {
         const initialTheme = (userSettings?.theme as ThemeType) || "dark";
 
         if (initialTheme in themeConfig.themes) {
-          setTheme(initialTheme);
           themeService.setTheme(initialTheme);
           localStorage.setItem("userTheme", initialTheme);
         }
       } else {
         const defaultTheme: ThemeType = "dark";
-        setTheme(defaultTheme);
         themeService.setTheme(defaultTheme);
         localStorage.setItem("userTheme", defaultTheme);
       }
     } catch (error) {
       console.error("Error al cargar configuración:", error);
       const defaultTheme: ThemeType = "dark";
-      setTheme(defaultTheme);
       themeService.setTheme(defaultTheme);
       localStorage.setItem("userTheme", defaultTheme);
     }
@@ -235,7 +219,6 @@ const Settings = () => {
         const savedSettings = localStorage.getItem("userSettings");
         if (savedSettings) {
           const parsedSettings = JSON.parse(savedSettings) as SettingsState;
-          setSettings(parsedSettings);
           updateSettings(parsedSettings);
         } else if (user?.id) {
           const userSettings = await accountService.getUserSettings(user.id);
@@ -254,7 +237,6 @@ const Settings = () => {
                 : "date",
               confirmDelete: Boolean(userSettings.confirmDelete),
             };
-            setSettings(settingsToSave);
             updateSettings(settingsToSave);
             localStorage.setItem(
               "userSettings",
@@ -356,25 +338,6 @@ const Settings = () => {
       showMessage(errorMessage, "error");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleThemeChange = async (newTheme: ThemeType) => {
-    if (!user?.id) return;
-
-    setIsSavingTheme(true);
-    try {
-      setTheme(newTheme);
-      themeService.setTheme(newTheme);
-      await accountService.updateUserSettings(user.id, { theme: newTheme });
-      localStorage.setItem("userTheme", newTheme);
-      showMessage("Tema actualizado correctamente", "success");
-    } catch (error) {
-      console.error("Error al actualizar el tema:", error);
-      showMessage("Error al actualizar el tema", "error");
-    } finally {
-      setIsSavingTheme(false);
     }
   };
 
