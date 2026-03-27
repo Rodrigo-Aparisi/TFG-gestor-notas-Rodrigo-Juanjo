@@ -74,10 +74,7 @@ export const emailService = {
       };
 
       // Enviar el correo
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Correo enviado a ${user.email} para el recordatorio: ${reminderTitle}`);
-      console.log('ID del mensaje:', info.messageId);
-      
+      await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('Error al enviar correo de recordatorio:', error);
@@ -88,7 +85,6 @@ export const emailService = {
   // Nueva función para enviar correos de contacto sin autenticación
   async sendContactEmail(name: string, email: string, message: string): Promise<boolean> {
     try {
-      console.log('Enviando correo de contacto desde:', email);
       
       // Construir el asunto y cuerpo del correo
       const subject = `Mensaje de contacto de ${name}`;
@@ -110,10 +106,7 @@ export const emailService = {
       };
 
       // Enviar el correo
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Correo de contacto enviado a ${process.env.EMAIL_USER}`);
-      console.log('ID del mensaje:', info.messageId);
-      
+      await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('Error al enviar correo de contacto:', error);
@@ -166,10 +159,7 @@ export const emailService = {
         html: htmlContent
       };
       
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Correo de recuperación enviado a: ${email}`);
-      console.log('ID del mensaje:', info.messageId);
-      
+      await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('Error al enviar correo de recuperación:', error);

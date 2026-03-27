@@ -31,21 +31,10 @@ export const accountController = {
         return;
       }
 
-      console.log("Información de la imagen:", {
-        filename: req.file.filename,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        path: req.file.path,
-      });
-
     const userId = req.user.id;
     const baseUrl = getBaseServerUrl();
     const imageUrl = `/uploads/profile-images/${req.file.filename}`;
     const fullImageUrl = getProfileImageUrl(imageUrl) || `${baseUrl}${imageUrl}`;
-
-      console.log("URL base:", baseUrl);
-      console.log("URL relativa:", imageUrl);
-      console.log("URL completa:", fullImageUrl);
 
       // Mover esta consulta aquí, antes de usarla
       const previousImageResult: QueryResult = await pool.query(
@@ -62,13 +51,7 @@ export const accountController = {
 
         if (safePath) {
           const uploadsDir = path.join(__dirname, "..", "..", "uploads");
-          const success = safeDeleteFile(safePath, uploadsDir);
-
-          if (success) {
-            console.log("Imagen anterior eliminada con éxito");
-          } else {
-            console.log("No se pudo eliminar la imagen anterior");
-          }
+          safeDeleteFile(safePath, uploadsDir);
         } else {
           console.warn(`Path inseguro detectado en DB: ${previousImagePath}`);
         }
@@ -106,8 +89,6 @@ export const accountController = {
         profile_image: fullImageUrl, // Usar la URL completa para la respuesta
       };
 
-      console.log("Respuesta al cliente:", userResponse);
-
       res.json({
         message: "Imagen de perfil actualizada correctamente",
         profile_image: fullImageUrl,
@@ -139,49 +120,26 @@ export const accountController = {
 
   updateUser: async (req: Request, res: Response): Promise<void> => {
     try {
-      console.log("1. Request user:", req.user);
       const userId = req.user.id;
-      console.log("2. User ID extraído:", userId);
-      console.log("3. Datos recibidos del cliente:", req.body);
-
       const { username, email, currentPassword, newPassword } = req.body;
 
-      // Verificar si el usuario existe
-      const userQuery = "SELECT * FROM users WHERE id = $1";
-      console.log("4. Query a ejecutar:", userQuery);
-      console.log("5. Params de la query:", [userId]);
-
-      const userResult: QueryResult = await pool.query(userQuery, [userId]);
-      console.log("6. Resultado de la búsqueda:", {
-        encontrado: userResult.rows.length > 0,
-        filas: userResult.rows.length,
-      });
+      const userResult: QueryResult = await pool.query(
+        "SELECT * FROM users WHERE id = $1",
+        [userId]
+      );
 
       if (userResult.rows.length === 0) {
-        console.log("7. Usuario no encontrado en la base de datos");
-        res.status(404).json({
-          error: "Usuario no encontrado",
-          debugInfo: {
-            userId,
-            requestUser: req.user,
-          },
-        });
+        res.status(404).json({ error: "Usuario no encontrado" });
         return;
       }
 
       const user = userResult.rows[0];
-      console.log("8. Usuario encontrado:", {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      });
 
       // Verificar la contraseña actual
       const isPasswordValid = await bcrypt.compare(
         currentPassword,
         user.password
       );
-      console.log("9. Contraseña válida:", isPasswordValid);
 
       if (!isPasswordValid) {
         res.status(401).json({ error: "Contraseña actual incorrecta" });
@@ -204,13 +162,7 @@ export const accountController = {
         " RETURNING id, username, email, profile_image";
       values.push(userId);
 
-      console.log("10. Query de actualización:", {
-        query,
-        values: values.map((v, i) => `$${i + 1}: ${v}`),
-      });
-
       const result: QueryResult = await pool.query(query, values);
-      console.log("11. Resultado de la actualización:", result.rows[0]);
 
       // Construir respuesta con URL completa de la imagen si existe
       const userResponse = {
@@ -223,14 +175,9 @@ export const accountController = {
         user: userResponse,
       });
     } catch (error) {
-      console.error("ERROR COMPLETO:", error);
+      console.error("Error al actualizar el usuario:", error);
       res.status(500).json({
         error: "Error al actualizar el usuario",
-        details: error instanceof Error ? error.message : "Error desconocido",
-        debugInfo: {
-          user: req.user,
-          body: req.body,
-        },
       });
     }
   },
@@ -306,7 +253,6 @@ export const accountController = {
   getUserSettings: async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user.id;
-      console.log("Obteniendo configuración para usuario:", userId);
 
       const result: QueryResult = await pool.query(
         "SELECT * FROM settings WHERE user_id = $1",
@@ -314,7 +260,6 @@ export const accountController = {
       );
 
       if (result.rows.length === 0) {
-        console.log("No se encontró configuración, creando por defecto");
         const defaultSettings = {
           theme: "dark",
           notifications_enabled: true,
@@ -335,7 +280,6 @@ export const accountController = {
 
         res.json(newSettingsResult.rows[0]);
       } else {
-        console.log("Configuración encontrada:", result.rows[0]);
         res.json(result.rows[0]);
       }
     } catch (error) {
@@ -351,12 +295,6 @@ export const accountController = {
     try {
       const userId = req.user.id;
       const { theme, notifications_enabled, language } = req.body;
-      console.log("Actualizando configuración para usuario:", userId);
-      console.log("Nuevos valores:", {
-        theme,
-        notifications_enabled,
-        language,
-      });
 
       // Verificar si existe la configuración
       const checkResult: QueryResult = await pool.query(
@@ -367,7 +305,6 @@ export const accountController = {
       let result: QueryResult;
 
       if (checkResult.rows.length === 0) {
-        console.log("Creando nueva configuración");
         result = await pool.query(
           `INSERT INTO settings (user_id, theme, notifications_enabled, language)
                      VALUES ($1, $2, $3, $4)
@@ -380,7 +317,6 @@ export const accountController = {
           ]
         );
       } else {
-        console.log("Actualizando configuración existente");
         result = await pool.query(
           `UPDATE settings
                      SET theme = COALESCE($2, theme),
@@ -393,7 +329,6 @@ export const accountController = {
         );
       }
 
-      console.log("Configuración actualizada:", result.rows[0]);
       res.json(result.rows[0]);
     } catch (error) {
       console.error("Error al actualizar configuración:", error);

@@ -4,16 +4,6 @@ import { Request, Response, NextFunction } from 'express';
 
 const router = express.Router();
 
-// Middleware para logging de requests (ayuda en debugging)
-router.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`, {
-    body: req.body,
-    query: req.query,
-    params: req.params
-  });
-  next();
-});
-
 // Ruta para el formulario de contacto
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -25,8 +15,6 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         message: 'Todos los campos son requeridos' 
       });
     }
-    
-    console.log('Datos de contacto recibidos:', { name, email, message });
     
     // Usar la nueva función específica para contacto
     const success = await emailService.sendContactEmail(name, email, message);
