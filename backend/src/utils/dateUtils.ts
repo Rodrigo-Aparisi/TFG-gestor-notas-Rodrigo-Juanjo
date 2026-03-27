@@ -106,7 +106,6 @@ export const dateUtils = {
             targetDate.setMonth(currentMonth + 1);
           }
           
-          console.log(`Estableciendo día específico: ${day} (${targetDate.toISOString()})`);
         }
       }
     }
@@ -119,7 +118,6 @@ export const dateUtils = {
                 minutes = parseInt(timeMatch[2], 10);
                 
                 // NO CONVERTIR LA HORA - usar exactamente la hora especificada
-                console.log(`Estableciendo hora específica: ${hour}:${minutes}`);
             }
         }
         
@@ -264,7 +262,6 @@ export const dateUtils = {
         
         // Formato "miércoles"
         dateText = `próximo ${nombre}`;
-        console.log(`Día de semana detectado: ${nombre}, calculando para el próximo ${nombre}`);
         break;
       }
     }
@@ -287,7 +284,6 @@ export const dateUtils = {
         // Verificar que el día es un número válido para un mes
         if (day >= 1 && day <= 31) {
           dateText = `${day} del mes`;
-          console.log(`Día específico detectado sin mes: ${day}`);
         }
       }
       
@@ -336,7 +332,6 @@ export const dateUtils = {
         
         timeText = `${hour}:${minutes.toString().padStart(2, '0')}`;
         hasTime = true;
-        console.log(`Hora extraída de "a las": ${hour}:${minutes}`);
     }
     
     
@@ -368,9 +363,8 @@ export const dateUtils = {
       timeText = `${hour}:${minutes.toString().padStart(2, '0')}`;
       hasTime = true;
       
-      console.log(`Hora extraída: ${hour}:${minutes} (${period})`);
     }
-    
+
     // Si no se encontró fecha, usar "hoy"
     if (!dateText) {
       dateText = 'hoy';
@@ -379,8 +373,6 @@ export const dateUtils = {
     // Calcular la fecha ISO basada en los textos extraídos
     const dateTimeISO = this.getRelativeDateISO(dateText, timeText);
 
-    console.log(`Fecha extraída: ${dateText}, Hora: ${timeText}, ISO: ${dateTimeISO}, Email: ${sendEmail}, Título: ${extractedTitle || "No detectado"}`);
-    
     return {
       dateTime: dateTimeISO,
       hasTime: hasTime,

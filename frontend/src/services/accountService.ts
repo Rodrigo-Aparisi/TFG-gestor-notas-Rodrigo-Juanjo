@@ -114,11 +114,7 @@ export const accountService = {
 
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
-        console.log('Datos a enviar:', userData); // Para depuración
-
         const response = await api.put<UpdateResponse>('/account/update', userData);
-
-        console.log('Respuesta del servidor:', response.data); // Para depuración
         return response.data;
     } catch (error: unknown) {
         const axiosError = error as AxiosError<ApiErrorData>;

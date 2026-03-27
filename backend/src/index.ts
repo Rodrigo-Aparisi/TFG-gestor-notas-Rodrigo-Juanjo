@@ -170,20 +170,6 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Ruta de prueba para la base de datos
-app.get('/test-db', async (req, res, next) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json({
-      success: true,
-      message: 'Conexión exitosa',
-      timestamp: result.rows[0].now
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Middleware para manejar rutas no encontradas (404)
 app.use(notFoundHandler);
 

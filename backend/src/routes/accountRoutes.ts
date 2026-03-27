@@ -22,10 +22,6 @@ router.use(authenticateToken);
 
 // Rutas de perfil y cuenta
 router.put('/update', authenticateToken, (req: Request, res: Response) => {
-  console.log('Ruta de actualización alcanzada', {
-      body: req.body,
-      user: req.user
-  });
   return accountController.updateUser(req, res);
 });
 

@@ -116,8 +116,6 @@ const Login: React.FC = () => {
           duration: 3000,
           icon: '👋'
         });
-        // Asegurarnos de que tenemos la imagen de perfil
-        console.log('Usuario logueado:', response.user);
         navigate("/notes", { replace: true });
       }
     } catch (error: unknown) {

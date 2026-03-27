@@ -37,8 +37,6 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
   
   // Manejar el cambio de rol
   const handleRoleChange = (memberId: string, newRole: string) => {
-    console.log(`Cambiando rol de ${memberId} a ${newRole}`);
-    
     // Actualizar el estado local primero
     setLocalMembers(prevMembers => 
       prevMembers.map(member => 

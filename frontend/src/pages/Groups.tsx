@@ -225,31 +225,20 @@ const Groups: React.FC = () => {
         }
       );
 
-      // Añade un console.log para ver la respuesta completa
-      console.log("Respuesta de subida de imagen:", response.data);
-
       if (response.data && response.data.data && response.data.data.imageUrl) {
         const imageUrl = response.data.data.imageUrl;
-        console.log("URL de imagen recibida:", imageUrl);
-        
-        // Actualizar la nota con la nueva imagen
+
         const note = groupNotes.find((n) => n.id === noteId);
         if (note) {
           const updatedImages = [...(note.images || []), imageUrl];
-          console.log("Imágenes actualizadas:", updatedImages);
-          
           const updatedNote = {
             ...note,
             images: updatedImages,
           };
 
-          // Actualizar el estado local
           setEditingNote({ ...editingNote, [noteId]: updatedNote });
 
-          // Aquí es donde enviamos la actualización a la base de datos
-          // Asegúrate de que esta función está enviando las imágenes correctamente
           const success = await updateGroupNote(noteId);
-          console.log("Resultado de la actualización:", success);
 
           if (success) {
             showFeedback("Imagen subida y guardada correctamente");

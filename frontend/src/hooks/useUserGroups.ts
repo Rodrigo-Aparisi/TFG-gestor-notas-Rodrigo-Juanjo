@@ -50,9 +50,7 @@ export const useUserGroups = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("Fetching user groups...");
       const response = await api.get("/user-groups");
-      console.log("Response:", response.data);
 
       // Asegúrate de que siempre sea un array, incluso si la API devuelve algo inesperado
       const groups = response.data?.groups || [];
@@ -73,9 +71,7 @@ export const useUserGroups = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log("Fetching group notes for group:", groupId);
         const response = await api.get(`/user-groups/${groupId}/notes`);
-        console.log("Group notes response:", response.data);
 
         // Asegúrate de que siempre sea un array
         const notes = response.data?.notes || [];

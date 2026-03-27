@@ -58,11 +58,6 @@ const Reminders: React.FC = () => {
         const endDate = new Date(Math.max(weekEnd.getTime(), monthEnd.getTime()));
         endDate.setDate(endDate.getDate() + 7); // Una semana extra después
         
-        console.log('Fetching reminders for range:', {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
-        });
-  
         const response = await calendarService.getReminders({
           startDate,
           endDate
@@ -128,7 +123,6 @@ const Reminders: React.FC = () => {
         sendEmail: newReminder.sendEmail
       };
     
-      console.log('Creating reminder with data:', reminderData); // Para debug
       const response = await calendarService.createReminder(reminderData);
   
       if (response.reminder) {
@@ -205,12 +199,6 @@ const Reminders: React.FC = () => {
     if (!focusedReminder || !editingReminder) return;
     
     try {
-        console.log('Estado actual del recordatorio:', {
-            focusedReminder,
-            editingReminder,
-            editingStatus
-        });
-
         const updatePayload: UpdateReminderData = {
           title: editingReminder.title,
           description: editingReminder.description,
@@ -220,14 +208,10 @@ const Reminders: React.FC = () => {
           send_email: editingReminder.sendEmail
         };
 
-        console.log('Enviando actualización:', updatePayload);
-
         const response = await calendarService.updateReminder(
             focusedReminder.id,
             updatePayload
         );
-
-        console.log('Respuesta recibida:', response);
 
       if (response?.reminder) {
         // Actualizar el estado local

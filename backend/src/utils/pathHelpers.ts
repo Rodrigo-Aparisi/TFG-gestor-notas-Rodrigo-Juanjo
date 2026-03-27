@@ -78,10 +78,8 @@ export function safeDeleteFile(
 
     if (fs.existsSync(safePath)) {
       fs.unlinkSync(safePath);
-      console.log(`File safely deleted: ${safePath}`);
       return true;
     } else {
-      console.log(`File not found (already deleted?): ${safePath}`);
       return false;
     }
   } catch (error) {

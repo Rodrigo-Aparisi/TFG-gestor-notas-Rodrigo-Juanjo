@@ -9,9 +9,6 @@ export const emailSchedulerService = {
       // Obtener recordatorios que necesitan enviar correo
       const reminders = await Reminder.findRemindersForEmailNotification();
       
-      console.log(`Encontrados ${reminders.length} recordatorios para enviar correo`);
-      
-      // Programar el envío de correos para cada recordatorio
       for (const reminder of reminders) {
         await emailService.sendReminderEmail(
           reminder.userId,
@@ -21,7 +18,6 @@ export const emailSchedulerService = {
         );
       }
       
-      console.log(`${reminders.length} correos de recordatorio enviados`);
     } catch (error) {
       console.error('Error al programar correos de recordatorio:', error);
     }

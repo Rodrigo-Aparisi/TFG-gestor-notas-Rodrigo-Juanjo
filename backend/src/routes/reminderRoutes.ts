@@ -7,16 +7,6 @@ const router = express.Router();
 // Middleware de autenticación
 router.use(authenticateToken);
 
-// Middleware para logging de requests (ayuda en debugging)
-router.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`, {
-    body: req.body,
-    query: req.query,
-    params: req.params
-  });
-  next();
-});
-
 // Rutas para recordatorios
 router.get('/', async (req, res, next) => {
   try {

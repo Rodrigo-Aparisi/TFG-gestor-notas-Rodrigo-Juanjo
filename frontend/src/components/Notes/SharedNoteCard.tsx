@@ -49,18 +49,11 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
 
     try {
       setIsSaving(true);
-      console.log("Actualizando nota:", {
-        noteId: note.id,
-        title: editedTitle,
-        content: editedContent,
-      });
-
       await noteService.updateSharedNote(note.id, {
         title: editedTitle,
         content: editedContent,
       });
 
-      console.log("Nota actualizada exitosamente");
       if (showFeedback) {
         showFeedback("Cambios guardados correctamente");
       } else {

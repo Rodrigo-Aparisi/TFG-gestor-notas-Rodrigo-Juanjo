@@ -10,5 +10,4 @@ export function setupEmailScheduler() {
   // Ejecutar inmediatamente al iniciar
   emailSchedulerService.scheduleEmails();
   
-  console.log('Programador de correos de recordatorio configurado');
 }

@@ -26,8 +26,6 @@ interface ReminderConditions {
 
 export class Reminder {
   static async find(conditions: ReminderConditions) {
-    console.log('Condiciones de búsqueda:', conditions); // Debug
-
     const startDate = conditions.dateTime?.$gte ? new Date(conditions.dateTime.$gte) : new Date();
     const endDate = conditions.dateTime?.$lt ? new Date(conditions.dateTime.$lt) : new Date();
 
@@ -69,8 +67,6 @@ export class Reminder {
   }
 
   static async create(data: ReminderData) {
-    console.log('Datos para crear recordatorio:', data);
-
     const query = `
       INSERT INTO reminders (
         title, 
@@ -121,8 +117,6 @@ export class Reminder {
   
 
   static async findOneAndUpdate(conditions: ReminderConditions, data: Partial<ReminderData>) {
-    console.log('Datos recibidos para actualización:', data);
-
     const query = `
       UPDATE reminders 
       SET 
@@ -155,17 +149,6 @@ export class Reminder {
             ) : 
             null;
 
-        console.log('Valores a enviar en la consulta:', {
-            title: data.title,
-            description: data.description,
-            dateTime: dateTimeValue,
-            statusId: data.statusId,
-            hasTime: data.hasTime,
-            sendEmail: data.sendEmail,
-            id: conditions.id,
-            userId: conditions.userId
-        });
-
         const result = await pool.query(query, [
             data.title,
             data.description,
@@ -178,7 +161,6 @@ export class Reminder {
         ]);
 
         if (result.rows.length === 0) {
-            console.log('No se encontró el recordatorio para actualizar');
             return null;
         }
         
@@ -188,8 +170,6 @@ export class Reminder {
             hasTime: result.rows[0].hasTime
         };
 
-        console.log('Recordatorio actualizado:', updatedReminder);
-        
         return updatedReminder;
     } catch (error) {
         console.error('Error en findOneAndUpdate:', error);
@@ -243,8 +223,6 @@ export class Reminder {
         throw new Error('Invalid time value');
       }
   
-      console.log('Fechas de búsqueda:', { startDate, endDate }); // Debug
-  
       const query = `
         SELECT 
           r.id,
@@ -272,8 +250,6 @@ export class Reminder {
         endDate.toISOString()
       ];
   
-      console.log('Ejecutando query con valores:', values); // Debug
-  
       const result = await pool.query(query, values);
   
       // Transformar los resultados
@@ -282,8 +258,6 @@ export class Reminder {
         dateTime: new Date(row.dateTime).toISOString(),
         hasTime: row.hasTime || false
       }));
-  
-      console.log('Recordatorios encontrados:', reminders); // Debug
   
       return reminders;
   

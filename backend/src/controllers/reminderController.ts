@@ -15,11 +15,6 @@ export const reminderController = {
         });
       }
   
-      console.log('Request params:', {
-        startDate: req.query.startDate,
-        endDate: req.query.endDate
-      });
-  
       const startDate = new Date(req.query.startDate as string);
       const endDate = new Date(req.query.endDate as string);
   
@@ -94,8 +89,6 @@ export const reminderController = {
         });
       }
 
-      console.log('Creando recordatorio con datos:', reminderData); // Debug
-
       const reminder = await Reminder.create(reminderData);
       res.status(201).json({ reminder });
     } catch (error) {
@@ -155,8 +148,6 @@ export const reminderController = {
 
   async updateReminder(req: Request, res: Response) {
     try {
-        console.log('Datos recibidos en el controlador:', req.body);
-
         if (!req.user?.id) {
             return res.status(401).json({
                 error: 'Usuario no autenticado'
@@ -173,8 +164,6 @@ export const reminderController = {
             sendEmail: req.body.send_email,
             updatedAt: new Date()
         };
-
-        console.log('Datos procesados para actualización:', updateData);
 
         const reminder = await Reminder.findOneAndUpdate(
             { id, userId: req.user.id },
