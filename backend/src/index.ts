@@ -96,13 +96,13 @@ export const uploadNoteImage = multer({
   }
 }).single('image');
 
-// Desactivar CORS en Express (lo manejará Nginx) COMENTADO ESTO EN EL SERVER, DESCOMENTADO EN LOCAL
-/**  
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
-/**/
+// CORS: activo en desarrollo, en producción lo gestiona Nginx
+if (process.env.NODE_ENV !== 'production') {
+  app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true
+  }));
+}
 
 app.use(express.json());
 

@@ -53,7 +53,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
       className={`note-card ${focusedNoteId === note.id ? 'focused' : ''} ${isMarked ? 'marked' : ''}`}
       onClick={(e) => !focusedNoteId && handleFocus(note.id, e)}
       style={{
-        borderColor: activeGroup !== 'main' ? activeGroupColor : '#ccc',
+        borderColor: activeGroup !== 'main' ? activeGroupColor : '#ffc600',
         borderWidth: activeGroup !== 'main' ? '2px' : '1px'
       }}
       data-note-id={note.id}
