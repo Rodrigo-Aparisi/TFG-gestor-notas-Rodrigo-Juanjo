@@ -48,7 +48,7 @@ export const reminderController = {
       console.error('Error al obtener recordatorios:', apiError);
       res.status(apiError.status).json({
         error: 'Error al obtener recordatorios',
-        details: apiError.message
+        ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
       });
     }
   }
@@ -99,7 +99,7 @@ export const reminderController = {
       console.error('Error al crear recordatorio:', apiError);
       res.status(apiError.status).json({
         error: 'Error al crear recordatorio',
-        details: apiError.message
+        ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
       });
     }
   },
@@ -141,7 +141,7 @@ export const reminderController = {
       console.error('Error al actualizar estado:', apiError);
       res.status(apiError.status).json({
         error: 'Error al actualizar estado del recordatorio',
-        details: apiError.message
+        ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
       });
     }
   },
@@ -185,7 +185,7 @@ export const reminderController = {
         };
         res.status(apiError.status).json({
             error: 'Error al actualizar recordatorio',
-            details: apiError.message
+            ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
         });
     }
   },
@@ -219,7 +219,7 @@ export const reminderController = {
       console.error('Error al eliminar recordatorio:', apiError);
       res.status(apiError.status).json({
         error: 'Error al eliminar recordatorio',
-        details: apiError.message
+        ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
       });
     }
   },
@@ -270,7 +270,7 @@ export const reminderController = {
       console.error('Error al buscar recordatorios:', apiError);
       res.status(apiError.status).json({
         error: 'Error al buscar recordatorios',
-        details: apiError.message
+        ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })
       });
     }
   }

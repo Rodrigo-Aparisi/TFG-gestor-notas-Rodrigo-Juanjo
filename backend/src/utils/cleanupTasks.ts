@@ -12,9 +12,6 @@ export const setupTrashCleanup = () => {
         AND deleted_at < NOW() - INTERVAL '30 days'
       `);
       
-      if (result.rowCount && result.rowCount > 0) {
-        console.error(`Trash cleanup: ${result.rowCount} notas eliminadas permanentemente.`);
-      }
     } catch (error) {
       console.error('Error durante la limpieza de la papelera:', error);
     }

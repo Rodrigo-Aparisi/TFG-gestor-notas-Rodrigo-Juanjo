@@ -65,7 +65,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 
     res.status(403).json({
       error: 'Invalid token',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+      ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : 'Error desconocido' })
     });
   }
 };

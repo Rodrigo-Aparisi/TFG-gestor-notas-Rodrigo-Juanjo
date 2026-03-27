@@ -113,7 +113,7 @@ export const accountController = {
       console.error("Error al subir la imagen de perfil:", error);
       res.status(500).json({
         error: "Error al procesar la imagen de perfil",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     }
   },
@@ -286,7 +286,7 @@ export const accountController = {
       console.error("Error al obtener configuración:", error);
       res.status(500).json({
         error: "Error al obtener la configuración del usuario",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     }
   },
@@ -334,7 +334,7 @@ export const accountController = {
       console.error("Error al actualizar configuración:", error);
       res.status(500).json({
         error: "Error al actualizar la configuración del usuario",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     }
   },

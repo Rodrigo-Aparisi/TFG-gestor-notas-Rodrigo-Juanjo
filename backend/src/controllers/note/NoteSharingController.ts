@@ -252,7 +252,7 @@ export class NoteSharingController {
       console.error("Error in updateSharedNote:", error);
       res.status(500).json({
         error: "Error al actualizar la nota",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     }
   }

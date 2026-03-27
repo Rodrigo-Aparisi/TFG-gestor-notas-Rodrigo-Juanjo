@@ -258,7 +258,7 @@ export class NoteGroupController {
       console.error("Error al reordenar grupos:", error);
       res.status(500).json({
         error: "Error al reordenar los grupos",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     } finally {
       client.release();

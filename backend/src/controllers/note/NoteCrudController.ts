@@ -169,7 +169,7 @@ export class NoteCrudController {
       console.error("Error al actualizar nota:", error);
       res.status(500).json({
         error: "Error al actualizar la nota",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
       });
     }
   }

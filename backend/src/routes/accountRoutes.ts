@@ -55,9 +55,9 @@ router.post(
       return accountController.uploadProfileImage(req as any, res);
     } catch (error) {
       console.error('Error en la ruta de subida de imagen:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Error al procesar la imagen',
-        details: error instanceof Error ? error.message : 'Error desconocido'
+        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : 'Error desconocido' })
       });
     }
   }
@@ -66,9 +66,9 @@ router.post(
 // Middleware para manejar errores
 router.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error en las rutas de cuenta:', err);
-  return res.status(500).json({ 
+  return res.status(500).json({
     error: 'Error interno del servidor',
-    details: err instanceof Error ? err.message : 'Error desconocido'
+    ...(process.env.NODE_ENV !== 'production' && { details: err instanceof Error ? err.message : 'Error desconocido' })
   });
 });
 
