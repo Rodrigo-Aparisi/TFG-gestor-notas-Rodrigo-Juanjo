@@ -27,6 +27,7 @@ interface UpdateUserData {
 
 interface AuthResponse {
   token: string;
+  refreshToken: string;
   user: User;
 }
 
@@ -40,10 +41,11 @@ export const authService = {
     try {
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       if (response.data && response.data.token) {
-        const { token, user } = response.data;
+        const { token, refreshToken, user } = response.data;
 
         // Guardar datos en localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
       }
       return response.data;
@@ -106,6 +108,7 @@ export const authService = {
   logout: () => {
     themeService.resetToDefault();
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   },
 
@@ -129,6 +132,20 @@ export const authService = {
 
   getToken: (): string | null => {
     return localStorage.getItem('token');
+  },
+
+  getRefreshToken: (): string | null => {
+    return localStorage.getItem('refreshToken');
+  },
+
+  refreshAccessToken: async (): Promise<string> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) throw new Error('No refresh token');
+
+    const response = await api.post<{ token: string }>('/auth/refresh', { refreshToken });
+    const newToken = response.data.token;
+    localStorage.setItem('token', newToken);
+    return newToken;
   },
 
   getCurrentUser: (): User | null => {

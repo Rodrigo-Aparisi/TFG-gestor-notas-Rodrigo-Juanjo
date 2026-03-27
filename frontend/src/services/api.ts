@@ -42,14 +42,63 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para manejar errores
+// Cola de requests pendientes durante el refresco
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onTokenRefreshed(newToken: string) {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+}
+
+// Interceptor para manejar errores y refresco automático de token
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      authService.logout();
-      window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const refreshToken = authService.getRefreshToken();
+
+      // Sin refresh token → logout directo
+      if (!refreshToken) {
+        authService.logout();
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      // Si ya hay un refresco en curso, encolar esta request
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await authService.refreshAccessToken();
+        onTokenRefreshed(newToken);
+        isRefreshing = false;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        authService.logout();
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
     }
+
     return Promise.reject(error);
   }
 );
