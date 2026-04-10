@@ -271,6 +271,62 @@ export class Reminder {
     }
   }
   
+  static async search(
+    userId: string,
+    query: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<any[]> {
+    try {
+      const searchTerm = `%${query}%`;
+      const params: (string | Date)[] = [userId, searchTerm];
+      let dateFilter = '';
+
+      if (startDate && endDate) {
+        params.push(startDate, endDate);
+        dateFilter = `AND r.date_time >= $${params.length - 1} AND r.date_time < $${params.length}`;
+      } else if (startDate) {
+        params.push(startDate);
+        dateFilter = `AND r.date_time >= $${params.length}`;
+      } else if (endDate) {
+        params.push(endDate);
+        dateFilter = `AND r.date_time < $${params.length}`;
+      }
+
+      const sql = `
+        SELECT
+          r.id,
+          r.title,
+          r.description,
+          r.date_time as "dateTime",
+          r.has_time as "hasTime",
+          r.user_id as "userId",
+          r.status_id as "statusId",
+          r.send_email as "sendEmail",
+          r.created_at as "createdAt",
+          r.updated_at as "updatedAt",
+          rs.name as "statusName"
+        FROM reminders r
+        LEFT JOIN reminder_status rs ON r.status_id = rs.id
+        WHERE r.user_id = $1
+          AND (r.title ILIKE $2 OR r.description ILIKE $2)
+          ${dateFilter}
+        ORDER BY r.date_time ASC
+      `;
+
+      const result = await pool.query(sql, params);
+
+      return result.rows.map(row => ({
+        ...row,
+        dateTime: new Date(row.dateTime).toISOString(),
+        hasTime: row.hasTime || false
+      }));
+    } catch (error) {
+      console.error('Error en Reminder.search:', error);
+      throw error;
+    }
+  }
+
   static async findRemindersForEmailNotification(): Promise<any[]> {
     try {
       const query = `

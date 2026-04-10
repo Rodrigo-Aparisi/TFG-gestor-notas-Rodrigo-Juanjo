@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
 import { buildOrderByClause } from "../../utils/queryHelpers";
@@ -208,7 +208,7 @@ export class NoteCrudController {
     }
   }
 
-  async deleteMultipleNotes(req: Request, res: Response): Promise<void> {
+  async deleteMultipleNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -222,10 +222,10 @@ export class NoteCrudController {
       );
 
       await client.query("COMMIT");
-      res.json({ message: "Notas eliminadas exitosamente" });
+      res.json({ success: true, message: "Notas eliminadas exitosamente" });
     } catch (error) {
       await client.query("ROLLBACK");
-      throw error;
+      next(error);
     } finally {
       client.release();
     }

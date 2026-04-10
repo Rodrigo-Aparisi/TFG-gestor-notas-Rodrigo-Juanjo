@@ -26,23 +26,13 @@ export function useNotes() {
     try {
       const response = await noteService.getNotes();
       const fetchedNotes = response.notes || [];
-      
-      // Especifica el tipo en filter
-      const markedNotes = fetchedNotes.filter((note: Note) => note.is_marked);
-      
-      if (markedNotes.length > 0) {
-        await Promise.all(
-          markedNotes.map((note: Note) => noteService.toggleMark(note.id))
-        );
-        
-        // Especifica el tipo en map
-        setNotes(fetchedNotes.map((note: Note) => ({
-          ...note,
-          is_marked: false
-        })));
-      } else {
-        setNotes(fetchedNotes);
-      }
+
+      setNotes(fetchedNotes);
+      setMarkedNotes(
+        fetchedNotes
+          .filter((note: Note) => note.is_marked)
+          .map((note: Note) => note.id)
+      );
     } catch (err) {
       const error = err as Error;
       console.error('Error loading notes:', error.message);

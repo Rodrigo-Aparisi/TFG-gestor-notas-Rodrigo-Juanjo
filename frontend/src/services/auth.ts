@@ -163,24 +163,5 @@ export const authService = {
   }
 };
 
-// Interceptor para añadir el token a las peticiones
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Interceptor para manejar errores
-api.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 401) {
-      authService.logout();
-    }
-    return Promise.reject(error);
-  }
-);
 
 export default authService;

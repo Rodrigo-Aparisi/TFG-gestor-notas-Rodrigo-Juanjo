@@ -1,10 +1,7 @@
 import axios, { AxiosError } from "axios";
 import config from "../config/config";
 import { User } from "../types";
-
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-});
+import api from "./api";
 
 interface UserSettings {
   theme?: "light" | "dark";
@@ -90,11 +87,6 @@ export const accountService = {
     settings: UserSettings
   ): Promise<UserSettings> => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No hay token de autenticación");
-      }
-
       const response = await api.put("/account/settings", settings);
 
       if (!response.data) {
@@ -160,7 +152,7 @@ export const accountService = {
 
   deleteUserAccount: async (userId, password) => {
     if (!userId) throw new Error("ID de usuario no proporcionado");
-    
+
     try {
       const response = await api.delete(`/account/delete`, {
         data: { password } // Envía la contraseña en el cuerpo de la petición DELETE
@@ -175,32 +167,5 @@ export const accountService = {
     }
   }
 };
-
-// Interceptor para añadir el token a todas las peticiones
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para manejar errores de respuesta
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
-  }
-);
 
 export default accountService;

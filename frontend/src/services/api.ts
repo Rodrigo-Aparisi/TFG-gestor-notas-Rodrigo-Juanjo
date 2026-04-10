@@ -393,7 +393,7 @@ export const noteService = {
 
   removeNoteFromGroup: async (groupId: string, noteId: string) => {
     try {
-      const response = await api.delete(`/groups/${groupId}notes/${noteId}`);
+      const response = await api.delete(`/groups/${groupId}/notes/${noteId}`);
       return response.data;
     } catch (error) {
       console.error("Error removing note from group:", error);

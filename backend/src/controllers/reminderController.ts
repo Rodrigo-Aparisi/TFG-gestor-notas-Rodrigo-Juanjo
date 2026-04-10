@@ -232,42 +232,38 @@ export const reminderController = {
         });
       }
 
-      const { query, status } = req.query;
-      
-      // Construir filtro base
-      const filter: any = {
-        userId: req.user.id
-      };
-      
-      // Añadir filtro de búsqueda si existe
-      if (query) {
-        filter.$or = [
-          { title: { "$regex": query, "$options": 'i' } },
-          { description: { "$regex": query, "$options": 'i' } }
-        ];
+      const { query, startDate, endDate } = req.query;
+
+      if (!query || typeof query !== 'string' || query.trim() === '') {
+        return res.status(400).json({
+          error: 'El parámetro de búsqueda "query" es requerido'
+        });
       }
-      
-      // Añadir filtro de estado si existe
-      if (status) {
-        filter.statusId = parseInt(status as string);
+
+      const parsedStartDate = startDate ? new Date(startDate as string) : undefined;
+      const parsedEndDate = endDate ? new Date(endDate as string) : undefined;
+
+      if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
+        return res.status(400).json({ error: 'startDate inválido' });
       }
-      
-      const reminders = await Reminder.findWithStatus(filter);
-      
-      // Transformar los recordatorios antes de enviarlos
-      const transformedReminders = reminders.map(reminder => ({
-        ...reminder,
-        hasTime: reminder.hasTime === true
-      }));
-      
-      res.json({ reminders: transformedReminders });
+      if (parsedEndDate && isNaN(parsedEndDate.getTime())) {
+        return res.status(400).json({ error: 'endDate inválido' });
+      }
+
+      const reminders = await Reminder.search(
+        req.user.id,
+        query.trim(),
+        parsedStartDate,
+        parsedEndDate
+      );
+
+      res.json({ success: true, reminders });
     } catch (error) {
-      console.error('Error completo:', error);
+      console.error('Error al buscar recordatorios:', error);
       const apiError: ApiError = {
         message: error instanceof Error ? error.message : 'Error desconocido',
         status: 500
       };
-      console.error('Error al buscar recordatorios:', apiError);
       res.status(apiError.status).json({
         error: 'Error al buscar recordatorios',
         ...(process.env.NODE_ENV !== 'production' && { details: apiError.message })

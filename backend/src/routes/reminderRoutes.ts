@@ -24,6 +24,16 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+// Ruta de búsqueda declarada ANTES de las rutas con parámetro dinámico /:id
+// para que Express no interprete "search" como un id
+router.get('/search', async (req, res, next) => {
+  try {
+    await reminderController.searchReminders(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch('/:id/status', async (req, res, next) => {
   try {
     await reminderController.updateReminderStatus(req, res);
@@ -55,14 +65,6 @@ router.use((error: any, req: express.Request, res: express.Response, next: expre
     error: 'Error interno del servidor',
     message: error.message
   });
-});
-
-router.get('/search', async (req, res, next) => {
-  try {
-    await reminderController.searchReminders(req, res);
-  } catch (error) {
-    next(error);
-  }
 });
 
 export default router;
