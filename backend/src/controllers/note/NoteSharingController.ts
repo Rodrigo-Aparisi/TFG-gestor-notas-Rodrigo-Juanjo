@@ -180,7 +180,8 @@ export class NoteSharingController {
   async updateSharedNote(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { title, content, images } = req.body;
+      // Exclude `images` intentionally: editors must not modify the owner's images
+      const { title, content } = req.body;
       const userId = req.user.id;
 
       // Verify edit permission
@@ -199,7 +200,7 @@ export class NoteSharingController {
         return;
       }
 
-      // Build update query
+      // Build update query — only title and content are editable by shared users
       const updateFields = [];
       const values = [];
       let paramCount = 1;
@@ -213,12 +214,6 @@ export class NoteSharingController {
       if (content !== undefined) {
         updateFields.push(`content = $${paramCount}`);
         values.push(content);
-        paramCount++;
-      }
-
-      if (images !== undefined) {
-        updateFields.push(`images = $${paramCount}`);
-        values.push(images);
         paramCount++;
       }
 

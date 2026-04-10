@@ -8,6 +8,7 @@ import {
   CreateGroupNoteData,
   getErrorMessage,
 } from "../types";
+import { sanitizeHTML, sanitizePlainText } from "../utils/sanitize";
 
 export const useUserGroups = () => {
   // Estados para grupos y miembros
@@ -566,12 +567,16 @@ export const useUserGroups = () => {
       iframe.style.height = '0';
       document.body.appendChild(iframe);
 
-      // Formato simple para el contenido
-      const formattedContent = (note.content || '')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/__(.*?)__/g, '<u>$1</u>')
-        .replace(/\n/g, '<br>');
+      // Sanitize before interpolating into HTML to prevent XSS
+      const safeTitle = sanitizePlainText(note.title || 'Sin título');
+      const safeAuthor = sanitizePlainText(note.created_by_username || 'Usuario');
+      const formattedContent = sanitizeHTML(
+        (note.content || '')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/__(.*?)__/g, '<u>$1</u>')
+          .replace(/\n/g, '<br>')
+      );
 
       // Esperar a que el iframe esté cargado
       iframe.onload = () => {
@@ -587,7 +592,7 @@ export const useUserGroups = () => {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>${note.title || 'Sin título'}</title>
+            <title>${safeTitle}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -623,12 +628,12 @@ export const useUserGroups = () => {
             </style>
           </head>
           <body>
-            <h1>${note.title || 'Sin título'}</h1>
+            <h1>${safeTitle}</h1>
             <div class="note-info">
-              Por: ${note.created_by_username || 'Usuario'}
+              Por: ${safeAuthor}
             </div>
             <div class="content">${formattedContent}</div>
-            
+
             ${note.images && note.images.length > 0 ? `
               <div class="images">
                 <h2>Imágenes adjuntas</h2>

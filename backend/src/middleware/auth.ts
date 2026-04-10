@@ -32,6 +32,11 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(401).json({ error: 'Invalid token structure' });
     }
 
+    // Rechazar refresh tokens usados como access tokens
+    if ((verified as any).type === 'refresh') {
+      return res.status(401).json({ success: false, error: 'Token inválido' });
+    }
+
     // Check if token is revoked (blacklisted)
     const revokedCheck = await pool.query(
       'SELECT 1 FROM revoked_tokens WHERE token = $1 AND expires_at > NOW()',

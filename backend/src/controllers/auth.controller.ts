@@ -204,13 +204,17 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
 
     // Revoke access token (add to blacklist)
     if (token) {
-      const decoded = jwt.decode(token) as { id?: string; exp?: number } | null;
-      if (decoded && decoded.exp && decoded.id) {
-        const expiresAt = new Date(decoded.exp * 1000);
-        await pool.query(
-          'INSERT INTO revoked_tokens (token, user_id, expires_at, reason) VALUES ($1, $2, $3, $4)',
-          [token, decoded.id, expiresAt, 'logout']
-        );
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id?: string; exp?: number };
+        if (decoded && decoded.exp && decoded.id) {
+          const expiresAt = new Date(decoded.exp * 1000);
+          await pool.query(
+            'INSERT INTO revoked_tokens (token, user_id, expires_at, reason) VALUES ($1, $2, $3, $4)',
+            [token, decoded.id, expiresAt, 'logout']
+          );
+        }
+      } catch {
+        // Token inválido o expirado: no insertar en blacklist, continuar con logout
       }
     }
 

@@ -198,6 +198,25 @@ export class GroupNoteController {
         return;
       }
 
+      // Verify user is creator or has admin/owner permissions
+      if (noteCheckResult.rows[0].user_id !== userId) {
+        const roleCheckResult = await pool.query(
+          `SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2`,
+          [groupId, userId]
+        );
+
+        if (roleCheckResult.rows.length === 0) {
+          res.status(403).json({ error: "No tienes acceso a este grupo" });
+          return;
+        }
+
+        const role = roleCheckResult.rows[0].role;
+        if (role !== "owner" && role !== "admin") {
+          res.status(403).json({ error: "No tienes permisos para editar esta nota" });
+          return;
+        }
+      }
+
       // Build update query
       let query = "UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP";
       const values = [];
@@ -457,10 +476,13 @@ export class GroupNoteController {
       const userId = req.user.id;
       const index = parseInt(imageIndex);
 
-      // Verify note exists and user has permission
+      // Fetch note together with a membership check to prevent IDOR
+      // The JOIN ensures only notes from groups the user belongs to are returned
       const noteResult = await pool.query(
-        `SELECT * FROM group_notes WHERE id = $1`,
-        [noteId]
+        `SELECT gn.* FROM group_notes gn
+         INNER JOIN group_members gm ON gm.group_id = gn.group_id AND gm.user_id = $2
+         WHERE gn.id = $1`,
+        [noteId, userId]
       );
 
       if (noteResult.rows.length === 0) {

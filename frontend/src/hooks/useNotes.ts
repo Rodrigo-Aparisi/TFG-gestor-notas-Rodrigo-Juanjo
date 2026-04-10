@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note, UpdateNoteData } from '../types';
+import { sanitizeHTML, sanitizePlainText } from '../utils/sanitize';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -429,12 +430,15 @@ export function useNotes() {
       iframe.style.height = '0';
       document.body.appendChild(iframe);
 
-      // Formato simple para el contenido
-      const formattedContent = content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/__(.*?)__/g, '<u>$1</u>')
-        .replace(/\n/g, '<br>');
+      // Sanitize before interpolating into HTML to prevent XSS
+      const safeTitle = sanitizePlainText(title);
+      const formattedContent = sanitizeHTML(
+        content
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/__(.*?)__/g, '<u>$1</u>')
+          .replace(/\n/g, '<br>')
+      );
 
       // Esperar a que el iframe esté cargado
       iframe.onload = () => {
@@ -450,7 +454,7 @@ export function useNotes() {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>${title}</title>
+            <title>${safeTitle}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -481,9 +485,9 @@ export function useNotes() {
             </style>
           </head>
           <body>
-            <h1>${title}</h1>
+            <h1>${safeTitle}</h1>
             <div class="content">${formattedContent}</div>
-            
+
             ${note.images && note.images.length > 0 ? `
               <div class="images">
                 <h2>Imágenes adjuntas</h2>

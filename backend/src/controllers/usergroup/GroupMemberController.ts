@@ -550,11 +550,12 @@ export class GroupMemberController {
       );
 
       // Search users matching query who are not members
+      // email is excluded from SELECT to protect user PII
       const searchResult = await pool.query(
         `
-        SELECT id, username, email, profile_image
+        SELECT id, username, profile_image
         FROM users
-        WHERE (username ILIKE $1 OR email ILIKE $1)
+        WHERE username ILIKE $1
         AND id != ALL($2)
         LIMIT 10
       `,

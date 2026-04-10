@@ -70,14 +70,24 @@ app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads/group-note-images', express.static(path.join(__dirname, 'uploads/group-note-images')));
 
+// Allowed MIME types and their safe extensions — file.originalname is never used in filenames
+const ALLOWED_MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp'
+};
+
 // Configurar multer para las imágenes de las notas
 const noteImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, noteImagesDir);
   },
   filename: (req, file, cb) => {
+    // Derive extension from validated MIME type — never from file.originalname
+    const ext = ALLOWED_MIME_TO_EXT[file.mimetype] || '.bin';
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
+    cb(null, `${uniqueSuffix}${ext}`);
   }
 });
 
@@ -87,8 +97,7 @@ export const uploadNoteImage = multer({
     fileSize: 25 * 1024 * 1024 // 25MB límite
   },
   fileFilter: (req, file, cb) => {
-    // Lista de tipos MIME permitidos
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedMimes = Object.keys(ALLOWED_MIME_TO_EXT);
     if (!allowedMimes.includes(file.mimetype)) {
       return cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPEG, PNG, GIF y WEBP'));
     }
