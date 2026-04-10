@@ -85,22 +85,26 @@ export const emailService = {
   // Nueva función para enviar correos de contacto sin autenticación
   async sendContactEmail(name: string, email: string, message: string): Promise<boolean> {
     try {
-      
+      // Sanitizar inputs para prevenir Email Header Injection
+      const safeName = name.replace(/[\r\n]/g, ' ').substring(0, 100);
+      const safeEmail = email.replace(/[\r\n]/g, '').substring(0, 200);
+      const safeMessage = message.replace(/[\r\n\r]/g, ' ').substring(0, 2000);
+
       // Construir el asunto y cuerpo del correo
-      const subject = `Mensaje de contacto de ${name}`;
+      const subject = `Mensaje de contacto de ${safeName}`;
       const textBody = `
-        Nombre: ${name}
-        Email: ${email}
-        
+        Nombre: ${safeName}
+        Email: ${safeEmail}
+
         Mensaje:
-        ${message}
+        ${safeMessage}
       `;
-      
+
       // Configurar el correo - enviamos al EMAIL_USER configurado en las variables de entorno
       const mailOptions = {
         from: `"Formulario de Contacto" <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_USER,  // Enviar al correo configurado
-        replyTo: email,  // Para que puedan responder directamente al remitente
+        replyTo: safeEmail,  // Para que puedan responder directamente al remitente
         subject: subject,
         text: textBody
       };

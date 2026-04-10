@@ -86,6 +86,22 @@ export const strictApiLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for contact form endpoint
+ * Prevents email service abuse
+ * 5 submissions per hour per IP
+ */
+export const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: {
+    error: 'Demasiados mensajes enviados desde esta IP, por favor intente de nuevo más tarde'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipInDevelopment,
+});
+
+/**
  * Rate limiter for registration endpoint
  * Prevents automated account creation
  * 3 registrations per hour per IP
@@ -108,5 +124,6 @@ export default {
   passwordResetConfirmLimiter,
   generalApiLimiter,
   strictApiLimiter,
-  registerLimiter
+  registerLimiter,
+  contactLimiter
 };

@@ -105,6 +105,13 @@ export function useUIEffects() {
     }
   }, [focusedNoteId]);
 
+  // Restaurar overflow al desmontar para evitar que el scroll quede bloqueado
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return {
     focusedNoteId,
     sharingNoteId,

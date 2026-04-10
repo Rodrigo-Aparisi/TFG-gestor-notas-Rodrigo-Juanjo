@@ -1,11 +1,12 @@
 import express from 'express';
 import { emailService } from '../services/emailService';
 import { Request, Response, NextFunction } from 'express';
+import { contactLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
 // Ruta para el formulario de contacto
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', contactLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, email, message } = req.body;
     

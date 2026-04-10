@@ -278,6 +278,7 @@ export function useSharedNotes() {
     element.download = `${title}.txt`;
     document.body.appendChild(element);
     element.click();
+    URL.revokeObjectURL(element.href);
     document.body.removeChild(element);
   };
 

@@ -36,6 +36,7 @@ const Groups: React.FC = () => {
     deleteGroupNote,
     selectGroup,
     togglePinGroupNote,
+    toggleMarkGroupNote,
     setUserNewGroup,
     setShowCreateGroupModal,
     setShowAddMemberModal,
@@ -145,31 +146,8 @@ const Groups: React.FC = () => {
     event: React.MouseEvent
   ) => {
     event.stopPropagation();
-    try {
-      const note = groupNotes.find((n) => n.id === noteId);
-      if (!note) return;
-
-      const updatedNote = {
-        ...note,
-        is_marked: !note.is_marked,
-      };
-
-      setEditingNote({ ...editingNote, [noteId]: updatedNote });
-
-      // Aquí iría la llamada a la API para marcar/desmarcar la nota
-      const response = await api.put(
-        `/user-groups/notes/${noteId}/toggle-mark`
-      );
-
-      if (response.data.success) {
-        // La actualización de la lista de notas se maneja a través de la recarga
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error al marcar/desmarcar la nota:", error);
-      return false;
-    }
+    if (!selectedGroup) return;
+    await toggleMarkGroupNote(selectedGroup.id, noteId);
   };
 
   const handleGroupImageUpload = async (

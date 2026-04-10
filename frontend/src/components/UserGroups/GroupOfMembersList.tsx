@@ -193,11 +193,15 @@ const GroupOfMembersList: React.FC<GroupOfMembersListProps> = ({
                 {showLeaveButton && (
                   <button
                     className="leave-group-btn"
-                    onClick={() => handleRemoveMember(member.user_id)}
-                    style={{ 
-                      backgroundColor: '#ff9800', 
-                      color: 'white', 
-                      padding: '6px 12px', 
+                    onClick={() => {
+                      if (window.confirm('¿Abandonar este grupo? Perderás el acceso a todas sus notas.')) {
+                        handleRemoveMember(member.user_id);
+                      }
+                    }}
+                    style={{
+                      backgroundColor: '#ff9800',
+                      color: 'white',
+                      padding: '6px 12px',
                       borderRadius: '4px',
                       border: 'none',
                       cursor: 'pointer',

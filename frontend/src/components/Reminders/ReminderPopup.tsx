@@ -10,14 +10,21 @@ interface ReminderPopupProps {
   setIsFromPopup: (value: boolean) => void;
 }
 
-const ReminderPopup: React.FC<ReminderPopupProps> = ({ 
-  date, 
-  reminders, 
+const ReminderPopup: React.FC<ReminderPopupProps> = ({
+  date,
+  reminders,
   onClose,
   onEditReminder,
   onDeleteReminder,
   setIsFromPopup
-}) => (
+}) => {
+  const handleDelete = (id: string) => {
+    if (window.confirm('¿Eliminar este recordatorio? Esta acción no se puede deshacer.')) {
+      onDeleteReminder(id);
+    }
+  };
+
+  return (
   <div className="reminder-popup-overlay" onClick={onClose}>
     <div className="reminder-popup" onClick={e => e.stopPropagation()}>
       <div className="reminder-popup-header">
@@ -66,9 +73,9 @@ const ReminderPopup: React.FC<ReminderPopupProps> = ({
                   >
                     Editar
                   </button>
-                  <button 
+                  <button
                     className="edit-button"
-                    onClick={() => onDeleteReminder(reminder.id)}
+                    onClick={() => handleDelete(reminder.id)}
                     style={{ backgroundColor: '#ff4757' }}
                   >
                     Eliminar
@@ -81,6 +88,7 @@ const ReminderPopup: React.FC<ReminderPopupProps> = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default ReminderPopup;

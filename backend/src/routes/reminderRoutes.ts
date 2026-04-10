@@ -62,8 +62,9 @@ router.delete('/:id', async (req, res, next) => {
 router.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error en rutas de recordatorios:', error);
   res.status(500).json({
+    success: false,
     error: 'Error interno del servidor',
-    message: error.message
+    message: process.env.NODE_ENV !== 'production' ? error.message : undefined
   });
 });
 

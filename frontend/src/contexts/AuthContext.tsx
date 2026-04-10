@@ -30,21 +30,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   const [loading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return Boolean(localStorage.getItem('token'));
-  });
+
+  // isAuthenticated is derived directly from token to prevent desync
+  const isAuthenticated = Boolean(token);
 
   // setUser function
   const setUser = (newUser: User) => {
     setUserState(newUser);
-    setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
   // setToken function
   const setToken = (newToken: string) => {
     setTokenState(newToken);
-    setIsAuthenticated(true);
     localStorage.setItem('token', newToken);
   };
 
@@ -61,7 +59,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUserState(null);
     setTokenState(null);
-    setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };

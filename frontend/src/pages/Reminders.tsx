@@ -79,13 +79,12 @@ const Reminders: React.FC = () => {
     loadReminders();
   }, [currentMonth, selectedDate]);
 
+  // Restaurar overflow al desmontar para evitar que el scroll quede bloqueado
   useEffect(() => {
     return () => {
-      if (focusedReminder) {
-        document.body.style.overflow = '';
-      }
+      document.body.style.overflow = '';
     };
-  }, [focusedReminder]);
+  }, []);
   
   useEffect(() => {
     if (editingReminder) {
@@ -166,6 +165,9 @@ const Reminders: React.FC = () => {
   };
 
   const handleDeleteReminder = async (id: string) => {
+    if (!window.confirm('¿Eliminar este recordatorio? Esta acción no se puede deshacer.')) {
+      return;
+    }
     try {
       await calendarService.deleteReminder(id);
       setReminders(prev => prev.filter(reminder => reminder.id !== id));

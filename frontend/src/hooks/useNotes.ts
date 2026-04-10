@@ -520,6 +520,7 @@ export function useNotes() {
     element.download = `${title}.txt`;
     document.body.appendChild(element);
     element.click();
+    URL.revokeObjectURL(element.href);
     document.body.removeChild(element);
     showFeedback('Nota exportada como TXT');
   };

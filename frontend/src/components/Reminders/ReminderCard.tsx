@@ -20,7 +20,7 @@ const ReminderCard: React.FC<ReminderCardProps> = ({
 
   return (
     <div 
-      className={`reminder-pill status-${reminder.statusId} \${
+      className={`reminder-pill status-${reminder.statusId} ${
         isFocused ? 'focused' : ''
       }`}
       onClick={(e) => onClick(reminder, e)}
