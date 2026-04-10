@@ -28,5 +28,11 @@ yarn-error.log*
 !**/uploads/.gitkeep
 !**/uploads/note-images/.gitkeep
 
+# Claude
 .claude/
+CLAUDE.md
+docs/memory/
+
+# Docker
+.env.docker
 

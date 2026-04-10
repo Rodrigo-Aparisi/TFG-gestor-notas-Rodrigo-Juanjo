@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: olympus_scribe_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-olympus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-olympus_dev_password}
+      POSTGRES_DB: ${DB_NAME:-olympus_scribe}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-olympus} -d ${DB_NAME:-olympus_scribe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    name: olympus_scribe_pgdata
