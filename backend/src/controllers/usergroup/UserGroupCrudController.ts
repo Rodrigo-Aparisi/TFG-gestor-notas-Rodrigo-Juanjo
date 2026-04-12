@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
+import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
 
 /**
  * Controller for User Group CRUD operations
@@ -7,9 +8,9 @@ import { pool } from "../../database";
  */
 export class UserGroupCrudController {
   // Get all user groups
-  async getUserGroups(req: Request, res: Response): Promise<void> {
+  async getUserGroups(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         `
@@ -44,26 +45,22 @@ export class UserGroupCrudController {
       const groups = result.rows || [];
       res.json({ groups });
     } catch (error) {
-      console.error("Error al obtener grupos de usuario:", error);
-      res
-        .status(500)
-        .json({ error: "Error al obtener los grupos", groups: [] });
+      next(error);
     }
   }
 
   // Create a new user group
-  async createUserGroup(req: Request, res: Response): Promise<void> {
+  async createUserGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
       const { name, description } = req.body;
-      const ownerId = req.user.id;
+      const ownerId = req.user!.id;
 
       if (!name || name.trim() === "") {
-        res.status(400).json({ error: "El nombre del grupo es obligatorio" });
-        return;
+        return next(new BadRequestError("El nombre del grupo es obligatorio"));
       }
 
       // Create the group
@@ -118,18 +115,17 @@ export class UserGroupCrudController {
       });
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error al crear grupo de usuarios:", error);
-      res.status(500).json({ error: "Error al crear el grupo" });
+      next(error);
     } finally {
       client.release();
     }
   }
 
   // Get a specific group
-  async getUserGroup(req: Request, res: Response): Promise<void> {
+  async getUserGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is a member of the group
       const memberCheckResult = await pool.query(
@@ -145,8 +141,7 @@ export class UserGroupCrudController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Get group information with members
@@ -178,22 +173,20 @@ export class UserGroupCrudController {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       res.json({ group: result.rows[0] });
     } catch (error) {
-      console.error("Error al obtener grupo:", error);
-      res.status(500).json({ error: "Error al obtener el grupo" });
+      next(error);
     }
   }
 
   // Update a group
-  async updateUserGroup(req: Request, res: Response): Promise<void> {
+  async updateUserGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { name, description } = req.body;
 
       // Verify user is owner or admin
@@ -206,16 +199,12 @@ export class UserGroupCrudController {
       );
 
       if (roleCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       const role = roleCheckResult.rows[0].role;
       if (role !== "owner" && role !== "admin") {
-        res
-          .status(403)
-          .json({ error: "No tienes permisos para actualizar este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes permisos para actualizar este grupo"));
       }
 
       // Update the group
@@ -232,8 +221,7 @@ export class UserGroupCrudController {
       );
 
       if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       res.json({
@@ -241,16 +229,15 @@ export class UserGroupCrudController {
         group: updateResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al actualizar grupo:", error);
-      res.status(500).json({ error: "Error al actualizar el grupo" });
+      next(error);
     }
   }
 
   // Delete a group
-  async deleteUserGroup(req: Request, res: Response): Promise<void> {
+  async deleteUserGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is the owner
       const ownerCheckResult = await pool.query(
@@ -261,15 +248,11 @@ export class UserGroupCrudController {
       );
 
       if (ownerCheckResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       if (ownerCheckResult.rows[0].owner_id !== userId) {
-        res
-          .status(403)
-          .json({ error: "Solo el propietario puede eliminar el grupo" });
-        return;
+        return next(new ForbiddenError("Solo el propietario puede eliminar el grupo"));
       }
 
       // Delete the group (cascade deletes handle members and notes)
@@ -283,24 +266,20 @@ export class UserGroupCrudController {
 
       res.json({ message: "Grupo eliminado correctamente" });
     } catch (error) {
-      console.error("Error al eliminar grupo:", error);
-      res.status(500).json({ error: "Error al eliminar el grupo" });
+      next(error);
     }
   }
 
   // Rename a group
-  async renameUserGroup(req: Request, res: Response): Promise<void> {
+  async renameUserGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { name } = req.body;
 
       // Validate new name is not empty
       if (!name || name.trim() === "") {
-        res
-          .status(400)
-          .json({ error: "El nombre del grupo no puede estar vacío" });
-        return;
+        return next(new BadRequestError("El nombre del grupo no puede estar vacío"));
       }
 
       // Verify user is owner or admin
@@ -313,16 +292,12 @@ export class UserGroupCrudController {
       );
 
       if (roleCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       const role = roleCheckResult.rows[0].role;
       if (role !== "owner" && role !== "admin") {
-        res.status(403).json({
-          error: "No tienes permisos para cambiar el nombre de este grupo",
-        });
-        return;
+        return next(new ForbiddenError("No tienes permisos para cambiar el nombre de este grupo"));
       }
 
       // Update group name
@@ -338,8 +313,7 @@ export class UserGroupCrudController {
       );
 
       if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       res.json({
@@ -348,22 +322,20 @@ export class UserGroupCrudController {
         group: updateResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al cambiar el nombre del grupo:", error);
-      res.status(500).json({ error: "Error al cambiar el nombre del grupo" });
+      next(error);
     }
   }
 
   // Update group description
-  async updateGroupDescription(req: Request, res: Response): Promise<void> {
+  async updateGroupDescription(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { description } = req.body;
 
       // Validate description is defined (can be empty but must be defined)
       if (description === undefined) {
-        res.status(400).json({ error: "La descripción es obligatoria" });
-        return;
+        return next(new BadRequestError("La descripción es obligatoria"));
       }
 
       // Verify user is owner or admin
@@ -376,16 +348,12 @@ export class UserGroupCrudController {
       );
 
       if (roleCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       const role = roleCheckResult.rows[0].role;
       if (role !== "owner" && role !== "admin") {
-        res.status(403).json({
-          error: "No tienes permisos para cambiar la descripción de este grupo",
-        });
-        return;
+        return next(new ForbiddenError("No tienes permisos para cambiar la descripción de este grupo"));
       }
 
       // Update group description
@@ -401,8 +369,7 @@ export class UserGroupCrudController {
       );
 
       if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       res.json({
@@ -411,10 +378,7 @@ export class UserGroupCrudController {
         group: updateResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al cambiar la descripción del grupo:", error);
-      res
-        .status(500)
-        .json({ error: "Error al cambiar la descripción del grupo" });
+      next(error);
     }
   }
 }

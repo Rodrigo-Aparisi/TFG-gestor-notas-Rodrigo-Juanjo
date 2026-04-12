@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
 import { groupNoteImageUpload, deleteImage, handleMulterError } from "../../config/multerConfig";
 import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
+import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
 
 interface RequestWithFile extends Request {
   file?: Express.Multer.File;
@@ -15,10 +16,10 @@ interface RequestWithFile extends Request {
  */
 export class GroupNoteController {
   // Get group notes
-  async getGroupNotes(req: Request, res: Response): Promise<void> {
+  async getGroupNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is a member
       const memberCheckResult = await pool.query(
@@ -34,10 +35,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        res
-          .status(403)
-          .json({ error: "No tienes acceso a este grupo", notes: [] });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Get group notes
@@ -57,23 +55,19 @@ export class GroupNoteController {
       const notes = result.rows || [];
       res.json({ notes });
     } catch (error) {
-      console.error("Error al obtener notas del grupo:", error);
-      res
-        .status(500)
-        .json({ error: "Error al obtener las notas del grupo", notes: [] });
+      next(error);
     }
   }
 
   // Create a group note
-  async createGroupNote(req: Request, res: Response): Promise<void> {
+  async createGroupNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { title, content, images = [] } = req.body;
 
       if (!title || title.trim() === "") {
-        res.status(400).json({ error: "El título es obligatorio" });
-        return;
+        return next(new BadRequestError("El título es obligatorio"));
       }
 
       // Verify user is a member
@@ -90,8 +84,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Create the note
@@ -124,17 +117,16 @@ export class GroupNoteController {
         },
       });
     } catch (error) {
-      console.error("Error al crear nota de grupo:", error);
-      res.status(500).json({ error: "Error al crear la nota" });
+      next(error);
     }
   }
 
   // Get a specific group note
-  async getGroupNote(req: Request, res: Response): Promise<void> {
+  async getGroupNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const noteId = req.params.noteId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is a member
       const memberCheckResult = await pool.query(
@@ -150,8 +142,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Get the note
@@ -168,23 +159,21 @@ export class GroupNoteController {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       res.json({ note: result.rows[0] });
     } catch (error) {
-      console.error("Error al obtener nota de grupo:", error);
-      res.status(500).json({ error: "Error al obtener la nota" });
+      next(error);
     }
   }
 
   // Update a group note
-  async updateGroupNote(req: Request, res: Response): Promise<void> {
+  async updateGroupNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const noteId = req.params.noteId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { title, content, color, images } = req.body;
 
       // Verify note exists and belongs to group
@@ -194,8 +183,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -206,14 +194,12 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          res.status(403).json({ error: "No tienes acceso a este grupo" });
-          return;
+          return next(new ForbiddenError("No tienes acceso a este grupo"));
         }
 
         const role = roleCheckResult.rows[0].role;
         if (role !== "owner" && role !== "admin") {
-          res.status(403).json({ error: "No tienes permisos para editar esta nota" });
-          return;
+          return next(new ForbiddenError("No tienes permisos para editar esta nota"));
         }
       }
 
@@ -250,8 +236,7 @@ export class GroupNoteController {
       const updateResult = await pool.query(query, values);
 
       if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "No se pudo actualizar la nota" });
-        return;
+        return next(new NotFoundError("No se pudo actualizar la nota"));
       }
 
       // Get complete updated note with username
@@ -272,20 +257,16 @@ export class GroupNoteController {
         note: getNoteResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al actualizar nota de grupo:", error);
-      res.status(500).json({
-        error: "Error al actualizar la nota",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   }
 
   // Delete a group note
-  async deleteGroupNote(req: Request, res: Response): Promise<void> {
+  async deleteGroupNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const noteId = req.params.noteId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify note exists and belongs to group
       const noteCheckResult = await pool.query(
@@ -297,8 +278,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -312,16 +292,12 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          res.status(403).json({ error: "No tienes acceso a este grupo" });
-          return;
+          return next(new ForbiddenError("No tienes acceso a este grupo"));
         }
 
         const role = roleCheckResult.rows[0].role;
         if (role !== "owner" && role !== "admin") {
-          res
-            .status(403)
-            .json({ error: "No tienes permisos para eliminar esta nota" });
-          return;
+          return next(new ForbiddenError("No tienes permisos para eliminar esta nota"));
         }
       }
 
@@ -355,17 +331,16 @@ export class GroupNoteController {
 
       res.json({ message: "Nota eliminada correctamente" });
     } catch (error) {
-      console.error("Error al eliminar nota de grupo:", error);
-      res.status(500).json({ error: "Error al eliminar la nota" });
+      next(error);
     }
   }
 
   // Toggle pin on group note
-  async togglePinGroupNote(req: Request, res: Response): Promise<void> {
+  async togglePinGroupNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const noteId = req.params.noteId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify note exists and belongs to group
       const noteCheckResult = await pool.query(
@@ -377,8 +352,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -392,16 +366,12 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          res.status(403).json({ error: "No tienes acceso a este grupo" });
-          return;
+          return next(new ForbiddenError("No tienes acceso a este grupo"));
         }
 
         const role = roleCheckResult.rows[0].role;
         if (role !== "owner" && role !== "admin") {
-          res
-            .status(403)
-            .json({ error: "No tienes permisos para modificar esta nota" });
-          return;
+          return next(new ForbiddenError("No tienes permisos para modificar esta nota"));
         }
       }
 
@@ -436,17 +406,15 @@ export class GroupNoteController {
         note: getNoteResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al marcar/desmarcar nota de grupo:", error);
-      res.status(500).json({ error: "Error al actualizar la nota" });
+      next(error);
     }
   }
 
   // Upload group note image
-  async uploadGroupNoteImage(req: RequestWithFile, res: Response): Promise<void> {
+  async uploadGroupNoteImage(req: RequestWithFile, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) {
-        res.status(400).json({ error: "No se ha proporcionado ninguna imagen" });
-        return;
+        return next(new BadRequestError("No se ha proporcionado ninguna imagen"));
       }
 
       // Build relative URL for the image
@@ -459,21 +427,20 @@ export class GroupNoteController {
         },
       });
     } catch (error) {
-      console.error("Error al subir imagen:", error);
       if (req.file) {
         fs.unlink(req.file.path, (err) => {
           if (err) console.error("Error eliminando archivo temporal:", err);
         });
       }
-      res.status(500).json({ error: "Error al procesar la imagen" });
+      next(error);
     }
   }
 
   // Delete group note image
-  async deleteGroupNoteImage(req: Request, res: Response): Promise<void> {
+  async deleteGroupNoteImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { noteId, imageIndex } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const index = parseInt(imageIndex);
 
       // Fetch note together with a membership check to prevent IDOR
@@ -486,16 +453,14 @@ export class GroupNoteController {
       );
 
       if (noteResult.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       const note = noteResult.rows[0];
       const images = note.images || [];
 
       if (index < 0 || index >= images.length) {
-        res.status(400).json({ error: "Índice de imagen inválido" });
-        return;
+        return next(new BadRequestError("Índice de imagen inválido"));
       }
 
       // Verify permissions (note creator or group admin/owner)
@@ -515,8 +480,7 @@ export class GroupNoteController {
       }
 
       if (!hasPermission) {
-        res.status(403).json({ error: "No tienes permiso para eliminar esta imagen" });
-        return;
+        return next(new ForbiddenError("No tienes permiso para eliminar esta imagen"));
       }
 
       // Delete file if it exists on server
@@ -542,8 +506,7 @@ export class GroupNoteController {
         message: "Imagen eliminada correctamente"
       });
     } catch (error) {
-      console.error("Error al eliminar imagen:", error);
-      res.status(500).json({ error: "Error al eliminar la imagen" });
+      next(error);
     }
   }
 }

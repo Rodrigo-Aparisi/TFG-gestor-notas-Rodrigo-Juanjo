@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { noteService } from '../services/api';
 import { Group, GroupResponse } from '../types';
 
-export function useGroups(showFeedback?: (message: string) => void) {
+export function useGroups() {
   const navigate = useNavigate();
   const location = useLocation();
   const [groups, setGroups] = useState<Group[]>([
@@ -52,7 +53,7 @@ export function useGroups(showFeedback?: (message: string) => void) {
   const handleCreateGroup = async (markedNotes: string[]) => {
     try {
       if (!newNoteGroup.name.trim()) {
-        if (showFeedback) showFeedback('El nombre del grupo es requerido');
+        toast.error('El nombre del grupo es requerido');
         return;
       }
   
@@ -78,13 +79,13 @@ export function useGroups(showFeedback?: (message: string) => void) {
         setGroups(prev => [...prev, formattedGroup]);
         setShowGroupModal(false);
         setNoteNewGroup({ name: '', color: '#f1c40f' });
-        if (showFeedback) showFeedback('Grupo creado exitosamente');
+        toast.success('Grupo creado exitosamente');
         return true;
       }
       return false;
     } catch (error) {
       console.error('Error al crear grupo:', error);
-      if (showFeedback) showFeedback('Error al crear el grupo');
+      toast.error('Error al crear el grupo');
       return false;
     }
   };
@@ -104,13 +105,13 @@ export function useGroups(showFeedback?: (message: string) => void) {
             : group
         ));
         
-        if (showFeedback) showFeedback('Grupo actualizado exitosamente');
+        toast.success('Grupo actualizado exitosamente');
         return true;
       }
       return false;
     } catch (error) {
       console.error('Error al actualizar grupo:', error);
-      if (showFeedback) showFeedback('Error al actualizar el grupo');
+      toast.error('Error al actualizar el grupo');
       return false;
     }
   };
@@ -149,7 +150,7 @@ export function useGroups(showFeedback?: (message: string) => void) {
       await noteService.reorderGroups(groupIds);
     } catch (error) {
       console.error('Error al reordenar grupos:', error);
-      if (showFeedback) showFeedback('Error al reordenar los grupos');
+      toast.error('Error al reordenar los grupos');
       
       // Revertir cambios en caso de error
       setGroups(groups);
@@ -161,7 +162,7 @@ export function useGroups(showFeedback?: (message: string) => void) {
       // Verificar si la nota ya está en el grupo
       const group = groups.find(g => g.id === groupId);
       if (group && group.noteIds.includes(noteId)) {
-        if (showFeedback) showFeedback('La nota ya está en este grupo');
+        toast('La nota ya está en este grupo');
         return true; // Ya está en el grupo, consideramos que fue exitoso
       }
       
@@ -179,11 +180,11 @@ export function useGroups(showFeedback?: (message: string) => void) {
         return group;
       }));
       
-      if (showFeedback) showFeedback('Nota añadida al grupo exitosamente');
+      toast.success('Nota añadida al grupo exitosamente');
       return true;
     } catch (error) {
       console.error('Error al añadir nota al grupo:', error);
-      if (showFeedback) showFeedback('Error al añadir la nota al grupo');
+      toast.error('Error al añadir la nota al grupo');
       return false;
     }
   };
@@ -203,11 +204,11 @@ export function useGroups(showFeedback?: (message: string) => void) {
         return group;
       }));
       
-      if (showFeedback) showFeedback('Nota eliminada del grupo exitosamente');
+      toast.success('Nota eliminada del grupo exitosamente');
       return true;
     } catch (error) {
       console.error('Error al eliminar nota del grupo:', error);
-      if (showFeedback) showFeedback('Error al eliminar la nota del grupo');
+      toast.error('Error al eliminar la nota del grupo');
       return false;
     }
   };
@@ -235,10 +236,10 @@ export function useGroups(showFeedback?: (message: string) => void) {
           setActiveGroup('main');
           navigate('/notes');
         }
-        if (showFeedback) showFeedback('Grupo eliminado exitosamente');
+        toast.success('Grupo eliminado exitosamente');
       } catch (error) {
         console.error('Error al eliminar grupo:', error);
-        if (showFeedback) showFeedback('Error al eliminar el grupo');
+        toast.error('Error al eliminar el grupo');
       }
     }
   };

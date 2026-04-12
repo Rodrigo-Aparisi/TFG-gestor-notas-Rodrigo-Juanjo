@@ -14,8 +14,6 @@ interface NotesContentProps {
   hasSharedNotes: boolean;
   onTabChange: (tabId: string) => void;
 
-  // Feedback
-  feedback: string;
 
   // Group state
   activeGroup: string;
@@ -52,7 +50,6 @@ interface NotesContentProps {
   focusedNoteId: string | null;
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
-  showFeedback: (message: string) => void;
   handleDeleteSharedImage: (sharedNoteId: string, imageIndex: number) => Promise<void>;
   handleAddSharedImage: (e: React.ChangeEvent<HTMLInputElement>, sharedNoteId: string) => Promise<void>;
   handleExportSharedNote: (format: string, sharedNoteId: string) => void;
@@ -76,8 +73,6 @@ const NotesContent: React.FC<NotesContentProps> = ({
   activeTab,
   hasSharedNotes,
   onTabChange,
-  // Feedback
-  feedback,
   // Group state
   activeGroup,
   groups,
@@ -109,7 +104,6 @@ const NotesContent: React.FC<NotesContentProps> = ({
   focusedNoteId,
   handleFocus,
   handleFocusIndicatorClick,
-  showFeedback,
   handleDeleteSharedImage,
   handleAddSharedImage,
   handleExportSharedNote,
@@ -149,9 +143,6 @@ const NotesContent: React.FC<NotesContentProps> = ({
         hasSharedNotes={hasSharedNotes}
         onTabChange={onTabChange}
       />
-
-      {/* Feedback message */}
-      {feedback && <div className="feedback-message">{feedback}</div>}
 
       {/* Active group header */}
       {activeGroup && (
@@ -209,7 +200,6 @@ const NotesContent: React.FC<NotesContentProps> = ({
           handleFocus={handleFocus}
           handleFocusIndicatorClick={handleFocusIndicatorClick}
           autoResizeTextarea={autoResizeTextarea}
-          showFeedback={showFeedback}
           insertList={insertList}
           handleDeleteSharedImage={handleDeleteSharedImage}
           handleAddSharedImage={handleAddSharedImage}

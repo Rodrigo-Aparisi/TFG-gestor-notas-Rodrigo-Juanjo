@@ -4,7 +4,7 @@ import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import { Pool } from 'pg';
+import { pool } from './database';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
 import groupRoutes from './routes/noteGroupRoutes';
@@ -135,15 +135,6 @@ app.use('/uploads', (err: Error & { code?: string }, req: express.Request, res: 
   next(err);
 });
 
-// Configurar conexión a base de datos
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || '5432')
-});
-
 // Middleware para manejar errores de archivos (Multer)
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
@@ -215,5 +206,3 @@ app.listen(PORT, () => {
   setupEmailScheduler();
 });
 
-// Exportar pool para uso en otros archivos
-export { pool };

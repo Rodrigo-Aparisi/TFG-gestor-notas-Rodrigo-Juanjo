@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
+import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
 
 /**
  * Controller for Group Member operations
@@ -7,10 +8,10 @@ import { pool } from "../../database";
  */
 export class GroupMemberController {
   // Get group members
-  async getGroupMembers(req: Request, res: Response): Promise<void> {
+  async getGroupMembers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is a member of the group
       const memberCheckResult = await pool.query(
@@ -26,8 +27,7 @@ export class GroupMemberController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Get group members
@@ -56,32 +56,27 @@ export class GroupMemberController {
 
       res.json({ members: result.rows });
     } catch (error) {
-      console.error("Error al obtener miembros del grupo:", error);
-      res
-        .status(500)
-        .json({ error: "Error al obtener los miembros del grupo" });
+      next(error);
     }
   }
 
   // Add a member to the group
-  async addGroupMember(req: Request, res: Response): Promise<void> {
+  async addGroupMember(req: Request, res: Response, next: NextFunction): Promise<void> {
     const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { username, role = "member" } = req.body;
 
       if (!username) {
-        res.status(400).json({ error: "El nombre de usuario es obligatorio" });
-        return;
+        return next(new BadRequestError("El nombre de usuario es obligatorio"));
       }
 
       if (!["admin", "member"].includes(role)) {
-        res.status(400).json({ error: "Rol no válido" });
-        return;
+        return next(new BadRequestError("Rol no válido"));
       }
 
       // Verify user adding is owner or admin
@@ -94,24 +89,17 @@ export class GroupMemberController {
       );
 
       if (roleCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       const currentUserRole = roleCheckResult.rows[0].role;
       if (currentUserRole !== "owner" && currentUserRole !== "admin") {
-        res
-          .status(403)
-          .json({ error: "No tienes permisos para añadir miembros" });
-        return;
+        return next(new ForbiddenError("No tienes permisos para añadir miembros"));
       }
 
       // Only owner can add admins
       if (role === "admin" && currentUserRole !== "owner") {
-        res
-          .status(403)
-          .json({ error: "Solo el propietario puede añadir administradores" });
-        return;
+        return next(new ForbiddenError("Solo el propietario puede añadir administradores"));
       }
 
       // Find user by username
@@ -123,8 +111,7 @@ export class GroupMemberController {
       );
 
       if (findUserResult.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const newMemberId = findUserResult.rows[0].id;
@@ -143,8 +130,7 @@ export class GroupMemberController {
       const memberExists = memberExistsResult.rows[0].exists;
 
       if (memberExists) {
-        res.status(400).json({ error: "El usuario ya es miembro del grupo" });
-        return;
+        return next(new BadRequestError("El usuario ya es miembro del grupo"));
       }
 
       // Add new member
@@ -182,19 +168,18 @@ export class GroupMemberController {
       });
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error al añadir miembro al grupo:", error);
-      res.status(500).json({ error: "Error al añadir miembro al grupo" });
+      next(error);
     } finally {
       client.release();
     }
   }
 
   // Remove a member from the group
-  async removeGroupMember(req: Request, res: Response): Promise<void> {
+  async removeGroupMember(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const memberUserId = req.params.userId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user removing is owner, admin, or removing themselves
       if (userId !== memberUserId) {
@@ -207,16 +192,12 @@ export class GroupMemberController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          res.status(403).json({ error: "No tienes acceso a este grupo" });
-          return;
+          return next(new ForbiddenError("No tienes acceso a este grupo"));
         }
 
         const currentUserRole = roleCheckResult.rows[0].role;
         if (currentUserRole !== "owner" && currentUserRole !== "admin") {
-          res
-            .status(403)
-            .json({ error: "No tienes permisos para eliminar miembros" });
-          return;
+          return next(new ForbiddenError("No tienes permisos para eliminar miembros"));
         }
 
         // Check member role to remove
@@ -229,8 +210,7 @@ export class GroupMemberController {
         );
 
         if (memberRoleResult.rows.length === 0) {
-          res.status(404).json({ error: "Miembro no encontrado" });
-          return;
+          return next(new NotFoundError("Miembro no encontrado"));
         }
 
         const memberRole = memberRoleResult.rows[0].role;
@@ -240,18 +220,12 @@ export class GroupMemberController {
           currentUserRole === "admin" &&
           (memberRole === "owner" || memberRole === "admin")
         ) {
-          res
-            .status(403)
-            .json({ error: "No tienes permisos para eliminar a este miembro" });
-          return;
+          return next(new ForbiddenError("No tienes permisos para eliminar a este miembro"));
         }
 
         // Cannot remove owner
         if (memberRole === "owner") {
-          res
-            .status(403)
-            .json({ error: "No se puede eliminar al propietario del grupo" });
-          return;
+          return next(new ForbiddenError("No se puede eliminar al propietario del grupo"));
         }
       }
 
@@ -266,37 +240,31 @@ export class GroupMemberController {
       );
 
       if (deleteResult.rows.length === 0) {
-        res.status(404).json({ error: "Miembro no encontrado" });
-        return;
+        return next(new NotFoundError("Miembro no encontrado"));
       }
 
       res.json({ message: "Miembro eliminado correctamente" });
     } catch (error) {
-      console.error("Error al eliminar miembro del grupo:", error);
-      res.status(500).json({ error: "Error al eliminar miembro del grupo" });
+      next(error);
     }
   }
 
   // Update member role
-  async updateMemberRole(req: Request, res: Response): Promise<void> {
+  async updateMemberRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
       const memberUserId = req.params.userId;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { role } = req.body;
 
       // Validate role
       if (!["admin", "member"].includes(role)) {
-        res.status(400).json({ error: "Rol no válido" });
-        return;
+        return next(new BadRequestError("Rol no válido"));
       }
 
       // Cannot change own role
       if (memberUserId === userId) {
-        res
-          .status(403)
-          .json({ error: "No puedes cambiar tus propios permisos" });
-        return;
+        return next(new ForbiddenError("No puedes cambiar tus propios permisos"));
       }
 
       // Get group info and verify it exists
@@ -308,16 +276,12 @@ export class GroupMemberController {
       );
 
       if (groupResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       // Cannot change owner role
       if (memberUserId === groupResult.rows[0].owner_id) {
-        res
-          .status(403)
-          .json({ error: "No se puede cambiar el rol del propietario" });
-        return;
+        return next(new ForbiddenError("No se puede cambiar el rol del propietario"));
       }
 
       // Verify current user role in group
@@ -330,18 +294,14 @@ export class GroupMemberController {
       );
 
       if (currentUserRoleResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       const currentUserRole = currentUserRoleResult.rows[0].role;
 
       // Only owners and admins can change roles
       if (currentUserRole !== "owner" && currentUserRole !== "admin") {
-        res
-          .status(403)
-          .json({ error: "No tienes permisos para cambiar roles" });
-        return;
+        return next(new ForbiddenError("No tienes permisos para cambiar roles"));
       }
 
       // Get current role of member to modify
@@ -354,19 +314,14 @@ export class GroupMemberController {
       );
 
       if (memberRoleResult.rows.length === 0) {
-        res.status(404).json({ error: "Miembro no encontrado" });
-        return;
+        return next(new NotFoundError("Miembro no encontrado"));
       }
 
       const memberCurrentRole = memberRoleResult.rows[0].role;
 
       // Admins cannot change role of other admins
       if (currentUserRole === "admin" && memberCurrentRole === "admin") {
-        res.status(403).json({
-          error:
-            "Los administradores no pueden modificar el rol de otros administradores",
-        });
-        return;
+        return next(new ForbiddenError("Los administradores no pueden modificar el rol de otros administradores"));
       }
 
       // Update role
@@ -381,8 +336,7 @@ export class GroupMemberController {
       );
 
       if (updateResult.rows.length === 0) {
-        res.status(404).json({ error: "Miembro no encontrado" });
-        return;
+        return next(new NotFoundError("Miembro no encontrado"));
       }
 
       // Get complete member information
@@ -407,21 +361,19 @@ export class GroupMemberController {
         member: getMemberResult.rows[0],
       });
     } catch (error) {
-      console.error("Error al actualizar rol de miembro:", error);
-      res.status(500).json({ error: "Error al actualizar rol de miembro" });
+      next(error);
     }
   }
 
   // Invite user by email
-  async inviteUserByEmail(req: Request, res: Response): Promise<void> {
+  async inviteUserByEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { email } = req.body;
 
       if (!email) {
-        res.status(400).json({ error: "El email es obligatorio" });
-        return;
+        return next(new BadRequestError("El email es obligatorio"));
       }
 
       // Verify user inviting is a member
@@ -434,17 +386,13 @@ export class GroupMemberController {
       );
 
       if (memberCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Only owners and admins can invite
       const role = memberCheckResult.rows[0].role;
       if (role !== "owner" && role !== "admin") {
-        res
-          .status(403)
-          .json({ error: "No tienes permisos para invitar usuarios" });
-        return;
+        return next(new ForbiddenError("No tienes permisos para invitar usuarios"));
       }
 
       // Verify group exists
@@ -456,8 +404,7 @@ export class GroupMemberController {
       );
 
       if (groupResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       // Find user by email
@@ -469,8 +416,7 @@ export class GroupMemberController {
       );
 
       if (userResult.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const invitedUserId = userResult.rows[0].id;
@@ -487,8 +433,7 @@ export class GroupMemberController {
       );
 
       if (existingMemberResult.rows[0].exists) {
-        res.status(400).json({ error: "El usuario ya es miembro del grupo" });
-        return;
+        return next(new BadRequestError("El usuario ya es miembro del grupo"));
       }
 
       // Add user as member with 'member' role
@@ -502,23 +447,19 @@ export class GroupMemberController {
 
       res.json({ message: "Usuario invitado correctamente" });
     } catch (error) {
-      console.error("Error al invitar usuario:", error);
-      res.status(500).json({ error: "Error al procesar la invitación" });
+      next(error);
     }
   }
 
   // Search users to add to group
-  async searchUsers(req: Request, res: Response): Promise<void> {
+  async searchUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const query = req.query.q as string;
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       if (!query || query.trim().length < 2) {
-        res.status(400).json({
-          error: "La consulta de búsqueda debe tener al menos 2 caracteres",
-        });
-        return;
+        return next(new BadRequestError("La consulta de búsqueda debe tener al menos 2 caracteres"));
       }
 
       // Verify user is a member
@@ -533,8 +474,7 @@ export class GroupMemberController {
       );
 
       if (!memberCheckResult.rows[0].is_member) {
-        res.status(403).json({ error: "No tienes acceso a este grupo" });
-        return;
+        return next(new ForbiddenError("No tienes acceso a este grupo"));
       }
 
       // Get IDs of users who are already members
@@ -564,16 +504,15 @@ export class GroupMemberController {
 
       res.json({ users: searchResult.rows });
     } catch (error) {
-      console.error("Error al buscar usuarios:", error);
-      res.status(500).json({ error: "Error al buscar usuarios" });
+      next(error);
     }
   }
 
   // Leave group
-  async leaveGroup(req: Request, res: Response): Promise<void> {
+  async leaveGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify user is a member
       const memberCheckResult = await pool.query(
@@ -585,18 +524,15 @@ export class GroupMemberController {
       );
 
       if (memberCheckResult.rows.length === 0) {
-        res.status(403).json({ error: "No eres miembro de este grupo" });
-        return;
+        return next(new ForbiddenError("No eres miembro de este grupo"));
       }
 
       // Check if user is owner
       const role = memberCheckResult.rows[0].role;
       if (role === "owner") {
-        res.status(400).json({
-          error:
-            "Eres el propietario del grupo. Transfiere la propiedad antes de abandonar o elimina el grupo.",
-        });
-        return;
+        return next(new BadRequestError(
+          "Eres el propietario del grupo. Transfiere la propiedad antes de abandonar o elimina el grupo."
+        ));
       }
 
       // Remove user from group
@@ -610,47 +546,43 @@ export class GroupMemberController {
 
       res.json({ message: "Has abandonado el grupo correctamente" });
     } catch (error) {
-      console.error("Error al abandonar grupo:", error);
-      res.status(500).json({ error: "Error al abandonar el grupo" });
+      next(error);
     }
   }
 
   // Transfer group ownership
-  async transferOwnership(req: Request, res: Response): Promise<void> {
+  // B4.7: All validation queries are moved inside the transaction to avoid race conditions
+  async transferOwnership(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const client = await pool.connect();
     try {
       const groupId = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { newOwnerId } = req.body;
 
       if (!newOwnerId) {
-        res
-          .status(400)
-          .json({ error: "El ID del nuevo propietario es obligatorio" });
-        return;
+        return next(new BadRequestError("El ID del nuevo propietario es obligatorio"));
       }
 
-      // Verify current user is owner
-      const groupResult = await pool.query(
-        `
-        SELECT owner_id FROM user_groups WHERE id = $1
-      `,
+      await client.query("BEGIN");
+
+      // Validate current ownership and new owner membership atomically (FOR UPDATE locks the group row)
+      const groupResult = await client.query(
+        `SELECT owner_id FROM user_groups WHERE id = $1 FOR UPDATE`,
         [groupId]
       );
 
       if (groupResult.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        await client.query("ROLLBACK");
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       if (groupResult.rows[0].owner_id !== userId) {
-        res
-          .status(403)
-          .json({ error: "Solo el propietario puede transferir la propiedad" });
-        return;
+        await client.query("ROLLBACK");
+        return next(new ForbiddenError("Solo el propietario puede transferir la propiedad"));
       }
 
-      // Verify new owner is a member
-      const newOwnerCheckResult = await pool.query(
+      // Verify new owner is a member (inside transaction)
+      const newOwnerCheckResult = await client.query(
         `
         SELECT EXISTS(
           SELECT 1 FROM group_members
@@ -661,61 +593,36 @@ export class GroupMemberController {
       );
 
       if (!newOwnerCheckResult.rows[0].is_member) {
-        res
-          .status(400)
-          .json({ error: "El nuevo propietario debe ser miembro del grupo" });
-        return;
-      }
-
-      const client = await pool.connect();
-
-      try {
-        await client.query("BEGIN");
-
-        // Update owner in user_groups table
-        await client.query(
-          `
-          UPDATE user_groups
-          SET owner_id = $1
-          WHERE id = $2
-        `,
-          [newOwnerId, groupId]
-        );
-
-        // Update old owner role to 'admin'
-        await client.query(
-          `
-          UPDATE group_members
-          SET role = 'admin'
-          WHERE group_id = $1 AND user_id = $2
-        `,
-          [groupId, userId]
-        );
-
-        // Update new owner role to 'owner'
-        await client.query(
-          `
-          UPDATE group_members
-          SET role = 'owner'
-          WHERE group_id = $1 AND user_id = $2
-        `,
-          [groupId, newOwnerId]
-        );
-
-        await client.query("COMMIT");
-
-        res.json({ message: "Propiedad del grupo transferida correctamente" });
-      } catch (error) {
         await client.query("ROLLBACK");
-        throw error;
-      } finally {
-        client.release();
+        return next(new BadRequestError("El nuevo propietario debe ser miembro del grupo"));
       }
+
+      // Update owner in user_groups table
+      await client.query(
+        `UPDATE user_groups SET owner_id = $1 WHERE id = $2`,
+        [newOwnerId, groupId]
+      );
+
+      // Update old owner role to 'admin'
+      await client.query(
+        `UPDATE group_members SET role = 'admin' WHERE group_id = $1 AND user_id = $2`,
+        [groupId, userId]
+      );
+
+      // Update new owner role to 'owner'
+      await client.query(
+        `UPDATE group_members SET role = 'owner' WHERE group_id = $1 AND user_id = $2`,
+        [groupId, newOwnerId]
+      );
+
+      await client.query("COMMIT");
+
+      res.json({ message: "Propiedad del grupo transferida correctamente" });
     } catch (error) {
-      console.error("Error al transferir propiedad del grupo:", error);
-      res
-        .status(500)
-        .json({ error: "Error al transferir propiedad del grupo" });
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
     }
   }
 }

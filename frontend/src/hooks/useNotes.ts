@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { noteService } from '../services/api';
 import { authService } from '../services/auth';
 import { Note, UpdateNoteData } from '../types';
-import { sanitizeHTML, sanitizePlainText } from '../utils/sanitize';
+import { exportAsPDF as exportAsPDFHelper } from '../utils/exportHelpers';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -13,14 +14,8 @@ export function useNotes() {
   const [markedNotes, setMarkedNotes] = useState<string[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [feedback, setFeedback] = useState('');
   const [sortKey, setSortKey] = useState<number>(0);
   const navigate = useNavigate();
-
-  const showFeedback = useCallback((message: string) => {
-    setFeedback(message);
-    setTimeout(() => setFeedback(''), 3000);
-  }, []);
 
   const loadNotes = useCallback(async () => {
     try {
@@ -62,10 +57,10 @@ export function useNotes() {
 
   const handleCreateNote = async () => {
     if (!newNote.title.trim()) {
-      showFeedback('El título es requerido');
+      toast.error('El título es requerido');
       return;
     }
-  
+
     setIsLoading(true);
     try {
       // Asegúrate de que images se envíe correctamente
@@ -74,18 +69,18 @@ export function useNotes() {
         content: newNote.content.trim(),
         images: newNote.images // Enviar el array de imágenes
       });
-      
+
       if (result && result.note) {
         setNotes(prevNotes => [result.note, ...prevNotes]);
         setNewNote({ title: '', content: '', images: [] }); // Resetear también las imágenes
-        
+
         forceReorder();
-        showFeedback('Nota creada exitosamente');
+        toast.success('Nota creada exitosamente');
       }
     } catch (error: unknown) {
       console.error('Error creating note:', error);
       const apiError = error as { response?: { data?: { error?: string } } };
-      showFeedback(apiError.response?.data?.error || 'Error al crear la nota');
+      toast.error(apiError.response?.data?.error || 'Error al crear la nota');
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +114,7 @@ export function useNotes() {
     if (editedNote[field] === originalNote[field]) return;
 
     if (field === 'title' && editedNote.title.trim() === '') {
-      showFeedback('El título no puede estar vacío');
+      toast.error('El título no puede estar vacío');
       setEditingNote(prev => ({
         ...prev,
         [id]: {
@@ -134,20 +129,20 @@ export function useNotes() {
       setIsLoading(true);
       const updateData = { [field]: editedNote[field] };
       const response = await noteService.updateNote(id, updateData);
-      
+
       if (response && response.note) {
-        setNotes(prevNotes => 
-          prevNotes.map(note => 
+        setNotes(prevNotes =>
+          prevNotes.map(note =>
             note.id === id ? response.note : note
           )
         );
 
         forceReorder();
-        showFeedback('Nota actualizada');
+        toast.success('Nota actualizada');
       }
     } catch (error) {
       console.error('Error al actualizar nota:', error);
-      showFeedback('Error al actualizar la nota');
+      toast.error('Error al actualizar la nota');
       setEditingNote(prev => ({
         ...prev,
         [id]: {
@@ -168,9 +163,9 @@ export function useNotes() {
     formData.append('image', file);
   
     try {
-      showFeedback('Subiendo imagen...');
+      toast('Subiendo imagen...');
       const response = await noteService.uploadNoteImage(formData);
-      
+
       if (response.data && response.data.data && response.data.data.imageUrl) {
         if (noteId === 'new') {
           // Para nota nueva, añadimos la imagen al array de imágenes
@@ -178,7 +173,7 @@ export function useNotes() {
             ...prev,
             images: [...(prev.images || []), response.data.data.imageUrl]
           }));
-          showFeedback('Imagen añadida a la nota nueva');
+          toast.success('Imagen añadida a la nota nueva');
         } else {
           const note = notes.find(n => n.id === noteId);
           if (note) {
@@ -186,27 +181,27 @@ export function useNotes() {
             const updateData: UpdateNoteData = {
               images: updatedImages
             };
-      
+
             await noteService.updateNote(noteId, updateData);
-            
+
             const updatedNote = {
               ...note,
               images: updatedImages
             };
-      
-            setNotes(prevNotes => 
-              prevNotes.map(n => 
+
+            setNotes(prevNotes =>
+              prevNotes.map(n =>
                 n.id === noteId ? updatedNote : n
               )
             );
-            
-            showFeedback('Imagen subida correctamente');
+
+            toast.success('Imagen subida correctamente');
           }
         }
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      showFeedback('Error al subir la imagen');
+      toast.error('Error al subir la imagen');
     }
   };
   
@@ -232,10 +227,10 @@ export function useNotes() {
           n.id === noteId ? updatedNote : n
         )
       );
-      showFeedback('Imagen eliminada correctamente');
+      toast.success('Imagen eliminada correctamente');
     } catch (error) {
       console.error('Error deleting image:', error);
-      showFeedback('Error al eliminar la imagen');
+      toast.error('Error al eliminar la imagen');
     }
   };
 
@@ -245,22 +240,22 @@ export function useNotes() {
       
       if (window.location.pathname === '/trash') {
         setTrashNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-        showFeedback('Nota eliminada permanentemente');
+        toast.success('Nota eliminada permanentemente');
       } else {
         // Actualizamos la lista de notas
         setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-        
+
         // Actualizamos la lista de notas marcadas
         setMarkedNotes(prev => prev.filter(noteId => noteId !== id));
-        
-        // AÑADIR ESTO: También actualizamos filteredNotes para que se actualice la UI inmediatamente
+
+        // También actualizamos filteredNotes para que se actualice la UI inmediatamente
         setFilteredNotes(prevFiltered => prevFiltered.filter(note => note.id !== id));
-        
-        showFeedback('Nota movida a la papelera');
+
+        toast.success('Nota movida a la papelera');
       }
     } catch (error) {
       console.error('Error deleting note:', error);
-      showFeedback('Error al procesar la nota');
+      toast.error('Error al procesar la nota');
     }
   };
 
@@ -269,11 +264,11 @@ export function useNotes() {
       const response = await noteService.restoreNote(id);
       if (response && response.note) {
         setTrashNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-        showFeedback('Nota restaurada exitosamente');
+        toast.success('Nota restaurada exitosamente');
       }
     } catch (error) {
       console.error('Error al restaurar nota:', error);
-      showFeedback('Error al restaurar la nota');
+      toast.error('Error al restaurar la nota');
     }
   };
 
@@ -285,10 +280,10 @@ export function useNotes() {
     try {
       await noteService.emptyTrash();
       setTrashNotes([]);
-      showFeedback('Papelera vaciada exitosamente');
+      toast.success('Papelera vaciada exitosamente');
     } catch (error) {
       console.error('Error al vaciar papelera:', error);
-      showFeedback('Error al vaciar la papelera');
+      toast.error('Error al vaciar la papelera');
     }
   };
 
@@ -300,16 +295,16 @@ export function useNotes() {
         if (window.location.pathname === '/trash') {
           await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
           setTrashNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
-          showFeedback('Notas eliminadas permanentemente');
+          toast.success('Notas eliminadas permanentemente');
         } else {
           await Promise.all(markedNotes.map(id => noteService.deleteNote(id)));
           setNotes(prevNotes => prevNotes.filter(note => !markedNotes.includes(note.id)));
-          showFeedback('Notas movidas a la papelera');
+          toast.success('Notas movidas a la papelera');
         }
         setMarkedNotes([]);
       } catch (error) {
         console.error('Error al procesar notas:', error);
-        showFeedback('Error al procesar las notas');
+        toast.error('Error al procesar las notas');
       }
     }
   };
@@ -355,11 +350,11 @@ export function useNotes() {
         
         forceReorder();
         
-        showFeedback(response.note.is_pinned ? 'Nota fijada' : 'Nota desfijada');
+        toast.success(response.note.is_pinned ? 'Nota fijada' : 'Nota desfijada');
       }
     } catch (error) {
       console.error('Error al fijar/desfijar nota:', error);
-      showFeedback('Error al actualizar la nota');
+      toast.error('Error al actualizar la nota');
     }
   };
 
@@ -381,16 +376,19 @@ export function useNotes() {
   
   const handleExportNote = (format: string, noteId?: string) => {
     if (!noteId) return;
-    
+
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
-    
+
     const content = note.content;
     const title = note.title || 'Nota sin título';
-    
+
     switch (format) {
       case 'pdf':
-        exportAsPDF(title, content, note);
+        exportAsPDFHelper(title, content, {
+          images: note.images,
+          imageBaseUrl: process.env.REACT_APP_API_URL?.replace('/api', '') ?? ''
+        });
         break;
       case 'txt':
         exportAsTXT(title, content);
@@ -399,119 +397,6 @@ export function useNotes() {
         break;
     }
   };
-
-  const exportAsPDF = (title: string, content: string, note: Note) => {
-    try {
-      showFeedback('Preparando exportación a PDF...');
-
-      // Eliminar iframe existente si hay alguno
-      const existingIframe = document.getElementById('pdf-print-frame');
-      if (existingIframe) {
-        document.body.removeChild(existingIframe);
-      }
-
-      // Crear un iframe oculto
-      const iframe = document.createElement('iframe');
-      iframe.id = 'pdf-print-frame';
-      iframe.style.position = 'absolute';
-      iframe.style.top = '-9999px';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      document.body.appendChild(iframe);
-
-      // Sanitize before interpolating into HTML to prevent XSS
-      const safeTitle = sanitizePlainText(title);
-      const formattedContent = sanitizeHTML(
-        content
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/__(.*?)__/g, '<u>$1</u>')
-          .replace(/\n/g, '<br>')
-      );
-
-      // Esperar a que el iframe esté cargado
-      iframe.onload = () => {
-        // Acceder al documento dentro del iframe
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) {
-          showFeedback('Error al crear el documento PDF');
-          return;
-        }
-
-        // Escribir el contenido HTML en el iframe
-        iframeDoc.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>${safeTitle}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                margin: 20px;
-                color: #333;
-              }
-              h1 {
-                color: #333;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 10px;
-              }
-              .content {
-                margin-top: 20px;
-              }
-              .images {
-                margin-top: 30px;
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-                max-width: 20%;
-              }
-              .images img {
-                max-width: 100%;
-                height: auto;
-                border: 1px solid #ddd;
-              }
-            </style>
-          </head>
-          <body>
-            <h1>${safeTitle}</h1>
-            <div class="content">${formattedContent}</div>
-
-            ${note.images && note.images.length > 0 ? `
-              <div class="images">
-                <h2>Imágenes adjuntas</h2>
-                ${note.images.map(img => `<img src="${process.env.REACT_APP_API_URL?.replace('/api', '')}${img}" alt="Imagen adjunta">`).join('')}
-              </div>
-            ` : ''}
-          </body>
-          </html>
-        `);
-
-        iframeDoc.close();
-
-        // Esperar un momento para que se cargue todo el contenido
-        setTimeout(() => {
-          try {
-            // Imprimir el iframe (esto abrirá el diálogo de impresión)
-            iframe.contentWindow?.print();
-            showFeedback('Documento preparado para descargar como PDF');
-          } catch (err) {
-            console.error('Error al imprimir:', err);
-            showFeedback('Error al generar el PDF');
-          }
-        }, 500);
-      };
-
-      // Iniciar la carga del iframe con un documento en blanco
-      iframe.src = 'about:blank';
-
-    } catch (error) {
-      console.error('Error al exportar como PDF:', error);
-      showFeedback('Error al exportar como PDF');
-    }
-  };
-
 
   const exportAsTXT = (title: string, content: string) => {
     const element = document.createElement('a');
@@ -522,7 +407,7 @@ export function useNotes() {
     element.click();
     URL.revokeObjectURL(element.href);
     document.body.removeChild(element);
-    showFeedback('Nota exportada como TXT');
+    toast.success('Nota exportada como TXT');
   };
 
   // Inicialización de datos
@@ -538,9 +423,7 @@ export function useNotes() {
     markedNotes,
     filteredNotes,
     isLoading,
-    feedback,
     sortKey,
-    showFeedback,
     loadNotes,
     loadTrashNotes,
     handleCreateNote,

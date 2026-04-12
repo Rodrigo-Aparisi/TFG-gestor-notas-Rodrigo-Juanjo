@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { noteService } from "../services/api";
 import { SharedNote } from "../types";
-import { sanitizeHTML, sanitizePlainText } from "../utils/sanitize";
+import { exportAsPDF as exportAsPDFHelper } from "../utils/exportHelpers";
 
 export function useSharedNotes() {
   const [activeTab, setActiveTab] = useState<string>("my-notes");
@@ -140,134 +140,16 @@ export function useSharedNotes() {
 
     switch (format) {
       case "pdf":
-        exportAsPDF(title, content, note);
+        exportAsPDFHelper(title, content, {
+          images: note.images,
+          imageBaseUrl: process.env.REACT_APP_API_URL?.replace("/api", "") ?? ""
+        });
         break;
       case "txt":
         exportAsTXT(title, content);
         break;
       default:
         break;
-    }
-  };
-
-  // Funciones auxiliares para exportación
-  const exportAsPDF = (title: string, content: string, note: SharedNote) => {
-    try {
-
-      // Eliminar iframe existente si hay alguno
-      const existingIframe = document.getElementById("pdf-print-frame");
-      if (existingIframe) {
-        document.body.removeChild(existingIframe);
-      }
-
-      // Crear un iframe oculto
-      const iframe = document.createElement("iframe");
-      iframe.id = "pdf-print-frame";
-      iframe.style.position = "absolute";
-      iframe.style.top = "-9999px";
-      iframe.style.left = "-9999px";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      document.body.appendChild(iframe);
-
-      // Sanitize before interpolating into HTML to prevent XSS
-      const safeTitle = sanitizePlainText(title);
-      const formattedContent = sanitizeHTML(
-        content
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*(.*?)\*/g, "<em>$1</em>")
-          .replace(/__(.*?)__/g, "<u>$1</u>")
-          .replace(/\n/g, "<br>")
-      );
-
-      // Esperar a que el iframe esté cargado
-      iframe.onload = () => {
-        // Acceder al documento dentro del iframe
-        const iframeDoc =
-          iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) {
-          console.error("Error al crear el documento PDF");
-          return;
-        }
-
-        // Escribir el contenido HTML en el iframe
-        iframeDoc.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>${safeTitle}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                margin: 20px;
-                color: #333;
-              }
-              h1 {
-                color: #333;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 10px;
-              }
-              .content {
-                margin-top: 20px;
-              }
-              .images {
-                margin-top: 30px;
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-                max-width: 20%;
-              }
-              .images img {
-                max-width: 100%;
-                height: auto;
-                border: 1px solid #ddd;
-              }
-            </style>
-          </head>
-          <body>
-            <h1>${safeTitle}</h1>
-            <div class="content">${formattedContent}</div>
-
-            ${
-              note.images && note.images.length > 0
-                ? `
-              <div class="images">
-                <h2>Imágenes adjuntas</h2>
-                ${note.images
-                  .map(
-                    (img) =>
-                      `<img src="${process.env.REACT_APP_API_URL?.replace(
-                        "/api",
-                        ""
-                      )}${img}" alt="Imagen adjunta">`
-                  )
-                  .join("")}
-              </div>
-            `
-                : ""
-            }
-          </body>
-          </html>
-        `);
-
-        iframeDoc.close();
-
-        // Esperar un momento para que se cargue todo el contenido
-        setTimeout(() => {
-          try {
-            // Imprimir el iframe (esto abrirá el diálogo de impresión)
-            iframe.contentWindow?.print();
-          } catch (err) {
-            console.error("Error al imprimir:", err);
-          }
-        }, 500);
-      };
-
-      // Iniciar la carga del iframe con un documento en blanco
-      iframe.src = "about:blank";
-    } catch (error) {
-      console.error("Error al exportar como PDF:", error);
     }
   };
 

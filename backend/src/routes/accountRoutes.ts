@@ -3,15 +3,10 @@ import { accountController } from '../controllers/accountController';
 import { authenticateToken } from '../middleware/auth';
 import { upload } from '../config/multerConfigPFP';
 import { Request, Response, NextFunction } from 'express';
+import { validate } from '../middleware/validate';
+import { updateUserSchema } from '../validation/schemas/user.schema';
 
-interface RequestWithUser extends Request {
-  user?: {
-    id: string;
-    [key: string]: any;
-  };
-}
-
-interface RequestWithFileAndUser extends RequestWithUser {
+interface RequestWithFileAndUser extends Request {
   file?: Express.Multer.File;
 }
 
@@ -21,55 +16,41 @@ const router = Router();
 router.use(authenticateToken);
 
 // Rutas de perfil y cuenta
-router.put('/update', authenticateToken, (req: Request, res: Response) => {
-  return accountController.updateUser(req, res);
+router.put('/update', validate(updateUserSchema), (req: Request, res: Response, next: NextFunction) => {
+  return accountController.updateUser(req, res, next);
 });
 
-
-router.get('/profile', (req: Request, res: Response) => {
-  return accountController.getProfile(req, res);
+router.get('/profile', (req: Request, res: Response, next: NextFunction) => {
+  return accountController.getProfile(req, res, next);
 });
 
-router.delete('/delete', (req: Request, res: Response) => {
-  return accountController.deleteAccount(req, res);
+router.delete('/delete', (req: Request, res: Response, next: NextFunction) => {
+  return accountController.deleteAccount(req, res, next);
 });
 
 // Rutas de configuración
-router.get('/settings', (req: Request, res: Response) => {
-  return accountController.getUserSettings(req, res);
+router.get('/settings', (req: Request, res: Response, next: NextFunction) => {
+  return accountController.getUserSettings(req, res, next);
 });
 
-router.put('/settings', (req: Request, res: Response) => {
-  return accountController.updateUserSettings(req, res);
+router.put('/settings', (req: Request, res: Response, next: NextFunction) => {
+  return accountController.updateUserSettings(req, res, next);
 });
 
 // Ruta para subir imagen de perfil
 router.post(
   '/upload-profile-image',
   upload.single('image'),
-  async (req: RequestWithFileAndUser, res: Response) => {
+  async (req: RequestWithFileAndUser, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se ha proporcionado ninguna imagen' });
       }
-      return accountController.uploadProfileImage(req as any, res);
+      return accountController.uploadProfileImage(req as any, res, next);
     } catch (error) {
-      console.error('Error en la ruta de subida de imagen:', error);
-      return res.status(500).json({
-        error: 'Error al procesar la imagen',
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : 'Error desconocido' })
-      });
+      next(error);
     }
   }
 );
-
-// Middleware para manejar errores
-router.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error en las rutas de cuenta:', err);
-  return res.status(500).json({
-    error: 'Error interno del servidor',
-    ...(process.env.NODE_ENV !== 'production' && { details: err instanceof Error ? err.message : 'Error desconocido' })
-  });
-});
 
 export default router;

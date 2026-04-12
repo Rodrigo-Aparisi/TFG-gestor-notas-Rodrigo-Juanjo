@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { pool } from '../database';
+import { AuthUser } from '../models/types';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: AuthUser;
     }
   }
 }
@@ -47,7 +48,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(403).json({ error: 'Token has been revoked' });
     }
 
-    req.user = verified;
+    req.user = verified as AuthUser;
 
     next();
   } catch (error) {

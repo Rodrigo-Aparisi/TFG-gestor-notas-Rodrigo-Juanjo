@@ -5,14 +5,8 @@ export function useUIEffects() {
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
   const [sharingNoteId, setSharingNoteId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [feedback, setFeedback] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [notePositions, setNotePositions] = useState<{[key: string]: NotePosition}>({});
-
-  const showFeedback = useCallback((message: string) => {
-    setFeedback(message);
-    setTimeout(() => setFeedback(''), 3000);
-  }, []);
 
   const getColumnPosition = useCallback((element: HTMLElement): 'left' | 'right' => {
     const columnIndex = Array.from(element.closest('.masonry-grid')?.children || [])
@@ -116,14 +110,12 @@ export function useUIEffects() {
     focusedNoteId,
     sharingNoteId,
     isExpanded,
-    feedback,
     isLoading,
     notePositions,
     setFocusedNoteId,
     setSharingNoteId,
     setIsExpanded,
     setIsLoading,
-    showFeedback,
     handleFocus,
     handleBlur,
     handleFocusIndicatorClick,

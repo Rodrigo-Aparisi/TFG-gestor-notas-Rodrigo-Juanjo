@@ -1,16 +1,17 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
+import { NotFoundError, BadRequestError } from "../../errors/AppError";
 
 /**
  * Controller for Note Group operations
  * Handles group creation, management, and note-group relationships
  */
 export class NoteGroupController {
-  async createGroup(req: Request, res: Response): Promise<void> {
+  async createGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     const client = await pool.connect();
     try {
       const { name, color, noteIds } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       await client.query("BEGIN");
 
@@ -56,16 +57,15 @@ export class NoteGroupController {
       });
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error al crear el grupo:", error);
-      res.status(500).json({ error: "Error al crear el grupo" });
+      next(error);
     } finally {
       client.release();
     }
   }
 
-  async getGroups(req: Request, res: Response): Promise<void> {
+  async getGroups(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const result = await pool.query(
         `SELECT g.*,
         COALESCE(array_agg(ngi.note_id) FILTER (WHERE ngi.note_id IS NOT NULL), ARRAY[]::uuid[]) as note_ids,
@@ -86,16 +86,15 @@ export class NoteGroupController {
 
       res.json({ groups });
     } catch (error) {
-      console.error("Error in getGroups:", error);
-      res.status(500).json({ error: "Error al obtener los grupos" });
+      next(error);
     }
   }
 
-  async updateGroup(req: Request, res: Response): Promise<void> {
+  async updateGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const { name, color } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify group exists and belongs to user
       const checkGroup = await pool.query(
@@ -104,8 +103,7 @@ export class NoteGroupController {
       );
 
       if (checkGroup.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       // Update group
@@ -131,15 +129,14 @@ export class NoteGroupController {
         },
       });
     } catch (error) {
-      console.error("Error al actualizar grupo:", error);
-      res.status(500).json({ error: "Error al actualizar el grupo" });
+      next(error);
     }
   }
 
-  async addNoteToGroup(req: Request, res: Response): Promise<void> {
+  async addNoteToGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { groupId, noteId } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify group exists and belongs to user
       const groupCheck = await pool.query(
@@ -148,8 +145,7 @@ export class NoteGroupController {
       );
 
       if (groupCheck.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       // Verify note exists and belongs to user
@@ -159,8 +155,7 @@ export class NoteGroupController {
       );
 
       if (noteCheck.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       // Check if note is already in group
@@ -170,8 +165,7 @@ export class NoteGroupController {
       );
 
       if (existingCheck.rows.length > 0) {
-        res.status(400).json({ error: "La nota ya está en este grupo" });
-        return;
+        return next(new BadRequestError("La nota ya está en este grupo"));
       }
 
       // Add note to group
@@ -182,15 +176,14 @@ export class NoteGroupController {
 
       res.json({ message: "Nota añadida al grupo exitosamente" });
     } catch (error) {
-      console.error("Error al añadir nota al grupo:", error);
-      res.status(500).json({ error: "Error al añadir la nota al grupo" });
+      next(error);
     }
   }
 
-  async removeNoteFromGroup(req: Request, res: Response): Promise<void> {
+  async removeNoteFromGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { groupId, noteId } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify group exists and belongs to user
       const groupCheck = await pool.query(
@@ -199,8 +192,7 @@ export class NoteGroupController {
       );
 
       if (groupCheck.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       // Remove note from group
@@ -211,20 +203,18 @@ export class NoteGroupController {
 
       res.json({ message: "Nota eliminada del grupo exitosamente" });
     } catch (error) {
-      console.error("Error al eliminar nota del grupo:", error);
-      res.status(500).json({ error: "Error al eliminar la nota del grupo" });
+      next(error);
     }
   }
 
-  async reorderGroups(req: Request, res: Response): Promise<void> {
+  async reorderGroups(req: Request, res: Response, next: NextFunction): Promise<void> {
     const client = await pool.connect();
     try {
       const { groupIds } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       if (!Array.isArray(groupIds) || groupIds.length === 0) {
-        res.status(400).json({ error: "Se requiere un array de IDs de grupos" });
-        return;
+        return next(new BadRequestError("Se requiere un array de IDs de grupos"));
       }
 
       await client.query("BEGIN");
@@ -237,10 +227,7 @@ export class NoteGroupController {
 
       if (groupsCheck.rows.length !== groupIds.length) {
         await client.query("ROLLBACK");
-        res.status(400).json({
-          error: "Uno o más grupos no existen o no pertenecen al usuario",
-        });
-        return;
+        return next(new BadRequestError("Uno o más grupos no existen o no pertenecen al usuario"));
       }
 
       // Update positions
@@ -255,20 +242,16 @@ export class NoteGroupController {
       res.json({ message: "Orden de grupos actualizado exitosamente" });
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error al reordenar grupos:", error);
-      res.status(500).json({
-        error: "Error al reordenar los grupos",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     } finally {
       client.release();
     }
   }
 
-  async deleteGroup(req: Request, res: Response): Promise<void> {
+  async deleteGroup(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         "DELETE FROM note_groups WHERE id = $1 AND user_id = $2 RETURNING *",
@@ -276,13 +259,12 @@ export class NoteGroupController {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Grupo no encontrado" });
-        return;
+        return next(new NotFoundError("Grupo no encontrado"));
       }
 
       res.json({ message: "Grupo eliminado exitosamente" });
     } catch (error) {
-      res.status(500).json({ error: "Error al eliminar el grupo" });
+      next(error);
     }
   }
 }

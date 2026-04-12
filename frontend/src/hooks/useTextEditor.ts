@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
+import toast from 'react-hot-toast';
 
 interface UseTextEditorProps {
   setNewNote: React.Dispatch<React.SetStateAction<{ title: string; content: string }>>;
   handleNoteChange: (id: string, field: 'title' | 'content', value: string) => void;
-  showFeedback: (message: string) => void;
 }
 
 interface UseTextEditorReturn {
@@ -17,8 +17,7 @@ interface UseTextEditorReturn {
  */
 export const useTextEditor = ({
   setNewNote,
-  handleNoteChange,
-  showFeedback
+  handleNoteChange
 }: UseTextEditorProps): UseTextEditorReturn => {
 
   // Handle keyboard events in textareas (Enter for list continuation, Tab for indentation)
@@ -145,7 +144,7 @@ export const useTextEditor = ({
 
     if (!textarea) {
       console.error(`Could not find textarea for note ${noteId}`);
-      showFeedback('Error al insertar lista');
+      toast.error('Error al insertar lista');
       return;
     }
 
@@ -236,7 +235,7 @@ export const useTextEditor = ({
       textarea?.focus();
       textarea?.setSelectionRange(newPosition, newPosition);
     }, 0);
-  }, [setNewNote, handleNoteChange, showFeedback]);
+  }, [setNewNote, handleNoteChange]);
 
   return {
     handleKeyDown,

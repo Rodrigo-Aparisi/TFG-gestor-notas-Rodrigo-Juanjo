@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
 import { noteService } from "../../services/api";
 import { useClickOutside } from "../../hooks/useClickOutside";
 
@@ -14,7 +15,6 @@ interface UserSuggestion {
 const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
   const [username, setUsername] = useState("");
   const [isSharing, setIsSharing] = useState(false);
-  const [feedback, setFeedback] = useState({ message: "", type: "" });
   const [includeImages, setIncludeImages] = useState(true);
   const [canEdit, setCanEdit] = useState(false);
   const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
@@ -65,10 +65,7 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
 
   const handleShare = async () => {
     if (!username) {
-      setFeedback({
-        message: "Por favor ingrese un nombre de usuario",
-        type: "error",
-      });
+      toast.error("Por favor ingrese un nombre de usuario");
       return;
     }
 
@@ -78,11 +75,11 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
         includeImages,
         canEdit,
       });
-      setFeedback({ message: "Nota compartida exitosamente", type: "success" });
+      toast.success("Nota compartida exitosamente");
       setUsername("");
     } catch (error) {
       console.error("Error al compartir la nota:", error);
-      setFeedback({ message: "Error al compartir la nota", type: "error" });
+      toast.error("Error al compartir la nota");
     } finally {
       setIsSharing(false);
     }
@@ -90,19 +87,6 @@ const ShareNote: React.FC<ShareNoteProps> = ({ noteId }) => {
 
   return (
     <div className="share-note-container">
-      {feedback.message && (
-        <div className={`share-feedback ${feedback.type}`}>
-          <i
-            className={
-              feedback.type === "success"
-                ? "fas fa-check-circle"
-                : "fas fa-exclamation-circle"
-            }
-          ></i>
-          {feedback.message}
-        </div>
-      )}
-
       <div className="share-input-group">
         <div className="autocomplete-container" ref={suggestionsRef}>
           <input

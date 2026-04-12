@@ -9,7 +9,6 @@ interface SharedNotesGridProps {
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
-  showFeedback?: (message: string) => void;
   insertList?: (noteId: string, type: 'bullet' | 'number') => void;
   handleDeleteSharedImage?: (noteId: string, imageIndex: number) => Promise<boolean>;
   handleAddSharedImage?: (noteId: string, file: File) => Promise<string>;
@@ -22,7 +21,6 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
   handleFocus,
   handleFocusIndicatorClick,
   autoResizeTextarea,
-  showFeedback,
   insertList,
   handleDeleteSharedImage,
   handleAddSharedImage,
@@ -50,7 +48,6 @@ const SharedNotesGrid: React.FC<SharedNotesGridProps> = ({
             handleFocus={handleFocus}
             handleFocusIndicatorClick={handleFocusIndicatorClick}
             autoResizeTextarea={autoResizeTextarea}
-            showFeedback={showFeedback}
             insertList={insertList}
             handleDeleteSharedImage={handleDeleteSharedImage}
             handleAddSharedImage={handleAddSharedImage}

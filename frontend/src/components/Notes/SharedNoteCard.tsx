@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo } from "react";
+import toast from "react-hot-toast";
 import { noteService } from "../../services/api";
 import NoteImage from "./NoteImage";
 import NoteActionsMenu from "./NoteActionsMenu";
@@ -10,7 +11,6 @@ interface SharedNoteCardProps {
   handleFocus: (id: string, event: React.MouseEvent<HTMLDivElement>) => void;
   handleFocusIndicatorClick: (event: React.MouseEvent, id: string) => void;
   autoResizeTextarea: (element: HTMLTextAreaElement) => void;
-  showFeedback?: (message: string) => void;
   insertList?: (noteId: string, type: "bullet" | "number") => void;
   handleDeleteSharedImage?: (noteId: string, imageIndex: number) => Promise<boolean>;
   handleAddSharedImage?: (noteId: string, file: File) => Promise<string>;
@@ -23,7 +23,6 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   handleFocus,
   handleFocusIndicatorClick,
   autoResizeTextarea,
-  showFeedback,
   insertList,
   handleDeleteSharedImage,
   handleAddSharedImage,
@@ -32,7 +31,6 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
   const [editedTitle, setEditedTitle] = useState(note.title || "");
   const [editedContent, setEditedContent] = useState(note.content || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [feedback, setFeedback] = useState({ message: "", type: "" });
 
   // Determinar si la nota es editable
   const isEditable = note.can_edit === true;
@@ -54,12 +52,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         content: editedContent,
       });
 
-      if (showFeedback) {
-        showFeedback("Cambios guardados correctamente");
-      } else {
-        setFeedback({ message: "Cambios guardados", type: "success" });
-        setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
-      }
+      toast.success("Cambios guardados correctamente");
     } catch (error: unknown) {
       console.error("Error al actualizar la nota compartida:", error);
       const apiError = error as { response?: { data?: unknown; status?: number } };
@@ -69,11 +62,7 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         console.error("Error status:", apiError.response?.status);
       }
 
-      if (showFeedback) {
-        showFeedback("Error al guardar los cambios");
-      } else {
-        setFeedback({ message: "Error al guardar los cambios", type: "error" });
-      }
+      toast.error("Error al guardar los cambios");
     } finally {
       setIsSaving(false);
     }
@@ -182,22 +171,10 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
       // Usar la función del hook para subir la imagen
       await handleAddSharedImage(note.id, file);
 
-      if (showFeedback) {
-        showFeedback("Imagen subida correctamente");
-      } else {
-        setFeedback({
-          message: "Imagen subida correctamente",
-          type: "success",
-        });
-        setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
-      }
+      toast.success("Imagen subida correctamente");
     } catch (error: unknown) {
       console.error("Error al subir imagen:", error);
-      if (showFeedback) {
-        showFeedback("Error al subir imagen");
-      } else {
-        setFeedback({ message: "Error al subir imagen", type: "error" });
-      }
+      toast.error("Error al subir imagen");
     } finally {
       setIsSaving(false);
       e.target.value = ""; // Resetear input
@@ -212,19 +189,10 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
       setIsSaving(true);
       await handleDeleteSharedImage(note.id, imageIndex);
 
-      if (showFeedback) {
-        showFeedback("Imagen eliminada");
-      } else {
-        setFeedback({ message: "Imagen eliminada", type: "success" });
-        setTimeout(() => setFeedback({ message: "", type: "" }), 3000);
-      }
+      toast.success("Imagen eliminada");
     } catch (error: unknown) {
       console.error("Error al eliminar imagen:", error);
-      if (showFeedback) {
-        showFeedback("Error al eliminar imagen");
-      } else {
-        setFeedback({ message: "Error al eliminar imagen", type: "error" });
-      }
+      toast.error("Error al eliminar imagen");
     } finally {
       setIsSaving(false);
     }
@@ -356,12 +324,6 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         {/* Indicador de guardado */}
         {isSaving && <div className="saving-indicator">Guardando...</div>}
 
-        {/* Feedback local (si no se usa el global) */}
-        {!showFeedback && feedback.message && (
-          <div className={`note-feedback ${feedback.type}`}>
-            {feedback.message}
-          </div>
-        )}
       </div>
     </div>
   );

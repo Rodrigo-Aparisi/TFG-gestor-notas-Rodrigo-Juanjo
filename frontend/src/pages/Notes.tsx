@@ -21,9 +21,7 @@ const Notes: React.FC = () => {
     markedNotes,
     filteredNotes,
     isLoading: notesLoading,
-    feedback,
     sortKey,
-    showFeedback,
     loadNotes,
     handleCreateNote,
     handleNoteChange,
@@ -58,7 +56,7 @@ const Notes: React.FC = () => {
     handleAddNoteToGroup,
     handleRemoveNoteFromGroup,
     handleUpdateGroup
-  } = useGroups(showFeedback);
+  } = useGroups();
 
   const {
     activeTab,
@@ -84,8 +82,7 @@ const Notes: React.FC = () => {
   // Custom hooks for text editing and group actions
   const { handleKeyDown, insertList } = useTextEditor({
     setNewNote,
-    handleNoteChange,
-    showFeedback
+    handleNoteChange
   });
 
   const {
@@ -99,7 +96,6 @@ const Notes: React.FC = () => {
   } = useGroupActions({
     markedNotes,
     setMarkedNotes,
-    showFeedback,
     loadNotes,
     handleCreateGroup,
     handleUpdateGroup,
@@ -216,8 +212,6 @@ const Notes: React.FC = () => {
           activeTab={activeTab}
           hasSharedNotes={hasSharedNotes}
           onTabChange={handleTabChange}
-          // Feedback
-          feedback={feedback}
           // Group state
           activeGroup={activeGroup}
           groups={groups}
@@ -249,7 +243,6 @@ const Notes: React.FC = () => {
           focusedNoteId={focusedNoteId}
           handleFocus={handleFocus}
           handleFocusIndicatorClick={handleFocusIndicatorClick}
-          showFeedback={showFeedback}
           handleDeleteSharedImage={handleDeleteSharedImage}
           handleAddSharedImage={handleAddSharedImage}
           handleExportSharedNote={handleExportSharedNote}

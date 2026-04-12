@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../database";
 import bcrypt from "bcrypt";
 import { QueryResult } from "pg";
@@ -7,34 +7,29 @@ import path from "path";
 import dotenv from "dotenv";
 import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
 import { getBaseServerUrl, getProfileImageUrl } from "../utils/urlHelpers";
+import { NotFoundError, UnauthorizedError, BadRequestError } from "../errors/AppError";
 
 dotenv.config();
 
 interface RequestWithFile extends Request {
   file: Express.Multer.File;
-  user: {
-    id: string;
-    [key: string]: any;
-  };
 }
 
 export const accountController = {
   uploadProfileImage: async (
     req: RequestWithFile,
-    res: Response
+    res: Response,
+    next: NextFunction
   ): Promise<void> => {
     try {
       if (!req.file) {
-        res
-          .status(400)
-          .json({ error: "No se ha proporcionado ninguna imagen" });
-        return;
+        return next(new BadRequestError("No se ha proporcionado ninguna imagen"));
       }
 
-    const userId = req.user.id;
-    const baseUrl = getBaseServerUrl();
-    const imageUrl = `/uploads/profile-images/${req.file.filename}`;
-    const fullImageUrl = getProfileImageUrl(imageUrl) || `${baseUrl}${imageUrl}`;
+      const userId = req.user.id;
+      const baseUrl = getBaseServerUrl();
+      const imageUrl = `/uploads/profile-images/${req.file.filename}`;
+      const fullImageUrl = getProfileImageUrl(imageUrl) || `${baseUrl}${imageUrl}`;
 
       // Mover esta consulta aquí, antes de usarla
       const previousImageResult: QueryResult = await pool.query(
@@ -57,14 +52,12 @@ export const accountController = {
         }
       }
 
-    // Actualizar la imagen de perfil en la base de datos
-    // Guardar solo la ruta relativa en la base de datos
-    // En accountController.ts
-    const result: QueryResult = await pool.query(
+      // Actualizar la imagen de perfil en la base de datos
+      // Guardar solo la ruta relativa en la base de datos
+      const result: QueryResult = await pool.query(
         'UPDATE users SET profile_image = $1, updated_at = NOW() WHERE id = $2 RETURNING id, username, email, profile_image',
         [imageUrl, userId]
       );
-
 
       if (result.rows.length === 0) {
         // Corregir la ruta para eliminar la imagen en caso de error
@@ -79,8 +72,7 @@ export const accountController = {
         if (fs.existsSync(uploadedImagePath)) {
           fs.unlinkSync(uploadedImagePath);
         }
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       // Construir el objeto de respuesta
@@ -109,18 +101,13 @@ export const accountController = {
           fs.unlinkSync(uploadedImagePath);
         }
       }
-
-      console.error("Error al subir la imagen de perfil:", error);
-      res.status(500).json({
-        error: "Error al procesar la imagen de perfil",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   },
 
-  updateUser: async (req: Request, res: Response): Promise<void> => {
+  updateUser: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { username, email, currentPassword, newPassword } = req.body;
 
       const userResult: QueryResult = await pool.query(
@@ -129,8 +116,7 @@ export const accountController = {
       );
 
       if (userResult.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const user = userResult.rows[0];
@@ -142,8 +128,7 @@ export const accountController = {
       );
 
       if (!isPasswordValid) {
-        res.status(401).json({ error: "Contraseña actual incorrecta" });
-        return;
+        return next(new UnauthorizedError("Contraseña actual incorrecta"));
       }
 
       // Preparar la consulta de actualización
@@ -175,16 +160,13 @@ export const accountController = {
         user: userResponse,
       });
     } catch (error) {
-      console.error("Error al actualizar el usuario:", error);
-      res.status(500).json({
-        error: "Error al actualizar el usuario",
-      });
+      next(error);
     }
   },
 
-  getProfile: async (req: Request, res: Response): Promise<void> => {
+  getProfile: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result: QueryResult = await pool.query(
         "SELECT id, username, email, profile_image, created_at FROM users WHERE id = $1",
@@ -192,8 +174,7 @@ export const accountController = {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       // Construir respuesta con URL completa de la imagen si existe
@@ -204,14 +185,13 @@ export const accountController = {
 
       res.json({ user: userResponse });
     } catch (error) {
-      console.error("Error al obtener perfil:", error);
-      res.status(500).json({ error: "Error al obtener el perfil del usuario" });
+      next(error);
     }
   },
 
-  deleteAccount: async (req: Request, res: Response): Promise<void> => {
+  deleteAccount: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { password } = req.body;
 
       const userResult: QueryResult = await pool.query(
@@ -220,16 +200,14 @@ export const accountController = {
       );
 
       if (userResult.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const user = userResult.rows[0];
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        res.status(401).json({ error: "Contraseña incorrecta" });
-        return;
+        return next(new UnauthorizedError("Contraseña incorrecta"));
       }
 
       // Eliminar la imagen de perfil si existe usando safeDeleteFile
@@ -245,14 +223,13 @@ export const accountController = {
 
       res.json({ message: "Cuenta eliminada exitosamente" });
     } catch (error) {
-      console.error("Error al eliminar cuenta:", error);
-      res.status(500).json({ error: "Error al eliminar la cuenta" });
+      next(error);
     }
   },
 
-  getUserSettings: async (req: Request, res: Response): Promise<void> => {
+  getUserSettings: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result: QueryResult = await pool.query(
         "SELECT * FROM settings WHERE user_id = $1",
@@ -283,17 +260,13 @@ export const accountController = {
         res.json(result.rows[0]);
       }
     } catch (error) {
-      console.error("Error al obtener configuración:", error);
-      res.status(500).json({
-        error: "Error al obtener la configuración del usuario",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   },
 
-  updateUserSettings: async (req: Request, res: Response): Promise<void> => {
+  updateUserSettings: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { theme, notifications_enabled, language } = req.body;
 
       // Verificar si existe la configuración
@@ -331,11 +304,7 @@ export const accountController = {
 
       res.json(result.rows[0]);
     } catch (error) {
-      console.error("Error al actualizar configuración:", error);
-      res.status(500).json({
-        error: "Error al actualizar la configuración del usuario",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   },
 };

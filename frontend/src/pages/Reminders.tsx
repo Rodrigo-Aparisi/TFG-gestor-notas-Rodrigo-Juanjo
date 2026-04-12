@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { calendarService } from '../services/api';
 import { Reminder, NewReminder, EditingReminder, UpdateReminderData } from '../types';
 import '../styles/reminders.css';
@@ -99,7 +100,7 @@ const Reminders: React.FC = () => {
   const handleCreateReminder = async () => {
     try {
       if (!newReminder.title) {
-        alert('Por favor ingresa un título');
+        toast.error('Por favor ingresa un título');
         return;
       }
   
@@ -160,7 +161,7 @@ const Reminders: React.FC = () => {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Error al crear el recordatorio');
+      toast.error(error instanceof Error ? error.message : 'Error al crear el recordatorio');
     }
   };
 

@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { Group } from '../types';
 
 interface UseGroupActionsProps {
   markedNotes: string[];
   setMarkedNotes: React.Dispatch<React.SetStateAction<string[]>>;
-  showFeedback: (message: string) => void;
   loadNotes: () => void;
   handleCreateGroup: (noteIds: string[]) => Promise<boolean>;
   handleUpdateGroup: (groupId: string, data: { name: string; color: string }) => Promise<boolean>;
@@ -33,7 +33,6 @@ interface UseGroupActionsReturn {
 export const useGroupActions = ({
   markedNotes,
   setMarkedNotes,
-  showFeedback,
   loadNotes,
   handleCreateGroup,
   handleUpdateGroup,
@@ -81,7 +80,7 @@ export const useGroupActions = ({
         }
       } catch (error) {
         console.error('Error updating group:', error);
-        showFeedback('Error al actualizar el grupo');
+        toast.error('Error al actualizar el grupo');
       }
     } else {
       // Creating new group
@@ -91,7 +90,7 @@ export const useGroupActions = ({
         setNoteNewGroup({ name: '', color: '#f1c40f' });
       }
     }
-  }, [editingGroup, handleUpdateGroup, newNoteGroup, setShowGroupModal, setNoteNewGroup, showFeedback, handleCreateGroupWithMarkedNotes]);
+  }, [editingGroup, handleUpdateGroup, newNoteGroup, setShowGroupModal, setNoteNewGroup, handleCreateGroupWithMarkedNotes]);
 
   // Delete marked notes and clear selection
   const handleDeleteMarkedNotesWithClear = useCallback(async () => {
@@ -111,14 +110,14 @@ export const useGroupActions = ({
       );
 
       await Promise.all(addPromises);
-      showFeedback('Notas añadidas al grupo exitosamente');
+      toast.success('Notas añadidas al grupo exitosamente');
       setMarkedNotes([]);
       loadNotes();
     } catch (error) {
       console.error('Error adding notes to group:', error);
-      showFeedback('Error al añadir notas al grupo');
+      toast.error('Error al añadir notas al grupo');
     }
-  }, [markedNotes, handleAddNoteToGroup, showFeedback, setMarkedNotes, loadNotes]);
+  }, [markedNotes, handleAddNoteToGroup, setMarkedNotes, loadNotes]);
 
   // Remove marked notes from a group
   const handleRemoveNotesFromGroup = useCallback(async (groupId: string) => {
@@ -128,14 +127,14 @@ export const useGroupActions = ({
       );
 
       await Promise.all(removePromises);
-      showFeedback('Notas eliminadas del grupo exitosamente');
+      toast.success('Notas eliminadas del grupo exitosamente');
       setMarkedNotes([]);
       loadNotes();
     } catch (error) {
       console.error('Error removing notes from group:', error);
-      showFeedback('Error al eliminar notas del grupo');
+      toast.error('Error al eliminar notas del grupo');
     }
-  }, [markedNotes, handleRemoveNoteFromGroup, showFeedback, setMarkedNotes, loadNotes]);
+  }, [markedNotes, handleRemoveNoteFromGroup, setMarkedNotes, loadNotes]);
 
   return {
     editingGroup,

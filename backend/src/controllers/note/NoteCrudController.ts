@@ -3,6 +3,7 @@ import { pool } from "../../database";
 import fs from "fs";
 import { buildOrderByClause } from "../../utils/queryHelpers";
 import { RequestWithFile } from "../../config/multerConfig";
+import { AppError, NotFoundError, BadRequestError } from "../../errors/AppError";
 
 /**
  * Controller for Note CRUD operations, trash management, and pin/mark functionality
@@ -10,14 +11,13 @@ import { RequestWithFile } from "../../config/multerConfig";
 export class NoteCrudController {
   // ==================== CRUD Operations ====================
 
-  async createNote(req: Request, res: Response): Promise<void> {
+  async createNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { title, content, images } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       if (!title || title.trim() === "") {
-        res.status(400).json({ error: "El título es requerido" });
-        return;
+        return next(new BadRequestError("El título es requerido"));
       }
 
       // Process content for lists
@@ -36,14 +36,13 @@ export class NoteCrudController {
         note: result.rows[0],
       });
     } catch (error) {
-      console.error("Error creating note:", error);
-      res.status(500).json({ error: "Error al crear la nota" });
+      next(error);
     }
   }
 
-  async getNotes(req: Request, res: Response): Promise<void> {
+  async getNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Pagination parameters
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -105,16 +104,15 @@ export class NoteCrudController {
         }
       });
     } catch (error) {
-      console.error("Error al obtener notas:", error);
-      res.status(500).json({ error: "Error al obtener las notas" });
+      next(error);
     }
   }
 
-  async updateNote(req: Request, res: Response): Promise<void> {
+  async updateNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const { title, content, images } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify note exists and belongs to user
       const noteExists = await pool.query(
@@ -123,8 +121,7 @@ export class NoteCrudController {
       );
 
       if (noteExists.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       const updateFields = [];
@@ -166,18 +163,14 @@ export class NoteCrudController {
         note: result.rows[0],
       });
     } catch (error) {
-      console.error("Error al actualizar nota:", error);
-      res.status(500).json({
-        error: "Error al actualizar la nota",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   }
 
-  async deleteNote(req: Request, res: Response): Promise<void> {
+  async deleteNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const noteResult = await pool.query(
         "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
@@ -185,8 +178,7 @@ export class NoteCrudController {
       );
 
       if (noteResult.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       const isInTrash = noteResult.rows[0].is_deleted;
@@ -204,7 +196,7 @@ export class NoteCrudController {
         res.json({ message: "Nota movida a la papelera" });
       }
     } catch (error) {
-      res.status(500).json({ error: "Error al procesar la nota" });
+      next(error);
     }
   }
 
@@ -214,7 +206,7 @@ export class NoteCrudController {
       await client.query("BEGIN");
 
       const { noteIds } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       await client.query(
         "DELETE FROM notes WHERE id = ANY($1) AND user_id = $2",
@@ -233,9 +225,9 @@ export class NoteCrudController {
 
   // ==================== Trash Operations ====================
 
-  async getTrashNotes(req: Request, res: Response): Promise<void> {
+  async getTrashNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         "SELECT * FROM notes WHERE user_id = $1 AND is_deleted = true ORDER BY deleted_at DESC",
@@ -244,14 +236,14 @@ export class NoteCrudController {
 
       res.json({ notes: result.rows });
     } catch (error) {
-      res.status(500).json({ error: "Error al obtener las notas de la papelera" });
+      next(error);
     }
   }
 
-  async restoreNote(req: Request, res: Response): Promise<void> {
+  async restoreNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         "UPDATE notes SET is_deleted = false, deleted_at = NULL WHERE id = $1 AND user_id = $2 RETURNING *",
@@ -259,8 +251,7 @@ export class NoteCrudController {
       );
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       res.json({
@@ -268,13 +259,13 @@ export class NoteCrudController {
         note: result.rows[0],
       });
     } catch (error) {
-      res.status(500).json({ error: "Error al restaurar la nota" });
+      next(error);
     }
   }
 
-  async emptyTrash(req: Request, res: Response): Promise<void> {
+  async emptyTrash(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       await pool.query(
         "DELETE FROM notes WHERE user_id = $1 AND is_deleted = true",
@@ -283,17 +274,16 @@ export class NoteCrudController {
 
       res.json({ message: "Papelera vaciada exitosamente" });
     } catch (error) {
-      res.status(500).json({ error: "Error al vaciar la papelera" });
+      next(error);
     }
   }
 
   // ==================== Image Operations ====================
 
-  async uploadNoteImage(req: RequestWithFile, res: Response): Promise<void> {
+  async uploadNoteImage(req: RequestWithFile, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) {
-        res.status(400).json({ error: "No se ha proporcionado ninguna imagen" });
-        return;
+        return next(new BadRequestError("No se ha proporcionado ninguna imagen"));
       }
 
       const imageUrl = `/uploads/note-images/${req.file.filename}`;
@@ -303,22 +293,21 @@ export class NoteCrudController {
         data: { imageUrl },
       });
     } catch (error) {
-      console.error("Error al subir imagen:", error);
       if (req.file) {
         fs.unlink(req.file.path, (err) => {
           if (err) console.error("Error eliminando archivo temporal:", err);
         });
       }
-      res.status(500).json({ error: "Error al procesar la imagen" });
+      next(error);
     }
   }
 
   // ==================== Pin/Mark Operations ====================
 
-  async togglePin(req: Request, res: Response): Promise<void> {
+  async togglePin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const note = await pool.query(
         "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
@@ -326,8 +315,7 @@ export class NoteCrudController {
       );
 
       if (note.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       const result = await pool.query(
@@ -337,14 +325,14 @@ export class NoteCrudController {
 
       res.json({ note: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ error: "Error al actualizar la nota" });
+      next(error);
     }
   }
 
-  async toggleMark(req: Request, res: Response): Promise<void> {
+  async toggleMark(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const note = await pool.query(
         "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
@@ -352,8 +340,7 @@ export class NoteCrudController {
       );
 
       if (note.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       const result = await pool.query(
@@ -363,13 +350,13 @@ export class NoteCrudController {
 
       res.json({ note: result.rows[0] });
     } catch (error) {
-      res.status(500).json({ error: "Error al actualizar la nota" });
+      next(error);
     }
   }
 
-  async unmarkAllNotes(req: Request, res: Response): Promise<void> {
+  async unmarkAllNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       await pool.query(
         "UPDATE notes SET is_marked = false WHERE user_id = $1",
@@ -378,13 +365,13 @@ export class NoteCrudController {
 
       res.json({ message: "Todas las notas han sido desmarcadas" });
     } catch (error) {
-      res.status(500).json({ error: "Error al desmarcar las notas" });
+      next(error);
     }
   }
 
-  async getMarkedNotes(req: Request, res: Response): Promise<void> {
+  async getMarkedNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         "SELECT * FROM notes WHERE user_id = $1 AND is_marked = true ORDER BY updated_at DESC",
@@ -393,15 +380,15 @@ export class NoteCrudController {
 
       res.json({ notes: result.rows });
     } catch (error) {
-      res.status(500).json({ error: "Error al obtener las notas marcadas" });
+      next(error);
     }
   }
 
   // ==================== User Preferences ====================
 
-  async getUserSortPreferences(req: Request, res: Response): Promise<void> {
+  async getUserSortPreferences(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         "SELECT default_note_sort, default_note_sort_direction FROM settings WHERE user_id = $1",
@@ -434,6 +421,7 @@ export class NoteCrudController {
         preferences: { sortType, sortDirection },
       });
     } catch (error) {
+      // Intentional fallback: sort preferences are non-critical
       console.error("Error al obtener preferencias de ordenación:", error);
       res.status(200).json({
         success: true,
@@ -442,10 +430,10 @@ export class NoteCrudController {
     }
   }
 
-  async saveUserSortPreferences(req: Request, res: Response): Promise<void> {
+  async saveUserSortPreferences(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sortType, sortDirection } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const checkResult = await pool.query(
         "SELECT id FROM settings WHERE user_id = $1",
@@ -469,11 +457,7 @@ export class NoteCrudController {
         message: "Preferencias de ordenación guardadas correctamente",
       });
     } catch (error) {
-      console.error("Error al guardar preferencias de ordenación:", error);
-      res.status(500).json({
-        success: false,
-        error: "Error al guardar preferencias de ordenación",
-      });
+      next(error);
     }
   }
 

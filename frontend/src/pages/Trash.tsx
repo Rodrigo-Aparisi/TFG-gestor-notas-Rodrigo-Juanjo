@@ -12,7 +12,6 @@ const Trash: React.FC = () => {
   const {
     trashNotes,
     isLoading,
-    feedback,
     loadTrashNotes,
     handleDeleteNote,
     handleRestoreNote,
@@ -107,8 +106,6 @@ const Trash: React.FC = () => {
 
       {/* Contenido principal */}
       <div className="notes-main">
-        {feedback && <div className="feedback-message">{feedback}</div>}
-        
         {/* Encabezado de la papelera */}
         <div className="active-group-header" style={{ color: '#e74c3c', borderBottom: '2px solid #e74c3c' }}>
           Papelera

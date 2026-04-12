@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { AnyZodObject, ZodEffects, ZodTypeAny, ZodError } from 'zod';
+
+type ValidatableSchema = AnyZodObject | ZodEffects<ZodTypeAny>;
 
 /**
  * Middleware genérico de validación usando Zod
@@ -7,7 +9,7 @@ import { AnyZodObject, ZodError } from 'zod';
  * Valida el body de la request contra un schema de Zod
  * Si la validación falla, retorna errores descriptivos
  */
-export const validate = (schema: AnyZodObject) => {
+export const validate = (schema: ValidatableSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Validar el body contra el schema

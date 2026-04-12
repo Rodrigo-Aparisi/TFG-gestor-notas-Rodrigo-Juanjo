@@ -1,12 +1,13 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
+import { NotFoundError, BadRequestError, ForbiddenError } from "../../errors/AppError";
 
 /**
  * Controller for Note Sharing operations
  * Handles sharing notes with other users and managing permissions
  */
 export class NoteSharingController {
-  async shareNote(req: Request, res: Response): Promise<void> {
+  async shareNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const {
         noteId,
@@ -14,12 +15,11 @@ export class NoteSharingController {
         includeImages = true,
         canEdit = false,
       } = req.body;
-      const ownerId = req.user.id;
+      const ownerId = req.user!.id;
 
       // Validate input
       if (!noteId || !username) {
-        res.status(400).json({ error: "Se requieren noteId y username" });
-        return;
+        return next(new BadRequestError("Se requieren noteId y username"));
       }
 
       // Verify note exists and belongs to current user
@@ -29,8 +29,7 @@ export class NoteSharingController {
       );
 
       if (note.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada o no tienes permiso" });
-        return;
+        return next(new NotFoundError("Nota no encontrada o no tienes permiso"));
       }
 
       // Find target user
@@ -40,16 +39,14 @@ export class NoteSharingController {
       );
 
       if (targetUser.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const sharedWithId = targetUser.rows[0].id;
 
       // Prevent sharing with self
       if (sharedWithId === ownerId) {
-        res.status(400).json({ error: "No puedes compartir una nota contigo mismo" });
-        return;
+        return next(new BadRequestError("No puedes compartir una nota contigo mismo"));
       }
 
       // Check if already shared
@@ -80,14 +77,13 @@ export class NoteSharingController {
 
       res.status(200).json({ success: true, message: "Nota compartida exitosamente" });
     } catch (error) {
-      console.error("Error al compartir nota:", error);
-      res.status(500).json({ error: "Error al compartir la nota" });
+      next(error);
     }
   }
 
-  async getSharedNotes(req: Request, res: Response): Promise<void> {
+  async getSharedNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       const result = await pool.query(
         `
@@ -112,16 +108,15 @@ export class NoteSharingController {
 
       res.json({ sharedNotes: result.rows });
     } catch (error) {
-      console.error("Error al obtener notas compartidas:", error);
-      res.status(500).json({ error: "Error al obtener las notas compartidas" });
+      next(error);
     }
   }
 
-  async updateSharedNotePermissions(req: Request, res: Response): Promise<void> {
+  async updateSharedNotePermissions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       const { username, canEdit, includeImages } = req.body;
-      const ownerId = req.user.id;
+      const ownerId = req.user!.id;
 
       // Find target user
       const targetUser = await pool.query(
@@ -130,8 +125,7 @@ export class NoteSharingController {
       );
 
       if (targetUser.rows.length === 0) {
-        res.status(404).json({ error: "Usuario no encontrado" });
-        return;
+        return next(new NotFoundError("Usuario no encontrado"));
       }
 
       const sharedWithId = targetUser.rows[0].id;
@@ -143,10 +137,7 @@ export class NoteSharingController {
       );
 
       if (isOwner.rows.length === 0) {
-        res.status(403).json({
-          error: "No tienes permiso para modificar los permisos de esta nota compartida",
-        });
-        return;
+        return next(new ForbiddenError("No tienes permiso para modificar los permisos de esta nota compartida"));
       }
 
       // Build update query dynamically
@@ -172,17 +163,16 @@ export class NoteSharingController {
 
       res.json({ message: "Permisos actualizados exitosamente" });
     } catch (error) {
-      console.error("Error al actualizar permisos:", error);
-      res.status(500).json({ error: "Error al actualizar permisos" });
+      next(error);
     }
   }
 
-  async updateSharedNote(req: Request, res: Response): Promise<void> {
+  async updateSharedNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
       // Exclude `images` intentionally: editors must not modify the owner's images
       const { title, content } = req.body;
-      const userId = req.user.id;
+      const userId = req.user!.id;
 
       // Verify edit permission
       const hasPermission = await pool.query(
@@ -194,10 +184,7 @@ export class NoteSharingController {
       );
 
       if (hasPermission.rows.length === 0) {
-        res.status(403).json({
-          error: "No tienes permiso para editar esta nota",
-        });
-        return;
+        return next(new ForbiddenError("No tienes permiso para editar esta nota"));
       }
 
       // Build update query — only title and content are editable by shared users
@@ -218,8 +205,7 @@ export class NoteSharingController {
       }
 
       if (updateFields.length === 0) {
-        res.status(400).json({ error: "No hay campos para actualizar" });
-        return;
+        return next(new BadRequestError("No hay campos para actualizar"));
       }
 
       updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -235,8 +221,7 @@ export class NoteSharingController {
       const result = await pool.query(query, values);
 
       if (result.rows.length === 0) {
-        res.status(404).json({ error: "Nota no encontrada" });
-        return;
+        return next(new NotFoundError("Nota no encontrada"));
       }
 
       res.json({
@@ -244,21 +229,16 @@ export class NoteSharingController {
         note: result.rows[0],
       });
     } catch (error) {
-      console.error("Error in updateSharedNote:", error);
-      res.status(500).json({
-        error: "Error al actualizar la nota",
-        ...(process.env.NODE_ENV !== 'production' && { details: error instanceof Error ? error.message : "Error desconocido" }),
-      });
+      next(error);
     }
   }
 
-  async searchUsers(req: Request, res: Response): Promise<void> {
+  async searchUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { query } = req.query;
 
       if (!query || typeof query !== "string" || query.length < 2) {
-        res.status(400).json({ error: "La consulta debe tener al menos 2 caracteres" });
-        return;
+        return next(new BadRequestError("La consulta debe tener al menos 2 caracteres"));
       }
 
       // Search users by username prefix
@@ -272,8 +252,7 @@ export class NoteSharingController {
 
       res.json({ users: result.rows });
     } catch (error) {
-      console.error("Error al buscar usuarios:", error);
-      res.status(500).json({ error: "Error al buscar usuarios" });
+      next(error);
     }
   }
 }

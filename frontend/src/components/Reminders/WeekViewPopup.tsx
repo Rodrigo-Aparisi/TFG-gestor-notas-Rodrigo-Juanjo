@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { calendarService } from '../../services/api';
 import WeekView from './WeekView';
 import { Reminder, NewReminder } from '../../types';
@@ -119,7 +120,7 @@ const WeekViewPopup: React.FC<WeekViewPopupProps> = ({ onClose }) => {
   const handleCreateReminder = async () => {
     try {
       if (!newReminder.title) {
-        alert('Por favor ingresa un título');
+        toast.error('Por favor ingresa un título');
         return;
       }
   
@@ -164,7 +165,7 @@ const WeekViewPopup: React.FC<WeekViewPopupProps> = ({ onClose }) => {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Error al crear el recordatorio');
+      toast.error(error instanceof Error ? error.message : 'Error al crear el recordatorio');
     }
   };
 

@@ -4,7 +4,7 @@
  * Tests for note CRUD operations: create, read, update, delete
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { NoteCrudController } from '../controllers/note/NoteCrudController';
 
 // Mock the database
@@ -65,6 +65,7 @@ describe('Notes Controller', () => {
   let controller: NoteCrudController;
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
+  let mockNext: jest.Mock;
 
   beforeEach(() => {
     controller = new NoteCrudController();
@@ -73,13 +74,15 @@ describe('Notes Controller', () => {
       body: {},
       params: {},
       query: {},
-      user: { id: 'test-user-id-123' },
+      user: { id: 'test-user-id-123', email: 'test@example.com' },
     };
 
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
     };
+
+    mockNext = jest.fn();
 
     jest.clearAllMocks();
   });
@@ -99,7 +102,7 @@ describe('Notes Controller', () => {
         rowCount: 1,
       });
 
-      await controller.createNote(mockReq as Request, mockRes as Response);
+      await controller.createNote(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith(
@@ -112,29 +115,23 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should return error when title is missing', async () => {
+    it('should call next with error when title is missing', async () => {
       mockReq.body = { content: 'Content without title' };
 
-      await controller.createNote(mockReq as Request, mockRes as Response);
+      await controller.createNote(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'El título es requerido',
-        })
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
       );
     });
 
-    it('should return error when title is empty', async () => {
+    it('should call next with error when title is empty', async () => {
       mockReq.body = { title: '   ', content: 'Some content' };
 
-      await controller.createNote(mockReq as Request, mockRes as Response);
+      await controller.createNote(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'El título es requerido',
-        })
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400 })
       );
     });
 
@@ -152,7 +149,7 @@ describe('Notes Controller', () => {
         rowCount: 1,
       });
 
-      await controller.createNote(mockReq as Request, mockRes as Response);
+      await controller.createNote(mockReq as Request, mockRes as Response, mockNext);
 
       // Verify query was called with processed content
       expect(mockPool.query).toHaveBeenCalledWith(
@@ -164,19 +161,14 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should handle database error', async () => {
+    it('should call next with error on database error', async () => {
       mockReq.body = createNoteRequest();
 
       (mockPool.query as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
 
-      await controller.createNote(mockReq as Request, mockRes as Response);
+      await controller.createNote(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Error al crear la nota',
-        })
-      );
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -204,7 +196,7 @@ describe('Notes Controller', () => {
           rowCount: 2,
         });
 
-      await controller.getNotes(mockReq as Request, mockRes as Response);
+      await controller.getNotes(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -240,7 +232,7 @@ describe('Notes Controller', () => {
           rowCount: 0,
         });
 
-      await controller.getNotes(mockReq as Request, mockRes as Response);
+      await controller.getNotes(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -274,7 +266,7 @@ describe('Notes Controller', () => {
           rowCount: 0,
         });
 
-      await controller.getNotes(mockReq as Request, mockRes as Response);
+      await controller.getNotes(mockReq as Request, mockRes as Response, mockNext);
 
       // Verify the query was called without LIMIT/OFFSET
       const queries = (mockPool.query as jest.Mock).mock.calls;
@@ -302,7 +294,7 @@ describe('Notes Controller', () => {
           rowCount: 0,
         });
 
-      await controller.getNotes(mockReq as Request, mockRes as Response);
+      await controller.getNotes(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -339,7 +331,7 @@ describe('Notes Controller', () => {
           rowCount: 1,
         });
 
-      await controller.updateNote(mockReq as Request, mockRes as Response);
+      await controller.updateNote(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -351,7 +343,7 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should return error when note not found', async () => {
+    it('should call next with NotFoundError when note not found', async () => {
       mockReq.params = { id: 'non-existent-id' };
       mockReq.body = { title: 'Title' };
 
@@ -361,13 +353,10 @@ describe('Notes Controller', () => {
         rowCount: 0,
       });
 
-      await controller.updateNote(mockReq as Request, mockRes as Response);
+      await controller.updateNote(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Nota no encontrada',
-        })
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
       );
     });
   });
@@ -395,7 +384,7 @@ describe('Notes Controller', () => {
           rowCount: 1,
         });
 
-      await controller.deleteNote(mockReq as Request, mockRes as Response);
+      await controller.deleteNote(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -426,7 +415,7 @@ describe('Notes Controller', () => {
           rowCount: 1,
         });
 
-      await controller.deleteNote(mockReq as Request, mockRes as Response);
+      await controller.deleteNote(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -435,7 +424,7 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should return error when note not found', async () => {
+    it('should call next with NotFoundError when note not found', async () => {
       mockReq.params = { id: 'non-existent-id' };
 
       // Mock SELECT returns no rows
@@ -444,9 +433,11 @@ describe('Notes Controller', () => {
         rowCount: 0,
       });
 
-      await controller.deleteNote(mockReq as Request, mockRes as Response);
+      await controller.deleteNote(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
     });
   });
 
@@ -466,7 +457,7 @@ describe('Notes Controller', () => {
         rowCount: 1,
       });
 
-      await controller.restoreNote(mockReq as Request, mockRes as Response);
+      await controller.restoreNote(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -491,7 +482,7 @@ describe('Notes Controller', () => {
         rowCount: 2,
       });
 
-      await controller.getTrashNotes(mockReq as Request, mockRes as Response);
+      await controller.getTrashNotes(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -524,7 +515,7 @@ describe('Notes Controller', () => {
           rowCount: 1,
         });
 
-      await controller.togglePin(mockReq as Request, mockRes as Response);
+      await controller.togglePin(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -535,7 +526,7 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should return error when note not found', async () => {
+    it('should call next with NotFoundError when note not found', async () => {
       mockReq.params = { id: 'non-existent-id' };
 
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
@@ -543,9 +534,11 @@ describe('Notes Controller', () => {
         rowCount: 0,
       });
 
-      await controller.togglePin(mockReq as Request, mockRes as Response);
+      await controller.togglePin(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
     });
   });
 
@@ -569,7 +562,7 @@ describe('Notes Controller', () => {
           rowCount: 1,
         });
 
-      await controller.toggleMark(mockReq as Request, mockRes as Response);
+      await controller.toggleMark(mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -580,7 +573,7 @@ describe('Notes Controller', () => {
       );
     });
 
-    it('should return error when note not found', async () => {
+    it('should call next with NotFoundError when note not found', async () => {
       mockReq.params = { id: 'non-existent-id' };
 
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
@@ -588,9 +581,11 @@ describe('Notes Controller', () => {
         rowCount: 0,
       });
 
-      await controller.toggleMark(mockReq as Request, mockRes as Response);
+      await controller.toggleMark(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404 })
+      );
     });
   });
 });

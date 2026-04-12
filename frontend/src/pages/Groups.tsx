@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import "../styles/groups.css";
 import { useAuth } from "../hooks/useAuth";
 import { useUserGroups } from "../hooks/useUserGroups";
@@ -21,7 +22,6 @@ const Groups: React.FC = () => {
     selectedGroup,
     groupNotes = [],
     loading,
-    feedback,
     newUserGroup,
     showCreateGroupModal,
     showAddMemberModal,
@@ -42,7 +42,6 @@ const Groups: React.FC = () => {
     setShowAddMemberModal,
     setNewNote,
     setEditingNote,
-    showFeedback,
   } = useUserGroups();
 
   const [activeTab, setActiveTab] = useState<"notes" | "members">("notes");
@@ -176,11 +175,11 @@ const Groups: React.FC = () => {
           ...prev,
           images: [...(prev.images || []), response.data.data.imageUrl],
         }));
-        showFeedback("Imagen subida correctamente");
+        toast.success("Imagen subida correctamente");
       }
     } catch (error) {
       console.error("Error al subir la imagen:", error);
-      showFeedback("Error al subir la imagen");
+      toast.error("Error al subir la imagen");
     }
   };
 
@@ -219,15 +218,15 @@ const Groups: React.FC = () => {
           const success = await updateGroupNote(noteId);
 
           if (success) {
-            showFeedback("Imagen subida y guardada correctamente");
+            toast.success("Imagen subida y guardada correctamente");
           } else {
-            showFeedback("La imagen se subió pero no se pudo guardar en la nota");
+            toast.error("La imagen se subió pero no se pudo guardar en la nota");
           }
         }
       }
     } catch (error) {
       console.error("Error al subir la imagen:", error);
-      showFeedback("Error al subir la imagen");
+      toast.error("Error al subir la imagen");
     }
   };
 
@@ -252,10 +251,10 @@ const Groups: React.FC = () => {
       // Actualizar la nota
       await updateGroupNote(noteId);
 
-      showFeedback("Imagen eliminada correctamente");
+      toast.success("Imagen eliminada correctamente");
     } catch (error) {
       console.error("Error al eliminar la imagen:", error);
-      showFeedback("Error al eliminar la imagen");
+      toast.error("Error al eliminar la imagen");
     }
   };
 
@@ -269,7 +268,7 @@ const Groups: React.FC = () => {
 
       // Verificar si el usuario está intentando editar sus propios permisos
       if (memberToEdit.user_id === user?.id) {
-        showFeedback("No puedes editar tus propios permisos");
+        toast.error("No puedes editar tus propios permisos");
         return;
       }
 
@@ -282,7 +281,7 @@ const Groups: React.FC = () => {
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
-        showFeedback("Permisos actualizados correctamente");
+        toast.success("Permisos actualizados correctamente");
       }
     } catch (error: unknown) {
       console.error("Error al actualizar permisos:", error);
@@ -293,9 +292,9 @@ const Groups: React.FC = () => {
         apiError.response?.data?.message?.includes("own permissions") ||
         apiError.response?.data?.error?.includes("own permissions")
       ) {
-        showFeedback("No puedes editar tus propios permisos");
+        toast.error("No puedes editar tus propios permisos");
       } else {
-        showFeedback("Error al actualizar permisos");
+        toast.error("Error al actualizar permisos");
       }
     }
   };
@@ -309,7 +308,7 @@ const Groups: React.FC = () => {
       setNewGroupName(selectedGroup.name);
       setShowRenameModal(true);
     } else {
-      showFeedback("No tienes permisos para editar este grupo");
+      toast.error("No tienes permisos para editar este grupo");
     }
   };
 
@@ -322,7 +321,7 @@ const Groups: React.FC = () => {
       setNewGroupDescription(selectedGroup.description || "");
       setShowDescriptionModal(true);
     } else {
-      showFeedback("No tienes permisos para editar este grupo");
+      toast.error("No tienes permisos para editar este grupo");
     }
   };
 
@@ -333,7 +332,7 @@ const Groups: React.FC = () => {
     try {
       // Validar que el nuevo nombre no esté vacío
       if (!newGroupName || newGroupName.trim() === "") {
-        showFeedback("El nombre del grupo no puede estar vacío");
+        toast.error("El nombre del grupo no puede estar vacío");
         return false;
       }
 
@@ -353,7 +352,7 @@ const Groups: React.FC = () => {
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
-        showFeedback("Nombre del grupo actualizado correctamente");
+        toast.success("Nombre del grupo actualizado correctamente");
         setShowRenameModal(false);
         return true;
       }
@@ -364,9 +363,9 @@ const Groups: React.FC = () => {
       const apiError = error as ApiErrorResponse;
 
       if (apiError.response?.status === 403) {
-        showFeedback("No tienes permisos para cambiar el nombre del grupo");
+        toast.error("No tienes permisos para cambiar el nombre del grupo");
       } else {
-        showFeedback("Error al cambiar el nombre del grupo");
+        toast.error("Error al cambiar el nombre del grupo");
       }
 
       return false;
@@ -393,7 +392,7 @@ const Groups: React.FC = () => {
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
-        showFeedback("Descripción del grupo actualizada correctamente");
+        toast.success("Descripción del grupo actualizada correctamente");
         setShowDescriptionModal(false);
         return true;
       }
@@ -404,11 +403,9 @@ const Groups: React.FC = () => {
       const apiError = error as ApiErrorResponse;
 
       if (apiError.response?.status === 403) {
-        showFeedback(
-          "No tienes permisos para cambiar la descripción del grupo"
-        );
+        toast.error("No tienes permisos para cambiar la descripción del grupo");
       } else {
-        showFeedback("Error al cambiar la descripción del grupo");
+        toast.error("Error al cambiar la descripción del grupo");
       }
 
       return false;
@@ -541,7 +538,6 @@ const Groups: React.FC = () => {
 
       <div className="groups-main">
         {loading && <div className="loading-indicator">Cargando...</div>}
-        {feedback && <div className="feedback-message">{feedback}</div>}
 
         {selectedGroup ? (
           <>

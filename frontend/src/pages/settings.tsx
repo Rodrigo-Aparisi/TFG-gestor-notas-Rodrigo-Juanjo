@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { accountService } from "../services/accountService";
@@ -126,10 +127,6 @@ const Settings = () => {
   const [expandedMenu, setExpandedMenu] = useState<string | null>("cuenta");
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [message, setMessage] = useState<{
-    text: string;
-    type: "success" | "error";
-  } | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const [showPasswords, setShowPasswords] = useState<{
@@ -283,8 +280,11 @@ const Settings = () => {
   };
 
   const showMessage = (text: string, type: "success" | "error") => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
+    if (type === "success") {
+      toast.success(text);
+    } else {
+      toast.error(text);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -343,11 +343,6 @@ const Settings = () => {
 
   return (
     <div className="settings-page">
-      {message && (
-        <div className={`feedback-message ${message.type}`}>
-          {message.text}
-        </div>
-      )}
       <div className={`settings-container ${isLoaded ? "loaded" : ""}`}>
         <div className="settings-sidebar">
           {[
