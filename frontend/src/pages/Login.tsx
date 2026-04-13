@@ -244,7 +244,8 @@ const Login: React.FC = () => {
                 required
               />
               <label>Contraseña</label>
-              <span
+              <button
+                type="button"
                 className="login-password-toggle"
                 onClick={() =>
                   setShowPasswords((prev) => ({
@@ -252,13 +253,16 @@ const Login: React.FC = () => {
                     loginPassword: !prev.loginPassword,
                   }))
                 }
+                aria-label={showPasswords.loginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={showPasswords.loginPassword}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {showPasswords.loginPassword ? (
                   <AiOutlineEyeInvisible />
                 ) : (
                   <AiOutlineEye />
                 )}
-              </span>
+              </button>
             </div>
 
             {error && (
@@ -350,7 +354,8 @@ const Login: React.FC = () => {
                 required
               />
               <label>Contraseña</label>
-              <span
+              <button
+                type="button"
                 className="login-password-toggle"
                 onClick={() =>
                   setShowPasswords((prev) => ({
@@ -358,13 +363,16 @@ const Login: React.FC = () => {
                     registerPassword: !prev.registerPassword,
                   }))
                 }
+                aria-label={showPasswords.registerPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={showPasswords.registerPassword}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 {showPasswords.registerPassword ? (
                   <AiOutlineEyeInvisible />
                 ) : (
                   <AiOutlineEye />
                 )}
-              </span>
+              </button>
             </div>
 
             {/* Indicador de fortaleza de contraseña */}

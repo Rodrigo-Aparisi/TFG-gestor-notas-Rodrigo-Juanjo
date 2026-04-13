@@ -26,12 +26,11 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const listButtonRef = useRef<HTMLButtonElement>(null);
   const exportButtonRef = useRef<HTMLButtonElement>(null);
-  
+
   // Función para guardar la selección actual
   const saveSelection = () => {
-    // Encuentra el textarea correspondiente a esta nota
     let textarea: HTMLTextAreaElement | null = null;
-    
+
     if (isNewNote) {
       textarea = document.querySelector('.create-note textarea');
     } else {
@@ -40,7 +39,7 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
         textarea = noteElement.querySelector('textarea');
       }
     }
-    
+
     if (textarea && document.activeElement === textarea) {
       savedGroupSelection = {
         start: textarea.selectionStart,
@@ -49,7 +48,7 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
       };
     }
   };
-  
+
   // Función para actualizar la posición del menú desplegable
   const updateMenuPosition = (buttonRef: React.RefObject<HTMLButtonElement>) => {
     if (buttonRef.current) {
@@ -60,33 +59,44 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
       });
     }
   };
-  
+
   const handleMouseEnter = (menuName: string, buttonRef: React.RefObject<HTMLButtonElement>) => {
-    // Guardar la selección actual cuando se muestra el menú
     saveSelection();
-    
-    // Actualizar la posición del menú
     updateMenuPosition(buttonRef);
-    
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
     setActiveMenu(menuName);
   };
-  
+
   const handleMouseLeave = () => {
-    // Añadir un retraso antes de cerrar el menú
     timeoutRef.current = setTimeout(() => {
       setActiveMenu(null);
-    }, 500); // 0.5 segundos de retraso
+    }, 500);
   };
-  
-  // Detectar si el cursor está sobre el menú desplegable
+
   const handleDropdownMouseEnter = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+  };
+
+  // Toggle del submenú al hacer click (para teclado)
+  const handleButtonClick = (menuName: string, buttonRef: React.RefObject<HTMLButtonElement>) => {
+    saveSelection();
+    updateMenuPosition(buttonRef);
+
+    if (activeMenu === menuName) {
+      setActiveMenu(null);
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setActiveMenu(menuName);
     }
   };
 
@@ -101,23 +111,27 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
 
   return (
     <div className="note-actions-menu" ref={menuRef}>
-      <div className="menu-grid">        
-        <div 
+      <div className="menu-grid">
+        <div
           className="menu-item-container"
           onMouseEnter={() => handleMouseEnter('list', listButtonRef)}
           onMouseLeave={handleMouseLeave}
         >
-          <button 
+          <button
             ref={listButtonRef}
-            className="list-button" 
+            className="list-button"
             title="Listas"
-            onMouseEnter={saveSelection} // Guardar selección al entrar al botón
+            aria-haspopup="menu"
+            aria-expanded={activeMenu === 'list'}
+            onMouseEnter={saveSelection}
+            onClick={() => handleButtonClick('list', listButtonRef)}
           >
             <i className="fas fa-list"></i>
           </button>
-          
+
           {activeMenu === 'list' && ReactDOM.createPortal(
-            <div 
+            <div
+              role="menu"
               className="portal-menu-dropdown"
               style={{
                 position: 'absolute',
@@ -135,19 +149,25 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <div 
-                className="menu-item" 
+              <button
+                role="menuitem"
+                type="button"
+                className="menu-item"
                 onClick={() => {
                   onInsertList(noteId, 'bullet');
                   setActiveMenu(null);
                 }}
                 style={{
+                  width: '100%',
                   padding: '12px 16px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   color: '#333',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#f8f9fa';
@@ -156,22 +176,28 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <i className="fas fa-list-ul" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                <i className="fas fa-list-ul" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i>
                 Lista con viñetas
-              </div>
-              <div 
-                className="menu-item" 
+              </button>
+              <button
+                role="menuitem"
+                type="button"
+                className="menu-item"
                 onClick={() => {
                   onInsertList(noteId, 'number');
                   setActiveMenu(null);
                 }}
                 style={{
+                  width: '100%',
                   padding: '12px 16px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   color: '#333',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#f8f9fa';
@@ -180,30 +206,34 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <i className="fas fa-list-ol" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                <i className="fas fa-list-ol" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i>
                 Lista numerada
-              </div>
+              </button>
             </div>,
             document.body
           )}
         </div>
-        
-        <div 
+
+        <div
           className="menu-item-container"
           onMouseEnter={() => handleMouseEnter('export', exportButtonRef)}
           onMouseLeave={handleMouseLeave}
         >
-          <button 
+          <button
             ref={exportButtonRef}
-            className="list-button" 
+            className="list-button"
             title="Exportar"
-            onMouseEnter={saveSelection} // Guardar selección al entrar al botón
+            aria-haspopup="menu"
+            aria-expanded={activeMenu === 'export'}
+            onMouseEnter={saveSelection}
+            onClick={() => handleButtonClick('export', exportButtonRef)}
           >
             <i className="fas fa-file-export"></i>
           </button>
-          
+
           {activeMenu === 'export' && ReactDOM.createPortal(
-            <div 
+            <div
+              role="menu"
               className="portal-menu-dropdown"
               style={{
                 position: 'absolute',
@@ -221,19 +251,25 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <div 
-                className="menu-item" 
+              <button
+                role="menuitem"
+                type="button"
+                className="menu-item"
                 onClick={() => {
                   onExport('pdf', noteId);
                   setActiveMenu(null);
                 }}
                 style={{
+                  width: '100%',
                   padding: '12px 16px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   color: '#333',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#f8f9fa';
@@ -242,22 +278,28 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <i className="fas fa-file-pdf" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                <i className="fas fa-file-pdf" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i>
                 PDF
-              </div>
-              <div 
-                className="menu-item" 
+              </button>
+              <button
+                role="menuitem"
+                type="button"
+                className="menu-item"
                 onClick={() => {
                   onExport('txt', noteId);
                   setActiveMenu(null);
                 }}
                 style={{
+                  width: '100%',
                   padding: '12px 16px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   color: '#333',
-                  transition: 'background-color 0.2s'
+                  transition: 'background-color 0.2s',
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left'
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#f8f9fa';
@@ -266,16 +308,16 @@ const GroupNoteActionsMenu: React.FC<GroupNoteActionsMenuProps> = ({
                   e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <i className="fas fa-file-alt" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i> 
+                <i className="fas fa-file-alt" style={{ marginRight: '10px', width: '16px', color: '#f1c40f' }}></i>
                 TXT
-              </div>
+              </button>
             </div>,
             document.body
           )}
         </div>
-        
+
         <div className="menu-item-container">
-          <button 
+          <button
             className="list-button"
             onClick={onImageUpload}
             title="Insertar imagen"

@@ -94,22 +94,35 @@ const BulkActionsMenu: React.FC<BulkActionsMenuProps> = ({
         
         {/* Menú desplegable para añadir a grupos existentes */}
         {otherGroups.length > 0 && (
-          <div 
+          <div
             className="bulk-dropdown"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <button 
+            <button
               ref={buttonRef}
               className="dropdown-button"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isHovering}
+              onClick={() => {
+                if (isHovering) {
+                  setIsHovering(false);
+                } else {
+                  updateDropdownPosition();
+                  setIsHovering(true);
+                }
+              }}
             >
               <i className="fas fa-folder-plus"></i>
               Añadir a grupo
             </button>
-            
+
             {isHovering && ReactDOM.createPortal(
-              <div 
+              <div
                 className="portal-dropdown"
+                role="menu"
+                aria-label="Seleccionar grupo"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 style={{
@@ -122,21 +135,32 @@ const BulkActionsMenu: React.FC<BulkActionsMenuProps> = ({
                   zIndex: 9999,
                   minWidth: '180px',
                   overflow: 'hidden',
-                  color: '#333', // Asegurar que el texto sea visible
-                  padding: '5px 0' // Añadir padding para mejor apariencia
+                  color: '#333',
+                  padding: '5px 0'
                 }}
               >
                 {otherGroups.map(group => (
-                  <div 
-                    key={group.id} 
-                    onClick={() => onAddToGroup(group.id)}
+                  <button
+                    key={group.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onAddToGroup(group.id);
+                      setIsHovering(false);
+                    }}
                     style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
                       padding: '12px 16px',
                       borderLeft: `4px solid ${group.color}`,
                       cursor: 'pointer',
                       transition: 'background-color 0.2s',
-                      color: '#333' // Asegurar que el texto sea visible
-                    }}
+                      color: '#333',
+                      background: 'none',
+                      border: 'none',
+                      borderLeft: `4px solid ${group.color}`,
+                    } as React.CSSProperties}
                     onMouseOver={(e) => {
                       e.currentTarget.style.backgroundColor = '#f8f9fa';
                     }}
@@ -145,7 +169,7 @@ const BulkActionsMenu: React.FC<BulkActionsMenuProps> = ({
                     }}
                   >
                     {group.name}
-                  </div>
+                  </button>
                 ))}
               </div>,
               document.body

@@ -27,10 +27,17 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
 
   return (
     <div className="notes-sidebar">
-      <div className="group-list">
+      <div className="group-list" role="listbox" aria-label="Grupos">
         {/* Encabezado del sidebar */}
         <div className="sidebar-header">
-          <h2 onClick={() => onGroupSelect("")}>Mis Grupos</h2>
+          <h2
+            onClick={() => onGroupSelect("")}
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && onGroupSelect("")}
+            style={{ cursor: 'pointer' }}
+          >
+            Mis Grupos
+          </h2>
         </div>
         {/* Grupos */}
         {localGroups
@@ -41,7 +48,11 @@ const UserGroupSidebar: React.FC<UserGroupSidebarProps> = ({
               className={`group-item ${
                 activeGroup === group.id ? "active" : ""
               }`}
+              role="option"
+              tabIndex={0}
+              aria-selected={activeGroup === group.id}
               onClick={() => onGroupSelect(group.id)}
+              onKeyDown={e => e.key === 'Enter' && onGroupSelect(group.id)}
             >
               <div className="group-actions-left">
                 <button

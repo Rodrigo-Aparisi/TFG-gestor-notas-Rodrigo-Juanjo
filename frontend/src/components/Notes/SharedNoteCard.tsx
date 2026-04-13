@@ -322,7 +322,9 @@ const SharedNoteCard: React.FC<SharedNoteCardProps> = ({
         )}
 
         {/* Indicador de guardado */}
-        {isSaving && <div className="saving-indicator">Guardando...</div>}
+        <div aria-live="polite" aria-atomic="true">
+          {isSaving && <div className="saving-indicator">Guardando...</div>}
+        </div>
 
       </div>
     </div>

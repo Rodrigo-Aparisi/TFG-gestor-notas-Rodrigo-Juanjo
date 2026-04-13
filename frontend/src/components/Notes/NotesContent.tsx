@@ -137,6 +137,15 @@ const NotesContent: React.FC<NotesContentProps> = ({
 
   return (
     <div className="notes-main">
+      {/* Zona de feedback accesible para lectores de pantalla */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isLoading ? 'Cargando notas...' : ''}
+      </div>
+
       {/* Tabs */}
       <NoteTabs
         activeTab={activeTab}
@@ -192,7 +201,7 @@ const NotesContent: React.FC<NotesContentProps> = ({
 
       {/* Notes grid */}
       {activeTab === 'my-notes' ? (
-        <NotesGrid notes={getNotesForGroup(filteredNotes)} />
+        <NotesGrid notes={getNotesForGroup(filteredNotes)} isLoading={isLoading} />
       ) : (
         <SharedNotesGrid
           sharedNotes={sharedNotes}

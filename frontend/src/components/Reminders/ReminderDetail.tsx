@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Reminder, EditingReminder } from '../../types';
 import { formatDateForInput } from './ReminderUtils';
 import StatusSelector from './StatusSelector';
@@ -28,10 +28,33 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
   isFromPopup,
   setIsFromPopup
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Mover foco al contenedor al abrir
+  useEffect(() => {
+    containerRef.current?.focus();
+  }, []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseReminder();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleCloseReminder]);
+
   return (
     <div className="reminder-popup-overlay" onClick={handleCloseReminder}>
-      <div 
+      <div
+        ref={containerRef}
         className={`reminder-card focused status-${focusedReminder.statusId}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Detalle del recordatorio"
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
       >
         {!editingReminder ? (
@@ -67,7 +90,8 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
               }
             </div>
             <div className="reminder-popup-actions">
-              <button 
+              <button
+                type="button"
                 className="edit-button"
                 onClick={() => {
                   setEditingStatus(focusedReminder.statusId);
@@ -79,15 +103,26 @@ const ReminderDetail: React.FC<ReminderDetailProps> = ({
                     sendEmail: focusedReminder.sendEmail || false
                   });
                 }}
+                aria-label="Editar recordatorio"
               >
                 Editar
               </button>
-              <button 
+              <button
+                type="button"
                 className="edit-button"
                 onClick={() => handleDeleteReminder(focusedReminder.id)}
                 style={{ backgroundColor: '#ff4757' }}
+                aria-label="Eliminar recordatorio"
               >
                 Eliminar
+              </button>
+              <button
+                type="button"
+                className="edit-button"
+                onClick={handleCloseReminder}
+                aria-label="Cerrar"
+              >
+                Cerrar
               </button>
             </div>
           </div>

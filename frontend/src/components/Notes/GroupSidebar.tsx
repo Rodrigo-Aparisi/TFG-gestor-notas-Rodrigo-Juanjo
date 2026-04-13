@@ -21,15 +21,19 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
 }) => {
   return (
     <div className="notes-sidebar">
-      <div className="group-list">
+      <div className="group-list" role="listbox" aria-label="Grupos de notas">
         {/* Elemento "Todas las notas" */}
-        <div 
+        <div
           key="group-main"
           className={`group-item ${activeGroup === 'main' ? 'active' : ''}`}
+          role="option"
+          tabIndex={0}
+          aria-selected={activeGroup === 'main'}
           onClick={() => onGroupSelect('main')}
+          onKeyDown={e => e.key === 'Enter' && onGroupSelect('main')}
         >
-          <div 
-            className="group-color" 
+          <div
+            className="group-color"
             style={{ backgroundColor: '#f1c40f' }}
           />
           <span className="group-name">Todas las notas</span>
@@ -39,10 +43,14 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
         {groups
           .filter(group => !group.isDefault && group.id !== 'trash') // Filtramos grupos predeterminados
           .map((group, index) => (
-            <div 
+            <div
               key={`group-${group.id}`}
               className={`group-item ${activeGroup === group.id ? 'active' : ''}`}
+              role="option"
+              tabIndex={0}
+              aria-selected={activeGroup === group.id}
               onClick={() => onGroupSelect(group.id)}
+              onKeyDown={e => e.key === 'Enter' && onGroupSelect(group.id)}
             >
               <div className="group-actions-left">
                 <button 
@@ -103,12 +111,16 @@ const GroupSidebar: React.FC<GroupSidebarProps> = ({
           ))}
 
         <div className="mt-4 border-t pt-2">
-          <div 
+          <div
             className={`group-item ${activeGroup === 'trash' ? 'active' : ''}`}
+            role="option"
+            tabIndex={0}
+            aria-selected={activeGroup === 'trash'}
             onClick={() => onGroupSelect('trash')}
+            onKeyDown={e => e.key === 'Enter' && onGroupSelect('trash')}
           >
-            <div 
-              className="group-color" 
+            <div
+              className="group-color"
               style={{ backgroundColor: '#e74c3c' }}
             />
             <span className="group-name" style={{ color: '#e74c3c' }}>Papelera</span>

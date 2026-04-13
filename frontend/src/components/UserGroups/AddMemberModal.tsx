@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { noteService } from '../../services/api';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -15,6 +15,11 @@ interface AddMemberModalProps {
   groupId?: string;
 }
 
+const getFocusableElements = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+
 const AddMemberModal: React.FC<AddMemberModalProps> = ({
   onClose,
   onAddMember,
@@ -25,16 +30,59 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const previousFocusRef = useRef<Element | null>(null);
 
   // Hook para cerrar dropdown al hacer clic fuera
   const closeSuggestions = useCallback(() => setShowSuggestions(false), []);
   useClickOutside(suggestionsRef, closeSuggestions);
 
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    firstInputRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = getFocusableElements(modalRef.current);
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocusRef.current && (previousFocusRef.current as HTMLElement).focus) {
+        (previousFocusRef.current as HTMLElement).focus();
+      }
+    };
+  }, [onClose]);
+
   // Manejar cambios en el input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setUsername(value);
-    
+
     if (value.length >= 3) {
       searchUsers(value);
     } else {
@@ -52,7 +100,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
       } else {
         response = await noteService.searchUsers(query);
       }
-      
+
       setSuggestions(response.users || []);
       setShowSuggestions((response.users || []).length > 0);
     } catch (error) {
@@ -71,7 +119,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
       await onAddMember(username);
@@ -85,22 +133,29 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-member-modal-title"
+        ref={modalRef}
+      >
         <div className="modal-header">
-          <h2>Añadir Miembro</h2>
-          <button 
+          <h2 id="add-member-modal-title">Añadir Miembro</h2>
+          <button
             className="close-modal-btn"
             onClick={onClose}
           >
             &times;
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="member-username">Nombre de usuario</label>
             <div className="autocomplete-container" ref={suggestionsRef}>
               <input
+                ref={firstInputRef}
                 id="member-username"
                 type="text"
                 value={username}
@@ -110,20 +165,21 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                 disabled={isSubmitting}
                 autoComplete="off"
               />
-              
+
               {showSuggestions && suggestions.length > 0 && (
                 <div className="user-suggestions">
                   {suggestions.map((user) => (
-                    <div 
-                      key={user.id} 
+                    <button
+                      key={user.id}
+                      type="button"
                       className="suggestion-item"
                       onClick={() => selectUser(user.username)}
                     >
                       <div className="suggestion-content">
                         {user.profile_image && (
-                          <img 
-                            src={user.profile_image} 
-                            alt={user.username} 
+                          <img
+                            src={user.profile_image}
+                            alt={user.username}
                             className="suggestion-avatar"
                           />
                         )}
@@ -132,15 +188,15 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                           {user.email && <div className="suggestion-email">{user.email}</div>}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="modal-actions">
-            <button 
+            <button
               type="button"
               className="cancel-btn"
               onClick={onClose}
@@ -148,7 +204,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
             >
               Cancelar
             </button>
-            <button 
+            <button
               type="submit"
               className="add-btn"
               disabled={!username.trim() || isSubmitting}

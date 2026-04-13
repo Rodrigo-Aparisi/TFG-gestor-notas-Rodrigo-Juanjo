@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Reminder } from '../../types';
 
 interface ReminderPopupProps {
@@ -18,22 +18,51 @@ const ReminderPopup: React.FC<ReminderPopupProps> = ({
   onDeleteReminder,
   setIsFromPopup
 }) => {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   const handleDelete = (id: string) => {
     if (window.confirm('¿Eliminar este recordatorio? Esta acción no se puede deshacer.')) {
       onDeleteReminder(id);
     }
   };
 
+  // Mover foco al botón de cierre al abrir
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
   <div className="reminder-popup-overlay" onClick={onClose}>
-    <div className="reminder-popup" onClick={e => e.stopPropagation()}>
+    <div
+      className="reminder-popup"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Recordatorios del día"
+      onClick={e => e.stopPropagation()}
+    >
       <div className="reminder-popup-header">
-        <h3>{date.toLocaleDateString('es-ES', { 
-          weekday: 'long', 
-          day: 'numeric', 
-          month: 'long' 
+        <h3>{date.toLocaleDateString('es-ES', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long'
         })}</h3>
-        <button onClick={onClose}>&times;</button>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+        >&times;</button>
       </div>
       <div className="reminder-popup-content">
         {reminders.map((reminder, idx) => (

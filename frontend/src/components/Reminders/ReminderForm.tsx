@@ -24,22 +24,28 @@ const ReminderForm: React.FC<ReminderFormProps> = ({
 }) => {
   return (
     <div className="reminder-form">
+      <label htmlFor="reminder-title" className="sr-only">Título del recordatorio</label>
       <input
+        id="reminder-title"
         type="text"
         placeholder="Título del recordatorio"
         value={newReminder.title}
         onChange={e => setNewReminder(prev => ({ ...prev, title: e.target.value }))}
       />
-      
+
+      <label htmlFor="reminder-description" className="sr-only">Descripción</label>
       <textarea
+        id="reminder-description"
         placeholder="Descripción"
         value={newReminder.description}
         onChange={e => setNewReminder(prev => ({ ...prev, description: e.target.value }))}
       />
-      
+
       <div className="date-time-container">
         <div className="date-input">
+          <label htmlFor="reminder-date" className="sr-only">Fecha del recordatorio</label>
           <input
+            id="reminder-date"
             type="date"
             value={formatDateForInput(selectedDate)}
             onChange={e => {
@@ -48,27 +54,31 @@ const ReminderForm: React.FC<ReminderFormProps> = ({
             }}
           />
         </div>
-        
+
         <div className="time-checkbox-container">
           <label className="checkbox-label">
             <input
               type="checkbox"
               checked={newReminder.hasTime}
-              onChange={e => setNewReminder(prev => ({ 
-                ...prev, 
+              onChange={e => setNewReminder(prev => ({
+                ...prev,
                 hasTime: e.target.checked,
                 time: e.target.checked ? prev.time || '00:00' : ''
               }))}
             />
             Incluir hora
           </label>
-          
+
           {newReminder.hasTime && (
-            <input
-              type="time"
-              value={newReminder.time}
-              onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
-            />
+            <>
+              <label htmlFor="reminder-time" className="sr-only">Hora del recordatorio</label>
+              <input
+                id="reminder-time"
+                type="time"
+                value={newReminder.time}
+                onChange={e => setNewReminder(prev => ({ ...prev, time: e.target.value }))}
+              />
+            </>
           )}
         </div>
       </div>

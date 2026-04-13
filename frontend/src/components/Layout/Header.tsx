@@ -43,6 +43,17 @@ const Header: React.FC = () => {
   const closeDropdown = useCallback(() => setShowDropdown(false), []);
   useClickOutside(menuContainerRef, closeDropdown, showDropdown);
 
+  // Cerrar dropdown con Escape
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape' && showDropdown) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showDropdown]);
+
   const handleLogout = () => {
     authLogout();
     navigate("/login");
@@ -147,48 +158,61 @@ const Header: React.FC = () => {
               <div
                 ref={menuContainerRef}
                 className={`user-menu-container ${showDropdown ? "active" : ""}`}
-                onClick={handleMenuClick}
               >
-                <div className="user-menu-icon">
-                  {profileImage && !imageError ? (
-                    <img
-                      src={profileImage}
-                      alt="Usuario"
-                      className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
-                      onLoad={() => setImageLoaded(true)}
-                      onError={(e) => {
-                        console.error("Error cargando imagen:", profileImage);
-                        setImageError(true);
-                        e.currentTarget.src = "";
-                      }}
-                    />
-                  ) : (
-                    <AiOutlineUser size={24} />
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className="user-menu-trigger"
+                  onClick={handleMenuClick}
+                  aria-haspopup="menu"
+                  aria-expanded={showDropdown}
+                  aria-label="Menú de usuario"
+                  aria-controls="user-dropdown"
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <div className="user-menu-icon">
+                    {profileImage && !imageError ? (
+                      <img
+                        src={profileImage}
+                        alt={user?.username || 'Foto de perfil'}
+                        className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
+                        onLoad={() => setImageLoaded(true)}
+                        onError={(e) => {
+                          console.error("Error cargando imagen:", profileImage);
+                          setImageError(true);
+                          e.currentTarget.src = "";
+                        }}
+                      />
+                    ) : (
+                      <AiOutlineUser size={24} />
+                    )}
+                  </div>
 
-                {/* Cambiar la clase user-name para que se muestre en móvil */}
-                <span className="user-name mobile-visible">{user.username}</span>
+                  {/* Cambiar la clase user-name para que se muestre en móvil */}
+                  <span className="user-name mobile-visible">{user.username}</span>
+                </button>
                 <div
                   className={`dropdown-menu ${showDropdown ? "show" : ""}`}
                   id="user-dropdown"
                   role="menu"
+                  aria-label="Opciones de usuario"
                 >
                   <button
+                    type="button"
+                    role="menuitem"
                     onClick={() => {
                       navigate("/settings");
                       setShowDropdown(false);
                     }}
-                    role="menuitem"
                   >
                     Configuración
                   </button>
                   <button
+                    type="button"
+                    role="menuitem"
                     onClick={() => {
                       handleLogout();
                       setShowDropdown(false);
                     }}
-                    role="menuitem"
                   >
                     Cerrar Sesión
                   </button>

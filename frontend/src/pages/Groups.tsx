@@ -537,6 +537,14 @@ const Groups: React.FC = () => {
       <div className="overlay"></div>
 
       <div className="groups-main">
+        {/* Zona de feedback accesible para lectores de pantalla */}
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {loading ? 'Cargando grupos...' : ''}
+        </div>
         {loading && <div className="loading-indicator">Cargando...</div>}
 
         {selectedGroup ? (

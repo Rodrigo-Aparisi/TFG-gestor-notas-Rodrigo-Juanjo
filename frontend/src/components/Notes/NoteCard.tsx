@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { Note } from '../../types';
 import ShareNote from './ShareNote';
 import NoteImage from './NoteImage';
@@ -37,8 +37,33 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
   } = useNotesContext();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMarked = markedNotes.includes(note.id);
   const activeGroupColor = groups.find(g => g.id === activeGroup)?.color || '#f1c40f';
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedOk, setSavedOk] = useState(false);
+
+  // Wrapper que añade indicador visual de guardado
+  const handleUpdateNoteWithIndicator = useCallback(async (id: string, field: 'title' | 'content') => {
+    setIsSaving(true);
+    setSavedOk(false);
+    try {
+      await handleUpdateNote(id, field);
+      setSavedOk(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSavedOk(false), 2000);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [handleUpdateNote]);
+
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   // Aplicar resize cuando el componente se monta o cuando cambia el contenido o el estado de foco
   useEffect(() => {
@@ -100,7 +125,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
           type="text"
           value={editingNote[note.id]?.title || note.title || ''}
           onChange={e => handleNoteChange(note.id, 'title', e.target.value)}
-          onBlur={() => handleUpdateNote(note.id, 'title')}
+          onBlur={() => handleUpdateNoteWithIndicator(note.id, 'title')}
           onClick={e => e.stopPropagation()}
         />
         
@@ -134,9 +159,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
           }}
           onKeyDown={(e) => handleKeyDown(e, note.id)}
           onInput={(e) => autoResizeTextarea && autoResizeTextarea(e.target as HTMLTextAreaElement)}
-          onBlur={() => handleUpdateNote(note.id, 'content')}
+          onBlur={() => handleUpdateNoteWithIndicator(note.id, 'content')}
           onClick={(e) => e.stopPropagation()}
         />
+      </div>
+
+      {/* Indicador de guardado automático */}
+      <div aria-live="polite" aria-atomic="true">
+        {isSaving && <div className="saving-indicator">Guardando...</div>}
+        {savedOk && !isSaving && <div className="saving-indicator">Guardado ✓</div>}
       </div>
 
       <div className="note-actions-bottom">

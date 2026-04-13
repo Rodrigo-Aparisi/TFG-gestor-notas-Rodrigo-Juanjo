@@ -485,7 +485,8 @@ const Settings = () => {
                         disabled={!isEditing}
                         required
                       />
-                      <span
+                      <button
+                        type="button"
                         className="password-toggle"
                         onClick={() =>
                           setShowPasswords((prev) => ({
@@ -493,13 +494,16 @@ const Settings = () => {
                             currentPassword: !prev.currentPassword,
                           }))
                         }
+                        aria-label={showPasswords.currentPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        aria-pressed={showPasswords.currentPassword}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                       >
                         {showPasswords.currentPassword ? (
                           <AiOutlineEyeInvisible />
                         ) : (
                           <AiOutlineEye />
                         )}
-                      </span>
+                      </button>
                     </div>
                   </div>
 
@@ -514,7 +518,8 @@ const Settings = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                       />
-                      <span
+                      <button
+                        type="button"
                         className="password-toggle"
                         onClick={() =>
                           setShowPasswords((prev) => ({
@@ -522,13 +527,16 @@ const Settings = () => {
                             newPassword: !prev.newPassword,
                           }))
                         }
+                        aria-label={showPasswords.newPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        aria-pressed={showPasswords.newPassword}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                       >
                         {showPasswords.newPassword ? (
                           <AiOutlineEyeInvisible />
                         ) : (
                           <AiOutlineEye />
                         )}
-                      </span>
+                      </button>
                     </div>
                   </div>
 
@@ -545,7 +553,8 @@ const Settings = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                       />
-                      <span
+                      <button
+                        type="button"
                         className="password-toggle"
                         onClick={() =>
                           setShowPasswords((prev) => ({
@@ -553,13 +562,16 @@ const Settings = () => {
                             confirmNewPassword: !prev.confirmNewPassword,
                           }))
                         }
+                        aria-label={showPasswords.confirmNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        aria-pressed={showPasswords.confirmNewPassword}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                       >
                         {showPasswords.confirmNewPassword ? (
                           <AiOutlineEyeInvisible />
                         ) : (
                           <AiOutlineEye />
                         )}
-                      </span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -646,7 +658,8 @@ const Settings = () => {
                           required
                           className="delete-confirm-password"
                         />
-                        <span
+                        <button
+                          type="button"
                           className="password-toggle"
                           onClick={() =>
                             setShowPasswords((prev) => ({
@@ -654,13 +667,16 @@ const Settings = () => {
                               currentPassword: !prev.currentPassword,
                             }))
                           }
+                          aria-label={showPasswords.currentPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                          aria-pressed={showPasswords.currentPassword}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                         >
                           {showPasswords.currentPassword ? (
                             <AiOutlineEyeInvisible />
                           ) : (
                             <AiOutlineEye />
                           )}
-                        </span>
+                        </button>
                       </div>
                       
                       <div className="delete-buttons">
