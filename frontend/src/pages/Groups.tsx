@@ -46,7 +46,6 @@ const Groups: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<"notes" | "members">("notes");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [forceRender, setForceRender] = useState(0);
   const [focusedNoteId, setFocusedNoteId] = useState<string | null>(null);
 
   // Estados para los modales y campos de edición
@@ -74,11 +73,10 @@ const Groups: React.FC = () => {
     }
 
     return false;
-  }, [selectedGroup?.members, user?.id, forceRender]);
+  }, [selectedGroup?.members, user?.id]);
 
-  // Forzar re-renderizado cuando cambia el grupo seleccionado
+  // Sincronizar campos de edición cuando cambia el grupo seleccionado
   useEffect(() => {
-    setForceRender((prev) => prev + 1);
     if (selectedGroup) {
       setNewGroupName(selectedGroup.name);
       setNewGroupDescription(selectedGroup.description || "");
@@ -345,10 +343,6 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
-        // Actualizar la lista de grupos localmente
-        // Forzar la actualización del componente
-        setForceRender(prev => prev + 1);
-
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 
@@ -386,9 +380,6 @@ const Groups: React.FC = () => {
       );
 
       if (response.status === 200 || response.data.success) {
-        // Forzar la actualización del componente
-        setForceRender(prev => prev + 1);
-
         // Recargar el grupo para obtener los datos actualizados
         selectGroup(selectedGroup.id);
 

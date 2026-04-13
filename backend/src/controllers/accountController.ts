@@ -8,12 +8,9 @@ import dotenv from "dotenv";
 import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
 import { getBaseServerUrl, getProfileImageUrl } from "../utils/urlHelpers";
 import { NotFoundError, UnauthorizedError, BadRequestError } from "../errors/AppError";
+import { RequestWithFile } from "../config/multerConfig";
 
 dotenv.config();
-
-interface RequestWithFile extends Request {
-  file: Express.Multer.File;
-}
 
 export const accountController = {
   uploadProfileImage: async (
@@ -46,7 +43,7 @@ export const accountController = {
 
         if (safePath) {
           const uploadsDir = path.join(__dirname, "..", "..", "uploads");
-          safeDeleteFile(safePath, uploadsDir);
+          await safeDeleteFile(safePath, uploadsDir);
         } else {
           console.warn(`Path inseguro detectado en DB: ${previousImagePath}`);
         }
@@ -70,7 +67,7 @@ export const accountController = {
           req.file.filename
         );
         if (fs.existsSync(uploadedImagePath)) {
-          fs.unlinkSync(uploadedImagePath);
+          await fs.promises.unlink(uploadedImagePath);
         }
         return next(new NotFoundError("Usuario no encontrado"));
       }
@@ -98,7 +95,7 @@ export const accountController = {
           req.file.filename
         );
         if (fs.existsSync(uploadedImagePath)) {
-          fs.unlinkSync(uploadedImagePath);
+          await fs.promises.unlink(uploadedImagePath);
         }
       }
       next(error);
@@ -215,7 +212,7 @@ export const accountController = {
         const safePath = extractSafeRelativePath(user.profile_image, '/uploads/');
         if (safePath) {
           const uploadsDir = path.join(__dirname, "..", "uploads");
-          safeDeleteFile(safePath, uploadsDir);
+          await safeDeleteFile(safePath, uploadsDir);
         }
       }
 

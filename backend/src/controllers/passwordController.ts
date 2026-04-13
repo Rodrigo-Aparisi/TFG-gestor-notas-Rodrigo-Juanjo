@@ -3,6 +3,7 @@ import { pool } from '../database';
 import { emailService } from '../services/emailService';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import logger from '../config/logger';
 
 export const passwordController = {
   // Solicitar recuperación de contraseña
@@ -50,7 +51,7 @@ export const passwordController = {
       });
       
     } catch (error) {
-      console.error('Error al solicitar restablecimiento de contraseña:', error);
+      logger.error('Error al solicitar restablecimiento de contraseña:', { error });
       return res.status(500).json({ error: 'Error al procesar la solicitud' });
     }
   },
@@ -113,7 +114,7 @@ export const passwordController = {
       });
 
     } catch (error) {
-      console.error('Error al restablecer contraseña:', error);
+      logger.error('Error al restablecer contraseña:', { error });
       return res.status(500).json({ error: 'Error al procesar la solicitud' });
     }
   },
@@ -135,7 +136,7 @@ export const passwordController = {
       return res.status(200).json({ valid: true });
       
     } catch (error) {
-      console.error('Error al validar token:', error);
+      logger.error('Error al validar token:', { error });
       return res.status(500).json({ error: 'Error al procesar la solicitud' });
     }
   }

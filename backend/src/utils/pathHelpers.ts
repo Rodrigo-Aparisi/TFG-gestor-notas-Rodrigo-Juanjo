@@ -64,10 +64,10 @@ export function validateSafePath(
  * @example
  * safeDeleteFile('/uploads/profile-images/old.jpg', '/var/www/uploads');
  */
-export function safeDeleteFile(
+export async function safeDeleteFile(
   filePath: string,
   allowedDir: string
-): boolean {
+): Promise<boolean> {
   try {
     const safePath = validateSafePath(filePath, allowedDir);
 
@@ -76,11 +76,14 @@ export function safeDeleteFile(
       return false;
     }
 
-    if (fs.existsSync(safePath)) {
-      fs.unlinkSync(safePath);
+    try {
+      await fs.promises.unlink(safePath);
       return true;
-    } else {
-      return false;
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        return false;
+      }
+      throw err;
     }
   } catch (error) {
     console.error(`Error deleting file: ${filePath}`, error);

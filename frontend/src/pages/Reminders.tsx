@@ -195,6 +195,7 @@ const Reminders: React.FC = () => {
     e.stopPropagation();
     setFocusedReminder(reminder);
     setEditingReminder(null);
+    setEditingStatus(reminder.statusId || 1);
     document.body.style.overflow = 'hidden';
   };
 

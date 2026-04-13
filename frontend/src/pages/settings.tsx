@@ -14,7 +14,7 @@ import {
   AiOutlineUser,
 } from "react-icons/ai";
 import "../styles/settings.css";
-import { getFullImageUrl } from "../utils/imageHelpers";
+import { useProfileImage } from "../hooks/useProfileImage";
 
 type ThemeType = keyof typeof themeConfig.themes;
 
@@ -23,17 +23,20 @@ const Settings = () => {
   const { user, logout: authLogout, updateUserProfile } = useAuth();
   const { updateSettings } = useSettings();
 
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const {
+    profileImageUrl,
+    imageLoaded,
+    imageError,
+    setImageError,
+    setImageLoaded,
+    refreshProfileImage
+  } = useProfileImage();
 
   // Mueve estos estados dentro del componente
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  const [profileImage, setProfileImage] = useState<string>(
-    user?.profile_image ? getFullImageUrl(user.profile_image) : ""
-  );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleImageUpload = async (
@@ -47,20 +50,12 @@ const Settings = () => {
         setImageLoaded(false);
         const response = await accountService.updateUserProfileImage(formData);
 
-        const fullUrl = getFullImageUrl(response);
-        setProfileImage(fullUrl);
-
         if (user) {
           updateUserProfile({ profile_image: response });
         }
 
-        // Precargar la imagen
-        const img = new Image();
-        img.onload = () => {
-          setImageLoaded(true);
-          setImageError(false);
-        };
-        img.src = fullUrl;
+        // Refresh the shared profile image hook state
+        refreshProfileImage(response);
 
         showMessage("Imagen de perfil actualizada correctamente", "success");
       } catch (error) {
@@ -110,10 +105,6 @@ const Settings = () => {
 
   // Menú lateral y tabs
   const subMenus: Record<string, { key: string; label: string }[]> = {
-    general: [
-      { key: "preferencias", label: "Preferencias" },
-      { key: "notificaciones", label: "Notificaciones" },
-    ],
     cuenta: [
       { key: "informacion", label: "Información de la cuenta" },
       { key: "email", label: "Email" },
@@ -181,25 +172,6 @@ const Settings = () => {
       localStorage.setItem("userTheme", defaultTheme);
     }
   }, [user]);
-
-  // Efecto para manejar la imagen de perfil
-  useEffect(() => {
-    if (user?.profile_image) {
-      const fullUrl = getFullImageUrl(user.profile_image);
-      setProfileImage(fullUrl);
-
-      const img = new Image();
-      img.onload = () => {
-        setImageLoaded(true);
-        setImageError(false);
-      };
-      img.onerror = () => {
-        setImageError(true);
-        setImageLoaded(false);
-      };
-      img.src = fullUrl;
-    }
-  }, [user?.profile_image]);
 
   // Efecto para inicializar configuraciones
   useEffect(() => {
@@ -386,14 +358,14 @@ const Settings = () => {
             <div className="profile-section">
               <label>Imagen de perfil</label>
               <div className="profile-image-container">
-                {profileImage && !imageError ? (
+                {profileImageUrl && !imageError ? (
                   <img
-                    src={profileImage}
+                    src={profileImageUrl}
                     alt="Perfil"
                     className={`profile-image ${imageLoaded ? "loaded" : ""}`}
                     onLoad={() => setImageLoaded(true)}
                     onError={(e) => {
-                      console.error("Error cargando imagen:", profileImage);
+                      console.error("Error cargando imagen:", profileImageUrl);
                       setImageError(true);
                       e.currentTarget.src = "";
                     }}
@@ -707,59 +679,6 @@ const Settings = () => {
 
             </form>
           </section>
-
-          {/* Sección General comentada pero mantenida para futuras implementaciones */}
-           {/* <section id="general-section">
-            <h2>General</h2>
-           
-            <div id="general-preferencias">
-              <h3>Preferencias</h3>
-              <div className="theme-selector">
-                <h4>Apariencia</h4>
-                <div className="theme-options">
-                  <div
-                    className={`theme-option ${theme === "dark" ? "active" : ""}`}
-                    onClick={() => setTheme("dark")}
-                  >
-                    <div className="theme-preview dark-theme">
-                      <div className="preview-header"></div>
-                      <div className="preview-content">
-                        <div className="preview-line"></div>
-                        <div className="preview-line short"></div>
-                      </div>
-                    </div>
-                    <span>Tema Oscuro</span>
-                  </div>
-
-                  <div
-                    className={`theme-option ${theme === "light" ? "active" : ""}`}
-                    onClick={() => setTheme("light")}
-                  >
-                    <div className="theme-preview light-theme">
-                      <div className="preview-header"></div>
-                      <div className="preview-content">
-                        <div className="preview-line"></div>
-                        <div className="preview-line short"></div>
-                      </div>
-                    </div>
-                    <span>Tema Claro</span>
-                  </div>
-                </div>
-                <button
-                  className="save-theme-button"
-                  onClick={() => handleThemeChange(theme)}
-                  disabled={isSavingTheme}
-                >
-                  {isSavingTheme ? "Guardando tema..." : "Guardar tema"}
-                </button>
-              </div>
-            </div>
-            <div id="general-notificaciones">
-              <h3>Notificaciones</h3>
-              <p>Contenido de Notificaciones generales.</p>
-            </div>
-          </section>
-          */}
 
           <section id="privacidad-section">
             <h2>Privacidad</h2>

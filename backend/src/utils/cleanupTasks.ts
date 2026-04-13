@@ -1,5 +1,6 @@
 import { pool } from '../database';
 import schedule from 'node-schedule';
+import logger from '../config/logger';
 
 // Función para eliminar notas que llevan más de 30 días en la papelera
 export const setupTrashCleanup = () => {
@@ -13,7 +14,7 @@ export const setupTrashCleanup = () => {
       `);
       
     } catch (error) {
-      console.error('Error durante la limpieza de la papelera:', error);
+      logger.error('Error durante la limpieza de la papelera:', { error });
     }
   });
 };

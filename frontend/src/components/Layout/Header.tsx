@@ -6,38 +6,17 @@ import { AiOutlineUser } from "react-icons/ai";
 import { BsStickyFill } from "react-icons/bs";
 import { IoCalendarOutline } from "react-icons/io5";
 import WeekViewPopup from "../Reminders/WeekViewPopup";
-import { getFullImageUrl } from "../../utils/imageHelpers";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { useProfileImage } from "../../hooks/useProfileImage";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout: authLogout } = useAuth();
-  const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [profileImage, setProfileImage] = useState<string>("");
+  const { profileImageUrl, imageLoaded, imageError, setImageError, setImageLoaded } = useProfileImage();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showWeekView, setShowWeekView] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
-
-  // Efecto para manejar la carga inicial y la imagen
-  useEffect(() => {
-    if (user?.profile_image) {
-      const fullUrl = getFullImageUrl(user.profile_image);
-      setProfileImage(fullUrl);
-      
-      const img = new Image();
-      img.onload = () => {
-        setImageLoaded(true);
-        setImageError(false);
-      };
-      img.onerror = () => {
-        setImageError(true);
-        setImageLoaded(false);
-      };
-      img.src = fullUrl;
-    }
-  }, [user?.profile_image]);
 
   // Hook para cerrar dropdown al hacer clic fuera
   const closeDropdown = useCallback(() => setShowDropdown(false), []);
@@ -142,7 +121,7 @@ const Header: React.FC = () => {
                 <button
                   className="icon-button"
                   onClick={() => {
-                    navigate("/Reminders");
+                    navigate("/reminders");
                     setMobileMenuOpen(false);
                   }}
                   aria-label="Ir a recordatorios"
@@ -170,14 +149,14 @@ const Header: React.FC = () => {
                   style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <div className="user-menu-icon">
-                    {profileImage && !imageError ? (
+                    {profileImageUrl && !imageError ? (
                       <img
-                        src={profileImage}
+                        src={profileImageUrl}
                         alt={user?.username || 'Foto de perfil'}
                         className={`header-profile-image ${imageLoaded ? 'loaded' : ''}`}
                         onLoad={() => setImageLoaded(true)}
                         onError={(e) => {
-                          console.error("Error cargando imagen:", profileImage);
+                          console.error("Error cargando imagen:", profileImageUrl);
                           setImageError(true);
                           e.currentTarget.src = "";
                         }}

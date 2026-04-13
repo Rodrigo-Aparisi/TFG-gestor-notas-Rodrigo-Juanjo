@@ -101,7 +101,7 @@ const WeekViewPopup: React.FC<WeekViewPopupProps> = ({ onClose }) => {
   }
 
   const handleShowMore = (date: Date) => {
-    window.location.href = `/Reminders?date=${date.toISOString()}`;
+    window.location.href = `/reminders?date=${date.toISOString()}`;
     onClose();
   };
 
@@ -306,7 +306,7 @@ const WeekViewPopup: React.FC<WeekViewPopupProps> = ({ onClose }) => {
             <button 
               className="view-full-calendar-button"
               onClick={() => {
-                window.location.href = '/Reminders';
+                window.location.href = '/reminders';
                 onClose();
               }}
             >

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from '../services/api';
 
 export interface SettingsState {
   defaultNoteSort: 'date' | 'title' | 'lastModified';
@@ -28,6 +29,22 @@ interface SettingsProviderProps {
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+
+  // Load settings from server on mount; fall back silently to defaults on error
+  useEffect(() => {
+    const loadFromServer = async () => {
+      try {
+        const response = await api.get('/account/settings');
+        if (response.data) {
+          const serverSettings = response.data as Partial<SettingsState>;
+          setSettings(prev => ({ ...prev, ...serverSettings }));
+        }
+      } catch {
+        // Silently keep defaults if the request fails (unauthenticated or network error)
+      }
+    };
+    loadFromServer();
+  }, []);
 
   const updateSettings = (updates: Partial<SettingsState>) => {
     setSettings(prev => ({ ...prev, ...updates }));

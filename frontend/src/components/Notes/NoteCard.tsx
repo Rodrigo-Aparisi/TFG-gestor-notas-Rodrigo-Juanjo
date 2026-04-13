@@ -189,10 +189,12 @@ const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
         />
         
         {/* Mantener el botón de eliminar */}
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
-            handleDeleteNote(note.id);
+            if (window.confirm('¿Eliminar esta nota? Esta acción no se puede deshacer.')) {
+              handleDeleteNote(note.id);
+            }
           }}
           className="delete-button"
         >

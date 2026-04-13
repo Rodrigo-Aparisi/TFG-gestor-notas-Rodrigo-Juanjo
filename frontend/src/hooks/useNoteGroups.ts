@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { noteService } from '../services/api';
@@ -50,7 +50,7 @@ export function useGroups() {
     }
   }, [navigate]);
 
-  const handleCreateGroup = async (markedNotes: string[]) => {
+  const handleCreateGroup = useCallback(async (markedNotes: string[]) => {
     try {
       if (!newNoteGroup.name.trim()) {
         toast.error('El nombre del grupo es requerido');
@@ -88,9 +88,9 @@ export function useGroups() {
       toast.error('Error al crear el grupo');
       return false;
     }
-  };
+  }, [newNoteGroup]);
 
-  const handleUpdateGroup = async (groupId: string, groupData: { name: string; color: string }) => {
+  const handleUpdateGroup = useCallback(async (groupId: string, groupData: { name: string; color: string }) => {
     try {
       const response = await noteService.updateGroup(groupId, groupData);
       
@@ -114,9 +114,9 @@ export function useGroups() {
       toast.error('Error al actualizar el grupo');
       return false;
     }
-  };
+  }, []);
 
-  const handleMoveGroup = async (groupId: string, direction: 'up' | 'down') => {
+  const handleMoveGroup = useCallback(async (groupId: string, direction: 'up' | 'down') => {
     // Encontrar el grupo y su índice, excluyendo grupos predeterminados como 'main' y 'trash'
     const reorderableGroups = groups.filter(g => !g.isDefault && g.id !== 'trash');
     const groupIndex = reorderableGroups.findIndex(g => g.id === groupId);
@@ -155,9 +155,9 @@ export function useGroups() {
       // Revertir cambios en caso de error
       setGroups(groups);
     }
-  };
+  }, [groups]);
 
-  const handleAddNoteToGroup = async (groupId: string, noteId: string) => {
+  const handleAddNoteToGroup = useCallback(async (groupId: string, noteId: string) => {
     try {
       // Verificar si la nota ya está en el grupo
       const group = groups.find(g => g.id === groupId);
@@ -187,9 +187,9 @@ export function useGroups() {
       toast.error('Error al añadir la nota al grupo');
       return false;
     }
-  };
+  }, [groups]);
 
-  const handleRemoveNoteFromGroup = async (groupId: string, noteId: string) => {
+  const handleRemoveNoteFromGroup = useCallback(async (groupId: string, noteId: string) => {
     try {
       await noteService.removeNoteFromGroup(groupId, noteId);
       
@@ -211,9 +211,9 @@ export function useGroups() {
       toast.error('Error al eliminar la nota del grupo');
       return false;
     }
-  };
+  }, []);
 
-  const removeNoteFromAllGroups = (noteId: string) => {
+  const removeNoteFromAllGroups = useCallback((noteId: string) => {
     setGroups(prev => prev.map(group => {
       if (group.noteIds.includes(noteId)) {
         return {
@@ -223,9 +223,9 @@ export function useGroups() {
       }
       return group;
     }));
-  };
+  }, []);
 
-  const handleDeleteGroup = async (groupId: string, event: React.MouseEvent) => {
+  const handleDeleteGroup = useCallback(async (groupId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (window.confirm('¿Estás seguro de que quieres eliminar este grupo?')) {
       try {
@@ -242,7 +242,7 @@ export function useGroups() {
         toast.error('Error al eliminar el grupo');
       }
     }
-  };
+  }, [activeGroup, navigate]);
 
   // Cargar grupos
   useEffect(() => {

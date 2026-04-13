@@ -65,9 +65,9 @@ const ReminderPopup: React.FC<ReminderPopupProps> = ({
         >&times;</button>
       </div>
       <div className="reminder-popup-content">
-        {reminders.map((reminder, idx) => (
-          <div 
-            key={idx}
+        {reminders.map((reminder) => (
+          <div
+            key={reminder.id}
             className={`reminder-popup-item status-${reminder.statusId}`}
           >
             <div className="reminder-popup-details">

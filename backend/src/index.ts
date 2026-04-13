@@ -3,7 +3,6 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import multer from 'multer';
 import { pool } from './database';
 import authRoutes from './routes/auth';
 import notesRoutes from './routes/noteRoutes';
@@ -70,41 +69,6 @@ app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads/group-note-images', express.static(path.join(__dirname, 'uploads/group-note-images')));
 
-// Allowed MIME types and their safe extensions — file.originalname is never used in filenames
-const ALLOWED_MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/gif': '.gif',
-  'image/webp': '.webp'
-};
-
-// Configurar multer para las imágenes de las notas
-const noteImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, noteImagesDir);
-  },
-  filename: (req, file, cb) => {
-    // Derive extension from validated MIME type — never from file.originalname
-    const ext = ALLOWED_MIME_TO_EXT[file.mimetype] || '.bin';
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `${uniqueSuffix}${ext}`);
-  }
-});
-
-export const uploadNoteImage = multer({
-  storage: noteImageStorage,
-  limits: {
-    fileSize: 25 * 1024 * 1024 // 25MB límite
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedMimes = Object.keys(ALLOWED_MIME_TO_EXT);
-    if (!allowedMimes.includes(file.mimetype)) {
-      return cb(new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPEG, PNG, GIF y WEBP'));
-    }
-    cb(null, true);
-  }
-}).single('image');
-
 // CORS: activo en desarrollo, en producción lo gestiona Nginx
 if (process.env.NODE_ENV !== 'production') {
   app.use(cors({
@@ -130,23 +94,6 @@ app.use('/uploads', (err: Error & { code?: string }, req: express.Request, res: 
     return res.status(404).json({
       success: false,
       error: { message: 'Imagen no encontrada' }
-    });
-  }
-  next(err);
-});
-
-// Middleware para manejar errores de archivos (Multer)
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'Archivo demasiado grande. Máximo 5MB', code: 'FILE_TOO_LARGE' }
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      error: { message: 'Error al subir el archivo: ' + err.message, code: 'UPLOAD_ERROR' }
     });
   }
   next(err);

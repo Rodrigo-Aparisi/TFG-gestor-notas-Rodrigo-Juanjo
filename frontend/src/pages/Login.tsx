@@ -62,34 +62,21 @@ const Login: React.FC = () => {
   });
 
   const [error, setError] = useState<string>("");
+  const [formMode, setFormMode] = useState<'login' | 'register'>('login');
 
-  useEffect(() => {
-    const wrapper = document.querySelector(".wrapper") as HTMLElement;
-    const registerLink = document.querySelector(".register-link") as HTMLElement;
-    const loginLink = document.querySelector(".login-link") as HTMLElement;
+  const switchToRegister = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFormMode('register');
+    setError("");
+    setShowPasswords({ loginPassword: false, registerPassword: false });
+  };
 
-    if (registerLink && loginLink && wrapper) {
-      registerLink.onclick = (e) => {
-        e.preventDefault();
-        wrapper.classList.add("active");
-        setError("");
-        setShowPasswords({
-          loginPassword: false,
-          registerPassword: false,
-        });
-      };
-
-      loginLink.onclick = (e) => {
-        e.preventDefault();
-        wrapper.classList.remove("active");
-        setError("");
-        setShowPasswords({
-          loginPassword: false,
-          registerPassword: false,
-        });
-      };
-    }
-  }, []);
+  const switchToLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFormMode('login');
+    setError("");
+    setShowPasswords({ loginPassword: false, registerPassword: false });
+  };
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLoginData({
@@ -173,10 +160,7 @@ const Login: React.FC = () => {
           email: "",
           password: "",
         });
-        const wrapper = document.querySelector(".wrapper") as HTMLElement;
-        if (wrapper) {
-          wrapper.classList.remove("active");
-        }
+        setFormMode('login');
       }
     } catch (error: unknown) {
       console.error("Error en el registro:", error);
@@ -201,7 +185,7 @@ const Login: React.FC = () => {
         </div>
       )}
 
-      <div className="wrapper">
+      <div className={`wrapper${formMode === 'register' ? ' active' : ''}`}>
         <span className="rotate-bg"></span>
         <span className="rotate-bg2"></span>
         
@@ -288,7 +272,7 @@ const Login: React.FC = () => {
             >
               <p>
                 ¿No tienes cuenta?{" "}
-                <a href="#" className="register-link">
+                <a href="#" className="register-link" onClick={switchToRegister}>
                   Regístrate
                 </a>
               </p>
@@ -409,7 +393,7 @@ const Login: React.FC = () => {
             >
               <p>
                 ¿Ya tienes cuenta?{" "}
-                <a href="#" className="login-link">
+                <a href="#" className="login-link" onClick={switchToLogin}>
                   Iniciar Sesión
                 </a>
               </p>

@@ -4,6 +4,7 @@ import fs from "fs";
 import { buildOrderByClause } from "../../utils/queryHelpers";
 import { RequestWithFile } from "../../config/multerConfig";
 import { AppError, NotFoundError, BadRequestError } from "../../errors/AppError";
+import logger from "../../config/logger";
 
 /**
  * Controller for Note CRUD operations, trash management, and pin/mark functionality
@@ -22,7 +23,7 @@ export class NoteCrudController {
 
       // Process content for lists
       const processedContent = content
-        .replace(/^- (.+)$/gm, "• $1")
+        ?.replace(/^- (.+)$/gm, "• $1")
         .replace(/^\* (.+)$/gm, "• $1")
         .replace(/^(\d+)\. (.+)$/gm, "$1. $2");
 
@@ -421,8 +422,8 @@ export class NoteCrudController {
         preferences: { sortType, sortDirection },
       });
     } catch (error) {
-      // Intentional fallback: sort preferences are non-critical
-      console.error("Error al obtener preferencias de ordenación:", error);
+      // Intentional fallback: sort preferences are non-critical, but log the error
+      logger.error("Error al obtener preferencias de ordenación:", { error });
       res.status(200).json({
         success: true,
         preferences: { sortType: "date", sortDirection: "desc" },

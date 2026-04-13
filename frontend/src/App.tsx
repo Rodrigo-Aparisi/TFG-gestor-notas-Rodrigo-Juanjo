@@ -122,7 +122,7 @@ function App() {
                       </PrivateRoute>
                     } />
 
-                    <Route path="/Reminders" element={
+                    <Route path="/reminders" element={
                       <PrivateRoute>
                         <Reminders />
                       </PrivateRoute>

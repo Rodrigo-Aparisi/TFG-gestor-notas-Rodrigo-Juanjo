@@ -2,13 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
-import { groupNoteImageUpload, deleteImage, handleMulterError } from "../../config/multerConfig";
+import { groupNoteImageUpload, deleteImage, handleMulterError, RequestWithFile } from "../../config/multerConfig";
 import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
 import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
-
-interface RequestWithFile extends Request {
-  file?: Express.Multer.File;
-}
 
 /**
  * Controller for Group Notes operations
@@ -311,14 +307,18 @@ export class GroupNoteController {
 
       const images = noteResult.rows[0].images || [];
 
-      for (const imagePath of images) {
-        if (imagePath && isGroupNoteImageUrl(imagePath)) {
-          const fullPath = path.join(__dirname, "..", "..", imagePath);
-          if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-          }
-        }
-      }
+      await Promise.allSettled(
+        images
+          .filter((imagePath: string) => imagePath && isGroupNoteImageUrl(imagePath))
+          .map(async (imagePath: string) => {
+            const fullPath = path.join(__dirname, "..", "..", imagePath);
+            try {
+              await fs.promises.unlink(fullPath);
+            } catch (err: any) {
+              if (err.code !== 'ENOENT') throw err;
+            }
+          })
+      );
 
       // Delete the note
       await pool.query(
@@ -487,8 +487,10 @@ export class GroupNoteController {
       const imageUrl = images[index];
       if (imageUrl && isGroupNoteImageUrl(imageUrl)) {
         const fullPath = path.join(__dirname, '..', '..', imageUrl);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
+        try {
+          await fs.promises.unlink(fullPath);
+        } catch (err: any) {
+          if (err.code !== 'ENOENT') throw err;
         }
       }
 
