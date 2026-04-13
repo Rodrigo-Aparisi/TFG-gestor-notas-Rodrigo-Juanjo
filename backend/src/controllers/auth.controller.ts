@@ -7,8 +7,18 @@ import { BadRequestError, NotFoundError, UnauthorizedError, ForbiddenError } fro
 import { logger, log } from '../config/logger';
 
 /**
- * User Registration
- * POST /api/auth/register
+ * Registra un nuevo usuario en el sistema.
+ *
+ * Valida que username, email y password estén presentes (respaldo al middleware Zod).
+ * Hashea la contraseña con bcrypt (10 rondas) antes de insertar en BD.
+ * Devuelve el usuario creado sin la contraseña.
+ *
+ * @param req - Request con body validado por `registerSchema` (username, email, password)
+ * @param res - Express Response
+ * @param next - Manejador de errores de Express
+ * @throws {BadRequestError} 400 — Faltan campos (`MISSING_FIELDS`)
+ * @throws {BadRequestError} 400 — Username o email ya existe (`USER_EXISTS`, PG code 23505)
+ * @returns 201 con `{ success, message, user }` — user sin campo password
  */
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -48,8 +58,20 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 };
 
 /**
- * User Login
- * POST /api/auth/login
+ * Autentica al usuario y genera un par de tokens JWT.
+ *
+ * - Access token: validez 1 hora, payload `{ id, email }`.
+ * - Refresh token: validez 7 días, payload `{ id, type: 'refresh' }`, almacenado en BD.
+ * - Devuelve también los ajustes del usuario (tema, idioma, notificaciones).
+ *   Si el usuario no tiene settings, devuelve los valores por defecto.
+ *
+ * @param req - Request con body validado por `loginSchema` (email, password)
+ * @param res - Express Response
+ * @param next - Manejador de errores de Express
+ * @throws {BadRequestError} 400 — Faltan campos (`MISSING_FIELDS`)
+ * @throws {NotFoundError} 404 — Correo no encontrado (`USER_NOT_FOUND`)
+ * @throws {UnauthorizedError} 401 — Contraseña incorrecta (`INVALID_PASSWORD`)
+ * @returns 200 con `{ success, message, token, refreshToken, user, settings }`
  */
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -133,8 +155,19 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 /**
- * Refresh Access Token
- * POST /api/auth/refresh
+ * Renueva el access token usando un refresh token válido.
+ *
+ * Verifica la firma JWT del refresh token y comprueba que exista en `refresh_tokens`
+ * sin haber expirado. No rota el refresh token (sigue siendo el mismo hasta su TTL).
+ *
+ * @param req - Request con body `{ refreshToken: string }`
+ * @param res - Express Response
+ * @param next - Manejador de errores de Express
+ * @throws {UnauthorizedError} 401 — Refresh token no proporcionado (`MISSING_REFRESH_TOKEN`)
+ * @throws {ForbiddenError} 403 — Token inválido (`INVALID_REFRESH_TOKEN`)
+ * @throws {ForbiddenError} 403 — Token expirado o no encontrado en BD (`EXPIRED_REFRESH_TOKEN`)
+ * @throws {NotFoundError} 404 — Usuario asociado al token no existe (`USER_NOT_FOUND`)
+ * @returns 200 con `{ success, message, token }` — nuevo access token (1h)
  */
 export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -194,8 +227,16 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
 };
 
 /**
- * User Logout
- * POST /api/auth/logout
+ * Cierra la sesión del usuario.
+ *
+ * - Si el access token es válido, lo añade a `revoked_tokens` (blacklist) hasta su expiración.
+ * - Si el access token es inválido o expirado, el logout continúa sin error (fail-open).
+ * - Elimina el refresh token de `refresh_tokens` si se proporciona.
+ *
+ * @param req - Request autenticado (Bearer token en header). Body opcional: `{ refreshToken }`
+ * @param res - Express Response
+ * @param next - Manejador de errores de Express
+ * @returns 200 con `{ success, message }`
  */
 export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

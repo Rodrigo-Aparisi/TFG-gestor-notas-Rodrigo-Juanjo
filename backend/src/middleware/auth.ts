@@ -11,6 +11,30 @@ declare global {
   }
 }
 
+/**
+ * Middleware de autenticación JWT para rutas protegidas.
+ *
+ * Proceso de validación (en orden):
+ * 1. Extrae el token del header `Authorization: Bearer <token>`.
+ * 2. Verifica la firma JWT con `JWT_SECRET` mediante `jwt.verify`.
+ * 3. Rechaza tokens con `type === 'refresh'` (previene su uso como access tokens).
+ * 4. Consulta `revoked_tokens` para detectar tokens en la blacklist.
+ * 5. Inyecta `req.user: AuthUser` con `{ id, email }` del payload.
+ *
+ * @param req - Express Request. Debe incluir `Authorization: Bearer <token>`.
+ *              Tras la validación, `req.user` queda poblado con `{ id, email }`.
+ * @param res - Express Response
+ * @param next - Continúa al siguiente middleware o controller si el token es válido
+ *
+ * @returns
+ *   - `401` si no hay token (`Access denied - No token`)
+ *   - `401` si el token ha expirado (`code: TOKEN_EXPIRED`)
+ *   - `401` si el token es de tipo refresh
+ *   - `403` si el token tiene firma inválida (`code: INVALID_TOKEN`)
+ *   - `403` si el token está en la blacklist (`Token has been revoked`)
+ *   - `403` si falla la consulta a BD (fail-closed: error → deniega acceso)
+ *   - Llama a `next()` si todas las verificaciones pasan
+ */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];

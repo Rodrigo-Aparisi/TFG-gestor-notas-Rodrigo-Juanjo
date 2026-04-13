@@ -7,11 +7,27 @@ import { AppError, NotFoundError, BadRequestError } from "../../errors/AppError"
 import logger from "../../config/logger";
 
 /**
- * Controller for Note CRUD operations, trash management, and pin/mark functionality
+ * Controlador de operaciones CRUD sobre notas, gestión de papelera,
+ * pin/marcado y preferencias de ordenación del usuario.
+ *
+ * Todas las operaciones verifican que el recurso pertenece al usuario autenticado
+ * (`req.user.id` inyectado por el middleware `authenticateToken`).
+ * Los errores de negocio se propagan con `next(new AppError)`.
  */
 export class NoteCrudController {
   // ==================== CRUD Operations ====================
 
+  /**
+   * Crea una nueva nota para el usuario autenticado.
+   *
+   * Convierte listas Markdown (`- `, `* `, `1. `) en viñetas (•) antes de guardar.
+   *
+   * @param req - Request autenticado. Body validado por `createNoteSchema` (title, content?, images?)
+   * @param res - Express Response
+   * @param next - Manejador de errores
+   * @throws {BadRequestError} 400 — Título vacío o ausente
+   * @returns 201 con `{ message, note }` — objeto nota completo
+   */
   async createNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { title, content, images } = req.body;
@@ -41,6 +57,17 @@ export class NoteCrudController {
     }
   }
 
+  /**
+   * Obtiene las notas activas (no eliminadas) del usuario autenticado.
+   *
+   * Ordena según las preferencias guardadas en `settings` (tipo y dirección).
+   * Soporta paginación mediante `page` y `limit`; desactivable con `paginate=false`.
+   *
+   * @param req - Query params opcionales: `page` (default 1), `limit` (default 50, máx 100), `paginate` (default true)
+   * @param res - Express Response
+   * @param next - Manejador de errores
+   * @returns 200 con `{ notes, pagination: { page, limit, totalNotes, totalPages, hasMore } }`
+   */
   async getNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user!.id;
