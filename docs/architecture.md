@@ -78,8 +78,7 @@ TFG-gestor-notas-Rodrigo-Juanjo/
 │   │   └── setupTests.ts
 │   └── package.json (react-scripts)
 ├── docker/
-│   ├── postgres/init/01_schema.sql   # Schema duplicado para inicialización Docker
-│   └── README.md
+│   └── README.md                     # (el schema vive en database.sql, montado por compose)
 ├── docs/                         # Esta carpeta
 ├── database.sql                  # Schema monolítico (alternativa a docker/init)
 ├── docker-compose.yml            # Solo levanta postgres:16-alpine
@@ -330,8 +329,8 @@ Estado local en cada página/componente con `useState`/`useReducer`. No se usan 
 
 PostgreSQL 16, esquema normalizado a 3NF. Existen dos copias del schema:
 
-- `database.sql` (raíz): script monolítico para uso manual.
-- `docker/postgres/init/01_schema.sql`: ejecutado automáticamente por el contenedor en la primera inicialización.
+- `database.sql` (raíz): **única fuente del esquema**. Lo usa tanto el setup manual (`psql -f database.sql`) como Docker (docker-compose lo monta en `/docker-entrypoint-initdb.d` y se ejecuta en la primera inicialización del contenedor).
+- `backend/migrations/`: cambios incrementales versionados (001, 002, 003, ...) aplicados sobre el esquema base.
 
 Ambos deben mantenerse sincronizados manualmente. La migración `backend/migrations/001_add_token_tables.sql` ya está incluida en ambos.
 
@@ -454,7 +453,7 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./database.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-olympus} -d ${DB_NAME:-olympus_scribe}"]
       interval: 10s
@@ -493,8 +492,8 @@ No hay servicios `backend` ni `frontend` en `docker-compose.yml`. No hay Dockerf
 3. **Refresh tokens no rotativos**: simplifica el flujo pero amplía la ventana de uso si un refresh token se filtra. Buena práctica sería rotarlos en cada uso.
 4. **CORS solo en desarrollo**: depende totalmente de la configuración de Nginx en producción. Si el deploy se mueve a un nuevo entorno, se introduce un riesgo silencioso.
 5. **Imágenes en disco local**: simple para un TFG, pero impide escalado horizontal y supone riesgo de pérdida en contenedores efímeros.
-6. **Doble esquema SQL** (`database.sql` vs `docker/postgres/init/01_schema.sql`): facilita arranque rápido con Docker pero duplica trabajo.
-7. **Sin sistema de migraciones**: solo existe `001_add_token_tables.sql`. No hay herramienta (Knex, Prisma, node-pg-migrate) que aplique/registre cambios. Cambios al schema requieren editar dos archivos a mano.
+6. ~~**Doble esquema SQL**~~ (RESUELTO): `database.sql` es ahora la única fuente, montada por docker-compose; ya no hay duplicado que sincronizar.
+7. **Sin framework de migraciones**: hay migraciones `.sql` versionadas en `backend/migrations/` (001-003) pero se aplican a mano; no hay una herramienta (Knex, Prisma, node-pg-migrate) que registre qué se aplicó. Pendiente como mejora futura.
 8. **`NotesContext` montado dentro de la página**: evita re-renders globales pero introduce un patrón inusual (consumer del contexto pero provider local).
 9. **Sin librería de estado global**: para una app con este volumen es razonable; los `Context`s y hooks son suficientes.
 10. **`window.location.href` para logout post-401**: forzado por la ubicación de `api.ts` fuera de un componente React. Podría sustituirse por un event emitter consumido por un componente que llame a `useNavigate`.

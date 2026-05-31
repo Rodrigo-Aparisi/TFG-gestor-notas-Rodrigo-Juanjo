@@ -66,7 +66,7 @@ El primer arranque del backend ejecuta `prepare-resources.js` y crea las carpeta
 
 ### 1.3 Inicialización de la BD por Docker
 
-Cuando se levanta el contenedor por primera vez, PostgreSQL ejecuta automáticamente todos los scripts en `docker/postgres/init/`. Actualmente sólo hay uno: `01_schema.sql`, que crea todas las tablas, vistas, índices, triggers y datos del lookup `reminder_status`.
+Cuando se levanta el contenedor por primera vez, PostgreSQL ejecuta automáticamente el esquema. docker-compose monta el `database.sql` de la raíz (la única fuente del esquema) en `/docker-entrypoint-initdb.d/01_schema.sql`, que crea todas las tablas, vistas, índices, triggers y datos del lookup `reminder_status`.
 
 > Si necesitas reiniciar la BD desde cero: `docker compose down -v` borra el volumen `postgres_data`.
 
@@ -485,6 +485,6 @@ No hay scripts para `lint`, `format`, `typecheck` ni `db:migrate`. ESLint y Pret
 - No existe Dockerfile para la app: hay que ejecutar el backend en el host o crear uno manualmente.
 - Las imágenes se guardan en disco local. Para escalar horizontalmente sería necesario migrar a S3/MinIO.
 - No hay pipeline CI/CD: tests, lint y build se ejecutan a mano.
-- No hay sistema de migraciones automatizado. Cualquier cambio al schema debe replicarse manualmente en `database.sql` y `docker/postgres/init/01_schema.sql`.
+- No hay framework de migraciones automatizado. El esquema base vive en un único `database.sql` (usado por Docker y por el setup manual); los cambios incrementales se añaden como `.sql` versionados en `backend/migrations/` y se aplican a mano.
 
 Estas y otras observaciones detalladas se recogen, con severidad y referencia exacta, en [`pending-tasks.md`](./pending-tasks.md).

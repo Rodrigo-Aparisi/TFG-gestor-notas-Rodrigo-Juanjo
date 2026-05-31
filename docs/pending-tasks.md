@@ -280,12 +280,11 @@ Cada ítem incluye:
 - **Detalle**: queries del tipo `SELECT * FROM note_groups WHERE user_id = $1` hacen full scan.
 - **Recomendación**: `CREATE INDEX idx_note_groups_user_id ON note_groups(user_id)`.
 
-### 4.3 [ALTO] Doble fuente de verdad del schema
+### 4.3 [RESUELTO] Doble fuente de verdad del schema
 
-- **Detalle**: `database.sql` y `docker/postgres/init/01_schema.sql` deben mantenerse sincronizados manualmente, y la migración `001_add_token_tables.sql` ya está fusionada en ambos.
-- **Recomendación**:
-  - A corto plazo, dejar uno único (`docker/postgres/init/01_schema.sql`) y eliminar `database.sql` o convertirlo en un symlink/generated.
-  - A medio plazo, introducir migraciones versionadas con `node-pg-migrate` o `db-migrate`.
+- **Detalle (original)**: `database.sql` y `docker/postgres/init/01_schema.sql` debían sincronizarse a mano y habían divergido (database.sql estaba obsoleto).
+- **Resolución**: se unificó en un único `database.sql` canónico; docker-compose lo monta directamente en `/docker-entrypoint-initdb.d`, así que Docker y el setup manual usan el mismo fichero físico. Se eliminó `docker/postgres/init/01_schema.sql`.
+- **Pendiente a medio plazo**: introducir un framework de migraciones versionadas (`node-pg-migrate`) que registre qué se aplicó.
 
 ### 4.4 [MEDIO] Roles/frecuencias como VARCHAR sin CHECK ni ENUM
 
