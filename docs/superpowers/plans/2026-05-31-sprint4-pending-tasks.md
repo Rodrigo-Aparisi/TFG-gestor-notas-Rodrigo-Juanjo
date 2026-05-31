@@ -1402,7 +1402,10 @@ Tessdata eliminado si sin uso (ahorra 48MB en clone)."
 - **S3/MinIO storage**: abstracción `StorageProvider` con implementaciones `LocalStorage` y `S3Storage`
 - **Idempotency keys**: cabecera `Idempotency-Key` en POST de notas/recordatorios
 - **i18n**: `react-i18next` si el proyecto escala a usuarios multilingüe
-- **Migrar frontend a Vite**: elimina las 58 CVEs de `react-scripts` y acelera el build ×5
+- **Migrar a pnpm + Vite (hacer juntos)**: reemplazar `npm` por `pnpm` en backend, frontend y CI; migrar el frontend de CRA (`react-scripts`) a Vite. Hacerlo en un solo paso porque:
+  - CRA con pnpm requiere `.npmrc: node-linker=hoisted` (hoisting forzado). Con Vite desaparece esa restricción.
+  - La migración Vite elimina las 58 CVEs de `react-scripts` y acelera el build ×5.
+  - Archivos afectados: todos los `package.json`, `.npmrc` raíz, `.github/workflows/ci.yml` (usar `pnpm/action-setup@v4`), `Dockerfiles` (`npm ci` → `pnpm install --frozen-lockfile`), `start.sh`, `CONTRIBUTING.md`.
 - **Performance**: índices adicionales basados en queries EXPLAIN reales
 
 ---
