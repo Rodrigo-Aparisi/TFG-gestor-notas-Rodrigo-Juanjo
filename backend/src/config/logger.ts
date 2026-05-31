@@ -25,12 +25,14 @@ const SENSITIVE_KEYS = [
  * Applied before all other formats so no transport ever sees the raw value.
  */
 const redactSensitive = winston.format((info) => {
-  const redact = (obj: Record<string, unknown>): void => {
+  const redact = (obj: Record<string, unknown>, seen = new WeakSet()): void => {
+    if (seen.has(obj)) return;
+    seen.add(obj);
     for (const key of Object.keys(obj)) {
       if (SENSITIVE_KEYS.includes(key.toLowerCase())) {
         obj[key] = '[REDACTED]';
       } else if (obj[key] !== null && typeof obj[key] === 'object') {
-        redact(obj[key] as Record<string, unknown>);
+        redact(obj[key] as Record<string, unknown>, seen);
       }
     }
   };

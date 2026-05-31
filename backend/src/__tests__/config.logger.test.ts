@@ -8,14 +8,13 @@ describe('logger redactSensitive format', () => {
 
     logger.info('test message', { password: 'secret123', username: 'alice' });
 
-    if (spy.mock.calls.length > 0) {
-      const loggedChunk = spy.mock.calls[0][0];
-      const loggedStr = typeof loggedChunk === 'string'
-        ? loggedChunk
-        : JSON.stringify(loggedChunk);
-      expect(loggedStr).not.toContain('secret123');
-      expect(loggedStr).toContain('[REDACTED]');
-    }
+    expect(spy).toHaveBeenCalled();
+    const loggedChunk = spy.mock.calls[0][0];
+    const loggedStr = typeof loggedChunk === 'string'
+      ? loggedChunk
+      : JSON.stringify(loggedChunk);
+    expect(loggedStr).not.toContain('secret123');
+    expect(loggedStr).toContain('[REDACTED]');
 
     spy.mockRestore();
   });
@@ -28,18 +27,17 @@ describe('logger redactSensitive format', () => {
 
     logger.info('test message', { username: 'alice', action: 'login' });
 
-    if (spy.mock.calls.length > 0) {
-      const loggedChunk = spy.mock.calls[0][0];
-      const loggedStr = typeof loggedChunk === 'string'
-        ? loggedChunk
-        : JSON.stringify(loggedChunk);
-      expect(loggedStr).toContain('alice');
-    }
+    expect(spy).toHaveBeenCalled();
+    const loggedChunk = spy.mock.calls[0][0];
+    const loggedStr = typeof loggedChunk === 'string'
+      ? loggedChunk
+      : JSON.stringify(loggedChunk);
+    expect(loggedStr).toContain('alice');
 
     spy.mockRestore();
   });
 
-  it('redacts token fields', () => {
+  it('redacts token fields (case-insensitive)', () => {
     jest.resetModules();
     const { logger } = require('../config/logger');
 
@@ -47,13 +45,30 @@ describe('logger redactSensitive format', () => {
 
     logger.warn('security event', { accessToken: 'eyJhbGc...', userId: '123' });
 
-    if (spy.mock.calls.length > 0) {
-      const loggedChunk = spy.mock.calls[0][0];
-      const loggedStr = typeof loggedChunk === 'string'
-        ? loggedChunk
-        : JSON.stringify(loggedChunk);
-      expect(loggedStr).not.toContain('eyJhbGc');
-    }
+    expect(spy).toHaveBeenCalled();
+    const loggedChunk = spy.mock.calls[0][0];
+    const loggedStr = typeof loggedChunk === 'string'
+      ? loggedChunk
+      : JSON.stringify(loggedChunk);
+    expect(loggedStr).not.toContain('eyJhbGc');
+
+    spy.mockRestore();
+  });
+
+  it('redacts sensitive fields in nested objects', () => {
+    jest.resetModules();
+    const { logger } = require('../config/logger');
+
+    const spy = jest.spyOn(logger.transports[0], 'write').mockImplementation(() => true);
+
+    logger.info('nested test', { user: { password: 'nested-secret', id: '42' } });
+
+    expect(spy).toHaveBeenCalled();
+    const loggedChunk = spy.mock.calls[0][0];
+    const loggedStr = typeof loggedChunk === 'string'
+      ? loggedChunk
+      : JSON.stringify(loggedChunk);
+    expect(loggedStr).not.toContain('nested-secret');
 
     spy.mockRestore();
   });
