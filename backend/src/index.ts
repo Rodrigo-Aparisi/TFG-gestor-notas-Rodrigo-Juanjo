@@ -39,6 +39,11 @@ if (process.env.NODE_ENV !== 'test') {
 // Crear aplicación Express
 const app = express();
 
+// Trust the first reverse proxy (Nginx/Cloudflare) to get real client IP for rate limiting
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security headers with Helmet
 app.use(helmet({
   contentSecurityPolicy: {
