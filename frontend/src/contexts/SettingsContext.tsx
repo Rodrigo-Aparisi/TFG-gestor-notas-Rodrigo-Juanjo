@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 export interface SettingsState {
   defaultNoteSort: 'date' | 'title' | 'lastModified';
@@ -18,7 +19,7 @@ const defaultSettings: SettingsState = {
   defaultNoteSort: 'date',
   theme: 'dark',
   defaultPage: 'notes',
-  confirmDelete: true
+  confirmDelete: true,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -29,9 +30,14 @@ interface SettingsProviderProps {
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const { isAuthenticated } = useAuth();
 
-  // Load settings from server on mount; fall back silently to defaults on error
+  // Load settings from server when authenticated; reset to defaults when not
   useEffect(() => {
+    if (!isAuthenticated) {
+      setSettings(defaultSettings);
+      return;
+    }
     const loadFromServer = async () => {
       try {
         const response = await api.get('/account/settings');
@@ -44,7 +50,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       }
     };
     loadFromServer();
-  }, []);
+  }, [isAuthenticated]); // Reload when auth state changes
 
   const updateSettings = (updates: Partial<SettingsState>) => {
     setSettings(prev => ({ ...prev, ...updates }));
@@ -60,11 +66,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     resetSettings,
   };
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
 // Custom hook to use the SettingsContext

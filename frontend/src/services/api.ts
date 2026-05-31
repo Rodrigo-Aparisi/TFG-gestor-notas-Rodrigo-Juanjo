@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { authService } from './auth';
 import { User, UpdateReminderData, CreateReminderData } from '../types';
+import { emitSessionExpired } from '../utils/authEvents';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -86,7 +87,7 @@ api.interceptors.response.use(
         isRefreshing = false;
         refreshSubscribers = [];
         authService.logout();
-        window.location.href = '/login';
+        emitSessionExpired();
         return Promise.reject(error);
       }
     }

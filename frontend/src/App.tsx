@@ -1,11 +1,12 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { accountService } from './services/accountService';
 import themeService from './services/themeService';
 import themeConfig from './config/themeConfig.json';
+import { authEvents, SESSION_EXPIRED_EVENT } from './utils/authEvents';
 import Header from './components/Layout/Header';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
@@ -32,6 +33,22 @@ const PageLoader: React.FC = () => (
     <p>Cargando...</p>
   </div>
 );
+
+const SessionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    const handler = () => {
+      logout();
+      navigate('/login', { replace: true });
+    };
+    authEvents.addEventListener(SESSION_EXPIRED_EVENT, handler);
+    return () => authEvents.removeEventListener(SESSION_EXPIRED_EVENT, handler);
+  }, [navigate, logout]);
+
+  return <>{children}</>;
+};
 
 const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -71,82 +88,99 @@ function App() {
     <AuthProvider>
       <SettingsProvider>
         <Router>
-          <ThemeLoader>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#1a1a1a',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 198, 0, 0.3)',
-                  borderRadius: '8px',
-                  padding: '16px'
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#ffc600',
-                    secondary: '#000'
-                  }
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#ff4444',
-                    secondary: '#fff'
+          <SessionGuard>
+            <ThemeLoader>
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid rgba(255, 198, 0, 0.3)',
+                    borderRadius: '8px',
+                    padding: '16px',
                   },
-                  duration: 5000
-                }
-              }}
-            />
-            <div className="app">
-              <Header />
-              <main className="main-content">
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    {/* Ruta principal accesible sin autenticación */}
-                    <Route path="/" element={<Home />} />
+                  success: {
+                    iconTheme: {
+                      primary: '#ffc600',
+                      secondary: '#000',
+                    },
+                  },
+                  error: {
+                    iconTheme: {
+                      primary: '#ff4444',
+                      secondary: '#fff',
+                    },
+                    duration: 5000,
+                  },
+                }}
+              />
+              <div className="app">
+                <Header />
+                <main className="main-content">
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* Ruta principal accesible sin autenticación */}
+                      <Route path="/" element={<Home />} />
 
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-                    <Route path="/notes" element={
-                      <PrivateRoute>
-                        <Notes />
-                      </PrivateRoute>
-                    } />
+                      <Route
+                        path="/notes"
+                        element={
+                          <PrivateRoute>
+                            <Notes />
+                          </PrivateRoute>
+                        }
+                      />
 
-                    <Route path="/trash" element={
-                      <PrivateRoute>
-                        <Trash />
-                      </PrivateRoute>
-                    } />
+                      <Route
+                        path="/trash"
+                        element={
+                          <PrivateRoute>
+                            <Trash />
+                          </PrivateRoute>
+                        }
+                      />
 
-                    <Route path="/reminders" element={
-                      <PrivateRoute>
-                        <Reminders />
-                      </PrivateRoute>
-                    } />
+                      <Route
+                        path="/reminders"
+                        element={
+                          <PrivateRoute>
+                            <Reminders />
+                          </PrivateRoute>
+                        }
+                      />
 
-                    <Route path="/settings" element={
-                      <PrivateRoute>
-                        <Settings />
-                      </PrivateRoute>
-                    } />
+                      <Route
+                        path="/settings"
+                        element={
+                          <PrivateRoute>
+                            <Settings />
+                          </PrivateRoute>
+                        }
+                      />
 
-                    <Route path="/groups" element={
-                      <PrivateRoute>
-                        <Groups />
-                      </PrivateRoute>
-                    } />
+                      <Route
+                        path="/groups"
+                        element={
+                          <PrivateRoute>
+                            <Groups />
+                          </PrivateRoute>
+                        }
+                      />
 
-                    {/* Ruta por defecto */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-              </main>
-            </div>
-          </ThemeLoader>
+                      {/* Ruta por defecto */}
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
+                </main>
+              </div>
+            </ThemeLoader>
+          </SessionGuard>
         </Router>
       </SettingsProvider>
     </AuthProvider>
