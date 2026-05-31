@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { pool } from '../../database';
 import fs from 'fs';
-import { buildOrderByClause } from '../../utils/queryHelpers';
+import { buildOrderByClause, buildPartialUpdate } from '../../utils/queryHelpers';
 import { RequestWithFile } from '../../middleware/upload';
 import { AppError, NotFoundError, BadRequestError } from '../../errors/AppError';
 import logger from '../../config/logger';
@@ -152,35 +152,16 @@ export class NoteCrudController {
         return next(new NotFoundError('Nota no encontrada'));
       }
 
-      const updateFields: string[] = [];
-      const values: unknown[] = [];
-      let paramCount = 1;
-
-      if (title !== undefined) {
-        updateFields.push(`title = $${paramCount}`);
-        values.push(title);
-        paramCount++;
-      }
-
-      if (content !== undefined) {
-        updateFields.push(`content = $${paramCount}`);
-        values.push(content);
-        paramCount++;
-      }
-
-      if (images !== undefined) {
-        updateFields.push(`images = $${paramCount}`);
-        values.push(images);
-        paramCount++;
-      }
-
-      updateFields.push(`updated_at = NOW()`);
+      const { setClause, values, nextIndex } = buildPartialUpdate({ title, content, images });
+      const setWithTimestamp = setClause
+        ? `${setClause}, updated_at = NOW()`
+        : 'updated_at = NOW()';
       values.push(id, userId);
 
       const query = `
         UPDATE notes
-        SET ${updateFields.join(', ')}
-        WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
+        SET ${setWithTimestamp}
+        WHERE id = $${nextIndex} AND user_id = $${nextIndex + 1}
         RETURNING *
       `;
 

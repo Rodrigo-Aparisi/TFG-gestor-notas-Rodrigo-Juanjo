@@ -3,6 +3,7 @@ import { pool } from '../../database';
 import fs from 'fs';
 import { RequestWithFile, deleteImage } from '../../middleware/upload';
 import { getGroupNoteImageUrl, isGroupNoteImageUrl } from '../../utils/urlHelpers';
+import { buildPartialUpdate } from '../../utils/queryHelpers';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../../errors/AppError';
 
 /**
@@ -199,32 +200,16 @@ export class GroupNoteController {
       }
 
       // Build update query
-      let query = 'UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP';
-      const values: unknown[] = [];
-      let paramCount = 1;
-
-      if (title !== undefined) {
-        query += `, title = $${paramCount++}`;
-        values.push(title);
-      }
-
-      if (content !== undefined) {
-        query += `, content = $${paramCount++}`;
-        values.push(content);
-      }
-
-      if (color !== undefined) {
-        query += `, color = $${paramCount++}`;
-        values.push(color);
-      }
-
-      if (images !== undefined) {
-        query += `, images = $${paramCount++}`;
-        values.push(images);
-      }
-
-      // Complete query with WHERE clause
-      query += ` WHERE id = $${paramCount++} AND group_id = $${paramCount++} RETURNING *`;
+      const { setClause, values, nextIndex } = buildPartialUpdate({
+        title,
+        content,
+        color,
+        images,
+      });
+      const setPart = setClause ? `, ${setClause}` : '';
+      const query =
+        `UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP${setPart}` +
+        ` WHERE id = $${nextIndex} AND group_id = $${nextIndex + 1} RETURNING *`;
       values.push(noteId, groupId);
 
       // Execute query

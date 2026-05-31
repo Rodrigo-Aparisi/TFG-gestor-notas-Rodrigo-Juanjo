@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { pool } from '../../database';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../../errors/AppError';
+import { buildPartialUpdate } from '../../utils/queryHelpers';
 
 /**
  * Controller for Note Sharing operations
@@ -137,24 +138,16 @@ export class NoteSharingController {
         );
       }
 
-      // Build update query dynamically
-      let updateQuery = 'UPDATE shared_notes SET updated_at = CURRENT_TIMESTAMP';
-      const queryParams: (string | boolean)[] = [id, ownerId, sharedWithId];
-      let paramIndex = 4;
-
-      if (canEdit !== undefined) {
-        updateQuery += `, can_edit = $${paramIndex}`;
-        queryParams.push(canEdit);
-        paramIndex++;
-      }
-
-      if (includeImages !== undefined) {
-        updateQuery += `, include_images = $${paramIndex}`;
-        queryParams.push(includeImages);
-        paramIndex++;
-      }
-
-      updateQuery += ' WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3';
+      // Build update query dynamically (los placeholders del SET empiezan en $4)
+      const { setClause, values: setValues } = buildPartialUpdate(
+        { can_edit: canEdit, include_images: includeImages },
+        4
+      );
+      const setPart = setClause ? `, ${setClause}` : '';
+      const queryParams: unknown[] = [id, ownerId, sharedWithId, ...setValues];
+      const updateQuery =
+        `UPDATE shared_notes SET updated_at = CURRENT_TIMESTAMP${setPart}` +
+        ' WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3';
 
       await pool.query(updateQuery, queryParams);
 
@@ -185,33 +178,18 @@ export class NoteSharingController {
       }
 
       // Build update query — only title and content are editable by shared users
-      const updateFields: string[] = [];
-      const values: unknown[] = [];
-      let paramCount = 1;
+      const { setClause, values, nextIndex } = buildPartialUpdate({ title, content });
 
-      if (title !== undefined) {
-        updateFields.push(`title = $${paramCount}`);
-        values.push(title);
-        paramCount++;
-      }
-
-      if (content !== undefined) {
-        updateFields.push(`content = $${paramCount}`);
-        values.push(content);
-        paramCount++;
-      }
-
-      if (updateFields.length === 0) {
+      if (!setClause) {
         return next(new BadRequestError('No hay campos para actualizar'));
       }
 
-      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
       values.push(id);
 
       const query = `
       UPDATE notes
-      SET ${updateFields.join(', ')}
-      WHERE id = $${paramCount}
+      SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${nextIndex}
       RETURNING *
     `;
 
