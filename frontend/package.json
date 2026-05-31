@@ -26,7 +26,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "typecheck": "tsc --noEmit",
-    "test:ci": "react-scripts test --watchAll=false --passWithNoTests --ci"
+    "test:ci": "react-scripts test --watchAll=false --passWithNoTests --ci --coverage"
   },
   "eslintConfig": {
     "extends": [
