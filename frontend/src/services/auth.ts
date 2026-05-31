@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { User } from '../types';
 import { themeService } from './themeService';
+import { tokenStore } from './tokenStore';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
@@ -44,8 +45,8 @@ export const authService = {
       if (response.data && response.data.token) {
         const { token, user } = response.data;
 
-        // Guardar datos en localStorage (refreshToken va en cookie HttpOnly — no se accede desde JS)
-        localStorage.setItem('token', token);
+        // Access token en memoria (no localStorage). El user queda como marcador de sesión.
+        tokenStore.set(token);
         localStorage.setItem('user', JSON.stringify(user));
       }
       return response.data;
@@ -75,7 +76,7 @@ export const authService = {
     try {
       const response = await api.put<UpdateResponse>('/auth/update', userData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${tokenStore.get()}`,
         },
       });
 
@@ -110,16 +111,15 @@ export const authService = {
 
   logout: () => {
     themeService.resetToDefault();
-    localStorage.removeItem('token');
-    // refreshToken ya no está en localStorage — se limpia con clearCookie en el backend
+    tokenStore.clear();
+    // refreshToken se limpia con clearCookie en el backend
     localStorage.removeItem('user');
   },
 
   isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
 
-    if (token && userStr) {
+    if (userStr) {
       try {
         JSON.parse(userStr) as User; // Validate JSON
         return true;
@@ -134,7 +134,7 @@ export const authService = {
   },
 
   getToken: (): string | null => {
-    return localStorage.getItem('token');
+    return tokenStore.get();
   },
 
   getRefreshToken: (): string | null => {
@@ -146,7 +146,7 @@ export const authService = {
     // No necesita leer refreshToken de localStorage — la cookie se envía automáticamente
     const response = await api.post<{ token: string }>('/auth/refresh', {});
     const newToken = response.data.token;
-    localStorage.setItem('token', newToken);
+    tokenStore.set(newToken);
     return newToken;
   },
 
@@ -156,10 +156,9 @@ export const authService = {
   },
 
   initializeAuth: () => {
-    const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
 
-    if (!token || !userStr) {
+    if (!userStr) {
       themeService.resetToDefault();
     }
   },
