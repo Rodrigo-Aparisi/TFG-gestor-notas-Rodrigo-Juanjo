@@ -21,83 +21,92 @@ const strongPasswordSchema = z
 
 // Schema básico de contraseña para login (acepta cualquier longitud)
 // Esto permite que usuarios existentes con contraseñas de 6 chars sigan entrando
-const basicPasswordSchema = z
-  .string()
-  .min(1, 'La contraseña es requerida');
+const basicPasswordSchema = z.string().min(1, 'La contraseña es requerida');
 
 // Schema de email
-const emailSchema = z
-  .string()
-  .email('Formato de email inválido')
-  .min(1, 'El email es requerido');
+const emailSchema = z.string().email('Formato de email inválido').min(1, 'El email es requerido');
 
 // Schema de username
 const usernameSchema = z
   .string()
   .min(3, 'El nombre de usuario debe tener al menos 3 caracteres')
   .max(50, 'El nombre de usuario no puede exceder 50 caracteres')
-  .regex(/^[a-zA-Z0-9_-]+$/, 'El nombre de usuario solo puede contener letras, números, guiones y guiones bajos');
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'El nombre de usuario solo puede contener letras, números, guiones y guiones bajos'
+  );
 
 /**
  * REGISTRO - Requiere contraseña robusta
  */
-export const registerSchema = z.object({
-  username: usernameSchema,
-  email: emailSchema,
-  password: strongPasswordSchema
-});
+export const registerSchema = z
+  .object({
+    username: usernameSchema,
+    email: emailSchema,
+    password: strongPasswordSchema,
+  })
+  .strict();
 
 /**
  * LOGIN - NO requiere contraseña robusta
  * Permite que usuarios existentes con contraseñas débiles puedan entrar
  */
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: basicPasswordSchema
-});
+export const loginSchema = z
+  .object({
+    email: emailSchema,
+    password: basicPasswordSchema,
+  })
+  .strict();
 
 /**
  * ACTUALIZAR USUARIO - Contraseña robusta solo si cambia
  */
-export const updateUserSchema = z.object({
-  username: usernameSchema.optional(),
-  email: emailSchema.optional(),
-  currentPassword: z.string().min(1, 'La contraseña actual es requerida'),
-  newPassword: strongPasswordSchema.optional()
-}).refine(
-  data => {
-    // Si se proporciona newPassword, debe cumplir requisitos
-    if (data.newPassword) {
-      return true; // Ya validado por strongPasswordSchema
+export const updateUserSchema = z
+  .object({
+    username: usernameSchema.optional(),
+    email: emailSchema.optional(),
+    currentPassword: z.string().min(1, 'La contraseña actual es requerida'),
+    newPassword: strongPasswordSchema.optional(),
+  })
+  .strict()
+  .refine(
+    data => {
+      // Si se proporciona newPassword, debe cumplir requisitos
+      if (data.newPassword) {
+        return true; // Ya validado por strongPasswordSchema
+      }
+      return true;
+    },
+    {
+      message: 'Si cambias la contraseña, debe cumplir los requisitos de seguridad',
     }
-    return true;
-  },
-  {
-    message: 'Si cambias la contraseña, debe cumplir los requisitos de seguridad'
-  }
-);
+  );
 
 /**
  * CAMBIAR CONTRASEÑA - Requiere contraseña robusta
  */
-export const changePasswordSchema = z.object({
-  currentPassword: basicPasswordSchema, // No validamos la actual (puede ser débil)
-  newPassword: strongPasswordSchema     // La nueva SÍ debe ser robusta
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: basicPasswordSchema, // No validamos la actual (puede ser débil)
+    newPassword: strongPasswordSchema, // La nueva SÍ debe ser robusta
+  })
+  .strict();
 
 /**
  * RESET CONTRASEÑA - Requiere contraseña robusta
  */
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Token de reset requerido'),
-  newPassword: strongPasswordSchema
-});
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token de reset requerido'),
+    newPassword: strongPasswordSchema,
+  })
+  .strict();
 
 /**
  * REQUEST RESET - Solo email
  */
 export const requestResetSchema = z.object({
-  email: emailSchema
+  email: emailSchema,
 });
 
 // Types inferidos de los schemas (útil para TypeScript)

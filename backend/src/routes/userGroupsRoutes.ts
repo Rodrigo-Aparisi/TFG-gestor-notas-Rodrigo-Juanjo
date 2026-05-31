@@ -4,6 +4,7 @@ import { authenticateToken } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
+import { asyncHandler } from '../middleware/errorHandler';
 import {
   createGroupSchema,
   updateGroupSchema,
@@ -22,40 +23,96 @@ const userGroupController = new UserGroupController();
 router.use(authenticateToken);
 
 // Rutas para grupos de usuarios
-router.get('/', userGroupController.getUserGroups);
-router.post('/', validate(createGroupSchema), userGroupController.createUserGroup);
-router.get('/:id', userGroupController.getUserGroup);
-router.put('/:id', validate(updateGroupSchema), userGroupController.updateUserGroup);
-router.delete('/:id', userGroupController.deleteUserGroup);
-router.put('/:id/rename', validate(renameGroupSchema), userGroupController.renameUserGroup);
-router.put('/:id/description', validate(updateGroupDescriptionSchema), userGroupController.updateGroupDescription);
+router.get('/', asyncHandler(userGroupController.getUserGroups.bind(userGroupController)));
+router.post(
+  '/',
+  validate(createGroupSchema),
+  asyncHandler(userGroupController.createUserGroup.bind(userGroupController))
+);
+router.get('/:id', asyncHandler(userGroupController.getUserGroup.bind(userGroupController)));
+router.put(
+  '/:id',
+  validate(updateGroupSchema),
+  asyncHandler(userGroupController.updateUserGroup.bind(userGroupController))
+);
+router.delete('/:id', asyncHandler(userGroupController.deleteUserGroup.bind(userGroupController)));
+router.put(
+  '/:id/rename',
+  validate(renameGroupSchema),
+  asyncHandler(userGroupController.renameUserGroup.bind(userGroupController))
+);
+router.put(
+  '/:id/description',
+  validate(updateGroupDescriptionSchema),
+  asyncHandler(userGroupController.updateGroupDescription.bind(userGroupController))
+);
 
 // Rutas para miembros de grupos
-router.get('/:id/members', userGroupController.getGroupMembers);
-router.post('/:id/members', validate(addGroupMemberSchema), userGroupController.addGroupMember);
-router.delete('/:id/members/:userId', userGroupController.removeGroupMember);
-router.put('/:id/members/:userId/role', validate(updateMemberRoleSchema), userGroupController.updateMemberRole);
+router.get(
+  '/:id/members',
+  asyncHandler(userGroupController.getGroupMembers.bind(userGroupController))
+);
+router.post(
+  '/:id/members',
+  validate(addGroupMemberSchema),
+  asyncHandler(userGroupController.addGroupMember.bind(userGroupController))
+);
+router.delete(
+  '/:id/members/:userId',
+  asyncHandler(userGroupController.removeGroupMember.bind(userGroupController))
+);
+router.put(
+  '/:id/members/:userId/role',
+  validate(updateMemberRoleSchema),
+  asyncHandler(userGroupController.updateMemberRole.bind(userGroupController))
+);
 
 // Rutas para notas de grupo
-router.get('/:id/notes', userGroupController.getGroupNotes);
-router.post('/:id/notes', userGroupController.createGroupNote);
-router.get('/:id/notes/:noteId', userGroupController.getGroupNote);
-router.put('/:id/notes/:noteId', userGroupController.updateGroupNote);
-router.delete('/:id/notes/:noteId', userGroupController.deleteGroupNote);
-router.patch('/:id/notes/:noteId/pin', userGroupController.togglePinGroupNote);
+router.get('/:id/notes', asyncHandler(userGroupController.getGroupNotes.bind(userGroupController)));
+router.post(
+  '/:id/notes',
+  asyncHandler(userGroupController.createGroupNote.bind(userGroupController))
+);
+router.get(
+  '/:id/notes/:noteId',
+  asyncHandler(userGroupController.getGroupNote.bind(userGroupController))
+);
+router.put(
+  '/:id/notes/:noteId',
+  asyncHandler(userGroupController.updateGroupNote.bind(userGroupController))
+);
+router.delete(
+  '/:id/notes/:noteId',
+  asyncHandler(userGroupController.deleteGroupNote.bind(userGroupController))
+);
+router.patch(
+  '/:id/notes/:noteId/pin',
+  asyncHandler(userGroupController.togglePinGroupNote.bind(userGroupController))
+);
 
 // Ruta para subir imágenes - usando el mismo middleware que en notesRoutes
 router.post(
-    '/:id/notes/upload-image',
-    upload.single('image'),
-    handleMulterError,
-    userGroupController.uploadGroupNoteImage
+  '/:id/notes/upload-image',
+  upload.single('image'),
+  handleMulterError,
+  asyncHandler(userGroupController.uploadGroupNoteImage.bind(userGroupController))
 );
 
 // Rutas adicionales
-router.post('/:id/invite', validate(inviteByEmailSchema), userGroupController.inviteUserByEmail);
-router.get('/:id/search-users', userGroupController.searchUsers);
-router.post('/:id/leave', userGroupController.leaveGroup);
-router.post('/:id/transfer-ownership', validate(transferOwnershipSchema), userGroupController.transferOwnership);
+router.post(
+  '/:id/invite',
+  validate(inviteByEmailSchema),
+  asyncHandler(userGroupController.inviteUserByEmail.bind(userGroupController))
+);
+router.get(
+  '/:id/search-users',
+  asyncHandler(userGroupController.searchUsers.bind(userGroupController))
+);
+router.post('/:id/leave', asyncHandler(userGroupController.leaveGroup.bind(userGroupController)));
+router.post(
+  '/:id/transfer-ownership',
+  validate(transferOwnershipSchema),
+  asyncHandler(userGroupController.transferOwnership.bind(userGroupController))
+);
 
 export default router;

@@ -15,7 +15,7 @@ import contactRoutes from './routes/contact';
 import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks';
-import { generalApiLimiter } from './middleware/rateLimiter';
+import { generalApiLimiter, uploadsLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRoutes from './routes/healthRoutes';
 import { logger } from './config/logger';
@@ -93,6 +93,9 @@ if (!fs.existsSync(groupNoteImagesDir)) {
   fs.mkdirSync(groupNoteImagesDir, { recursive: true });
 }
 
+// Aplicar rate limit a archivos estáticos
+app.use('/note-images', uploadsLimiter);
+app.use('/uploads', uploadsLimiter);
 app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(

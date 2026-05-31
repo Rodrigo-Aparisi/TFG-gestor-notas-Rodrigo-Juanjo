@@ -26,14 +26,13 @@ export const emailSchedulerService = {
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
           logger.error('Error al enviar correo de recordatorio', {
-            reminderId: reminders[index]?.userId,
-            error: result.reason
+            reminderId: reminders[index]?.id,
+            error: result.reason,
           });
         }
       });
-
     } catch (error) {
       logger.error('Error al programar correos de recordatorio:', { error });
     }
-  }
+  },
 };

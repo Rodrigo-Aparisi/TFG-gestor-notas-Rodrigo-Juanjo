@@ -13,7 +13,8 @@ export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: {
-    error: 'Demasiados intentos de login desde esta IP, por favor intente de nuevo después de 15 minutos'
+    error:
+      'Demasiados intentos de login desde esta IP, por favor intente de nuevo después de 15 minutos',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -29,7 +30,8 @@ export const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
   message: {
-    error: 'Demasiadas solicitudes de recuperación de contraseña desde esta IP, por favor intente de nuevo más tarde'
+    error:
+      'Demasiadas solicitudes de recuperación de contraseña desde esta IP, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -44,7 +46,8 @@ export const passwordResetConfirmLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
   message: {
-    error: 'Demasiados intentos de cambio de contraseña desde esta IP, por favor intente de nuevo más tarde'
+    error:
+      'Demasiados intentos de cambio de contraseña desde esta IP, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -60,14 +63,14 @@ export const generalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: {
-    error: 'Demasiadas solicitudes desde esta IP, por favor intente de nuevo más tarde'
+    error: 'Demasiadas solicitudes desde esta IP, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req: Request) => {
     if (process.env.NODE_ENV !== 'production') return true;
     return req.path.startsWith('/uploads/');
-  }
+  },
 });
 
 /**
@@ -78,7 +81,7 @@ export const strictApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: {
-    error: 'Demasiadas solicitudes para esta operación, por favor intente de nuevo más tarde'
+    error: 'Demasiadas solicitudes para esta operación, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -94,7 +97,7 @@ export const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
   message: {
-    error: 'Demasiados mensajes enviados desde esta IP, por favor intente de nuevo más tarde'
+    error: 'Demasiados mensajes enviados desde esta IP, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -110,11 +113,24 @@ export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 3,
   message: {
-    error: 'Demasiados registros desde esta IP, por favor intente de nuevo más tarde'
+    error: 'Demasiados registros desde esta IP, por favor intente de nuevo más tarde',
   },
   standardHeaders: true,
   legacyHeaders: false,
   skip: skipInDevelopment,
+});
+
+/**
+ * Rate limiter for static uploads directory — prevents DoS via mass download.
+ * 300 requests per 15 minutes per IP. Skipped in development.
+ */
+export const uploadsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { error: 'Demasiadas solicitudes de archivos desde esta IP' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => process.env.NODE_ENV !== 'production',
 });
 
 // Export all limiters
@@ -125,5 +141,6 @@ export default {
   generalApiLimiter,
   strictApiLimiter,
   registerLimiter,
-  contactLimiter
+  contactLimiter,
+  uploadsLimiter,
 };

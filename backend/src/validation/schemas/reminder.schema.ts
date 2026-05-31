@@ -23,7 +23,7 @@ const dateTimeSchema = z
   .datetime({ message: 'Formato de fecha inválido (debe ser ISO 8601)' })
   .or(z.date())
   .refine(
-    (val) => {
+    val => {
       const date = typeof val === 'string' ? new Date(val) : val;
       return date > new Date(); // Debe ser fecha futura
     },
@@ -33,25 +33,29 @@ const dateTimeSchema = z
 /**
  * CREAR RECORDATORIO
  */
-export const createReminderSchema = z.object({
-  title: titleSchema,
-  description: descriptionSchema,
-  dateTime: dateTimeSchema,
-  hasTime: z.boolean().default(true),
-  sendEmail: z.boolean().default(false)
-});
+export const createReminderSchema = z
+  .object({
+    title: titleSchema,
+    description: descriptionSchema,
+    dateTime: dateTimeSchema,
+    hasTime: z.boolean().default(true),
+    sendEmail: z.boolean().default(false),
+  })
+  .strict();
 
 /**
  * ACTUALIZAR RECORDATORIO
  */
-export const updateReminderSchema = z.object({
-  title: titleSchema.optional(),
-  description: descriptionSchema,
-  dateTime: dateTimeSchema.optional(),
-  hasTime: z.boolean().optional(),
-  sendEmail: z.boolean().optional(),
-  statusId: z.number().int().min(1).max(3).optional() // 1=pendiente, 2=completado, 3=cancelado
-});
+export const updateReminderSchema = z
+  .object({
+    title: titleSchema.optional(),
+    description: descriptionSchema,
+    dateTime: dateTimeSchema.optional(),
+    hasTime: z.boolean().optional(),
+    sendEmail: z.boolean().optional(),
+    statusId: z.number().int().min(1).max(3).optional(), // 1=pendiente, 2=completado, 3=cancelado
+  })
+  .strict();
 
 /**
  * ACTUALIZAR ESTADO
@@ -61,7 +65,7 @@ export const updateReminderStatusSchema = z.object({
     .number()
     .int()
     .min(1, 'Status ID debe ser 1, 2 o 3')
-    .max(3, 'Status ID debe ser 1, 2 o 3')
+    .max(3, 'Status ID debe ser 1, 2 o 3'),
 });
 
 // Types inferidos

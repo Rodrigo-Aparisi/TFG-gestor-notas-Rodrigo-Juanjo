@@ -4,7 +4,11 @@
  * Tests for Zod validation schemas
  */
 
-import { registerSchema, loginSchema, changePasswordSchema } from '../validation/schemas/user.schema';
+import {
+  registerSchema,
+  loginSchema,
+  changePasswordSchema,
+} from '../validation/schemas/user.schema';
 import { createNoteSchema, updateNoteSchema } from '../validation/schemas/note.schema';
 import { createGroupSchema, addGroupMemberSchema } from '../validation/schemas/group.schema';
 import { createReminderSchema } from '../validation/schemas/reminder.schema';
@@ -204,7 +208,7 @@ describe('Note Validation Schemas', () => {
       const validData = {
         title: 'Note with images',
         content: 'Content',
-        images: ['https://example.com/image1.jpg', 'https://example.com/image2.png'],
+        images: ['/note-images/image1.jpg', '/uploads/note-images/image2.png'],
       };
 
       const result = createNoteSchema.safeParse(validData);
@@ -250,7 +254,6 @@ describe('Group Validation Schemas', () => {
       const validData = {
         name: 'My Group',
         description: 'Group description',
-        color: '#ff5500',
       };
 
       const result = createGroupSchema.safeParse(validData);

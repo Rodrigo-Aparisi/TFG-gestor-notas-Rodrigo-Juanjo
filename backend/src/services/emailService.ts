@@ -4,14 +4,15 @@ import path from 'path';
 import fs from 'fs';
 import { pool } from '../database';
 import { getPasswordResetUrl } from '../utils/urlHelpers';
+import logger from '../config/logger';
 
 // Configuración del transporte de correo
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD
-  }
+    pass: process.env.EMAIL_APP_PASSWORD,
+  },
 });
 
 // Cargar plantillas
@@ -26,19 +27,23 @@ const reminderTextTemplate = fs.readFileSync(
 
 export const emailService = {
   // Función existente para recordatorios
-  async sendReminderEmail(userId: string, reminderTitle: string, reminderDescription: string, reminderDateTime: Date): Promise<boolean> {
+  async sendReminderEmail(
+    userId: string,
+    reminderTitle: string,
+    reminderDescription: string,
+    reminderDateTime: Date
+  ): Promise<boolean> {
     try {
       // Obtener información del usuario
-      const userResult = await pool.query(
-        'SELECT email, username FROM users WHERE id = $1',
-        [userId]
-      );
-      
+      const userResult = await pool.query('SELECT email, username FROM users WHERE id = $1', [
+        userId,
+      ]);
+
       if (userResult.rows.length === 0 || !userResult.rows[0].email) {
-        console.error('Usuario no encontrado o sin correo electrónico');
+        logger.error('Usuario no encontrado o sin correo electrónico');
         return false;
       }
-      
+
       const user = userResult.rows[0];
 
       // Datos para la plantilla
@@ -47,18 +52,18 @@ export const emailService = {
         description: reminderDescription,
         dateTime: reminderDateTime,
         hasTime: reminderDateTime.getHours() !== 0 || reminderDateTime.getMinutes() !== 0,
-        username: user.username
+        username: user.username,
       };
 
       // Renderizar plantillas
       const htmlEmail = ejs.render(reminderHtmlTemplate, {
         reminder: reminderData,
-        process: { env: process.env }
+        process: { env: process.env },
       });
 
       const textEmail = ejs.render(reminderTextTemplate, {
         reminder: reminderData,
-        process: { env: process.env }
+        process: { env: process.env },
       });
 
       // Generar asunto del correo
@@ -70,7 +75,7 @@ export const emailService = {
         to: user.email,
         subject: subject,
         text: textEmail,
-        html: htmlEmail
+        html: htmlEmail,
       };
 
       // Enviar el correo
@@ -88,7 +93,7 @@ export const emailService = {
       // Sanitizar inputs para prevenir Email Header Injection
       const safeName = name.replace(/[\r\n]/g, ' ').substring(0, 100);
       const safeEmail = email.replace(/[\r\n]/g, '').substring(0, 200);
-      const safeMessage = message.replace(/[\r\n\r]/g, ' ').substring(0, 2000);
+      const safeMessage = message.replace(/[\r\n]/g, ' ').substring(0, 2000);
 
       // Construir el asunto y cuerpo del correo
       const subject = `Mensaje de contacto de ${safeName}`;
@@ -103,10 +108,10 @@ export const emailService = {
       // Configurar el correo - enviamos al EMAIL_USER configurado en las variables de entorno
       const mailOptions = {
         from: `"Formulario de Contacto" <${process.env.EMAIL_USER}>`,
-        to: process.env.EMAIL_USER,  // Enviar al correo configurado
-        replyTo: safeEmail,  // Para que puedan responder directamente al remitente
+        to: process.env.EMAIL_USER, // Enviar al correo configurado
+        replyTo: safeEmail, // Para que puedan responder directamente al remitente
         subject: subject,
-        text: textBody
+        text: textBody,
       };
 
       // Enviar el correo
@@ -119,10 +124,14 @@ export const emailService = {
   },
 
   // Función para enviar correo de recuperación de contraseña
-  async sendPasswordResetEmail(email: string, resetToken: string, username: string): Promise<boolean> {
+  async sendPasswordResetEmail(
+    email: string,
+    resetToken: string,
+    username: string
+  ): Promise<boolean> {
     try {
       const resetLink = getPasswordResetUrl(resetToken);
-      
+
       const subject = 'Recuperación de contraseña - Olympus Scribe';
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -137,7 +146,7 @@ export const emailService = {
           <p>Saludos,<br>Equipo de Olympus Scribe</p>
         </div>
       `;
-      
+
       const textContent = `
         Recuperación de contraseña
         
@@ -154,20 +163,20 @@ export const emailService = {
         Saludos,
         Equipo de Olympus Scribe
       `;
-      
+
       const mailOptions = {
         from: `"Olympus Scribe" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: subject,
         text: textContent,
-        html: htmlContent
+        html: htmlContent,
       };
-      
+
       await transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('Error al enviar correo de recuperación:', error);
       return false;
     }
-  }
+  },
 };

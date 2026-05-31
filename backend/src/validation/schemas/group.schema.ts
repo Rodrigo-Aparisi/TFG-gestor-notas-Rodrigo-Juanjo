@@ -18,79 +18,93 @@ const groupDescriptionSchema = z
   .optional();
 
 // Schema de rol de miembro
-const memberRoleSchema = z
-  .enum(['owner', 'admin', 'member'], {
-    errorMap: () => ({ message: 'Rol inválido. Debe ser: owner, admin o member' })
-  });
+const memberRoleSchema = z.enum(['owner', 'admin', 'member'], {
+  errorMap: () => ({ message: 'Rol inválido. Debe ser: owner, admin o member' }),
+});
 
 /**
  * CREAR GRUPO
  */
-export const createGroupSchema = z.object({
-  name: groupNameSchema,
-  description: groupDescriptionSchema
-});
+export const createGroupSchema = z
+  .object({
+    name: groupNameSchema,
+    description: groupDescriptionSchema,
+  })
+  .strict();
 
 /**
  * ACTUALIZAR GRUPO
  */
-export const updateGroupSchema = z.object({
-  name: groupNameSchema.optional(),
-  description: groupDescriptionSchema
-});
+export const updateGroupSchema = z
+  .object({
+    name: groupNameSchema.optional(),
+    description: groupDescriptionSchema,
+  })
+  .strict();
 
 /**
  * RENOMBRAR GRUPO
  */
-export const renameGroupSchema = z.object({
-  name: groupNameSchema
-});
+export const renameGroupSchema = z
+  .object({
+    name: groupNameSchema,
+  })
+  .strict();
 
 /**
  * ACTUALIZAR DESCRIPCIÓN
  */
-export const updateGroupDescriptionSchema = z.object({
-  description: z.string().max(500, 'La descripción no puede exceder 500 caracteres')
-});
+export const updateGroupDescriptionSchema = z
+  .object({
+    description: z.string().max(500, 'La descripción no puede exceder 500 caracteres'),
+  })
+  .strict();
 
 /**
  * AÑADIR MIEMBRO
  */
-export const addGroupMemberSchema = z.object({
-  username: z
-    .string()
-    .min(1, 'El nombre de usuario es requerido')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de usuario inválido'),
-  role: z
-    .enum(['admin', 'member'], {
-      errorMap: () => ({ message: 'Rol debe ser admin o member (owner solo puede haber uno)' })
-    })
-    .default('member')
-});
+export const addGroupMemberSchema = z
+  .object({
+    username: z
+      .string()
+      .min(1, 'El nombre de usuario es requerido')
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de usuario inválido'),
+    role: z
+      .enum(['admin', 'member'], {
+        errorMap: () => ({ message: 'Rol debe ser admin o member (owner solo puede haber uno)' }),
+      })
+      .default('member'),
+  })
+  .strict();
 
 /**
  * CAMBIAR ROL DE MIEMBRO
  */
-export const updateMemberRoleSchema = z.object({
-  role: z
-    .enum(['admin', 'member'], {
-      errorMap: () => ({ message: 'Rol debe ser admin o member (no puedes cambiar owner)' })
-    })
-});
+export const updateMemberRoleSchema = z
+  .object({
+    role: z.enum(['admin', 'member'], {
+      errorMap: () => ({ message: 'Rol debe ser admin o member (no puedes cambiar owner)' }),
+    }),
+  })
+  .strict();
 
 /**
  * INVITAR POR EMAIL
  */
-export const inviteByEmailSchema = z.object({
-  email: z.string().email('Email inválido')
-});
+export const inviteByEmailSchema = z
+  .object({
+    email: z.string().email('Email inválido'),
+  })
+  .strict();
 
 /**
  * TRANSFERIR PROPIEDAD
  */
-export const transferOwnershipSchema = z.object({
-  newOwnerId: z.string().uuid('ID de usuario inválido')
-});
+export const transferOwnershipSchema = z
+  .object({
+    newOwnerId: z.string().uuid('ID de usuario inválido'),
+  })
+  .strict();
 
 // Types inferidos
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
