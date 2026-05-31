@@ -2,6 +2,7 @@ import axios from 'axios';
 import { User } from '../types';
 import { themeService } from './themeService';
 import { tokenStore } from './tokenStore';
+import { getFriendlyErrorMessage } from '../utils/errorMessages';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
@@ -54,11 +55,7 @@ export const authService = {
       }
       return response.data;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error && 'response' in error
-          ? (error as any).response?.data?.error || 'Error en el inicio de sesión'
-          : 'Error en el inicio de sesión';
-      throw new Error(errorMessage);
+      throw new Error(getFriendlyErrorMessage(error, 'Error en el inicio de sesión'));
     }
   },
 
@@ -67,11 +64,7 @@ export const authService = {
       const response = await api.post<AuthResponse>('/auth/register', userData);
       return response.data;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error && 'response' in error
-          ? (error as any).response?.data?.error || 'Error en el registro'
-          : 'Error en el registro';
-      throw new Error(errorMessage);
+      throw new Error(getFriendlyErrorMessage(error, 'Error en el registro'));
     }
   },
 
@@ -90,11 +83,7 @@ export const authService = {
 
       return response.data;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error && 'response' in error
-          ? (error as any).response?.data?.error || 'Error al actualizar el usuario'
-          : 'Error al actualizar el usuario';
-      throw new Error(errorMessage);
+      throw new Error(getFriendlyErrorMessage(error, 'Error al actualizar el usuario'));
     }
   },
 
