@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { pool } from '../../database';
 import fs from 'fs';
 import { buildOrderByClause, buildPartialUpdate } from '../../utils/queryHelpers';
+import { withTransaction } from '../../utils/db';
 import { RequestWithFile } from '../../middleware/upload';
 import { AppError, NotFoundError, BadRequestError } from '../../errors/AppError';
 import logger from '../../config/logger';
@@ -210,25 +211,17 @@ export class NoteCrudController {
   }
 
   async deleteMultipleNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-
       const { noteIds } = req.body;
       const userId = req.user!.id;
 
-      await client.query('DELETE FROM notes WHERE id = ANY($1) AND user_id = $2', [
-        noteIds,
-        userId,
-      ]);
+      await withTransaction(client =>
+        client.query('DELETE FROM notes WHERE id = ANY($1) AND user_id = $2', [noteIds, userId])
+      );
 
-      await client.query('COMMIT');
       res.json({ success: true, message: 'Notas eliminadas exitosamente' });
     } catch (error) {
-      await client.query('ROLLBACK');
       next(error);
-    } finally {
-      client.release();
     }
   }
 
