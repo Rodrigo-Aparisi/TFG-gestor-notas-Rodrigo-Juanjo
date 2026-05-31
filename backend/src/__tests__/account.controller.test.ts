@@ -6,9 +6,14 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcrypt';
 import { accountController } from '../controllers/accountController';
 import { NotFoundError, UnauthorizedError, BadRequestError } from '../errors/AppError';
+
+// Mock bcrypt
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('$2b$10$mockhash'),
+  compare: jest.fn(),
+}));
 
 // Mock the database
 jest.mock('../database', () => ({
@@ -188,11 +193,11 @@ describe('accountController.deleteAccount', () => {
     const res = mockRes();
     const next = mockNext();
 
-    // The controller does not explicitly guard against a missing password field.
-    // It queries the user and then calls bcrypt.compare(undefined, hash).
-    // bcrypt.compare with a non-string first arg throws a TypeError, which is
-    // caught by the try/catch and forwarded to next(error).
-    const hashed = await bcrypt.hash('AnyPassword1', 10);
+    // Mock bcrypt.compare to throw when password is missing
+    const bcrypt = require('bcrypt');
+    (bcrypt.compare as jest.Mock).mockRejectedValueOnce(
+      new Error('data and hash arguments required')
+    );
 
     (mockPool.query as jest.Mock).mockResolvedValueOnce({
       rows: [
@@ -200,7 +205,7 @@ describe('accountController.deleteAccount', () => {
           id: 'u-1',
           username: 'testuser',
           email: 'u@test.com',
-          password: hashed,
+          password: '$2b$10$mockhash',
           profile_image: null,
         },
       ],
@@ -209,10 +214,10 @@ describe('accountController.deleteAccount', () => {
 
     await accountController.deleteAccount(req as Request, res as Response, next);
 
-    // next must have been called with some error (TypeError from bcrypt or
-    // UnauthorizedError — either way the request did not succeed)
+    // next must have been called with an error (TypeError from bcrypt)
     expect(next).toHaveBeenCalled();
-    expect(next.mock.calls[0][0]).toBeInstanceOf(Error);
+    const calledError = (next as jest.Mock).mock.calls[0][0];
+    expect(calledError).toBeInstanceOf(Error);
     expect(res.json).not.toHaveBeenCalled();
   });
 
@@ -221,7 +226,9 @@ describe('accountController.deleteAccount', () => {
     const res = mockRes();
     const next = mockNext();
 
-    const hashed = await bcrypt.hash('CorrectPassword1', 10);
+    // Mock bcrypt.compare to return false (password mismatch)
+    const bcrypt = require('bcrypt');
+    (bcrypt.compare as jest.Mock).mockResolvedValueOnce(false);
 
     (mockPool.query as jest.Mock).mockResolvedValueOnce({
       rows: [
@@ -229,7 +236,7 @@ describe('accountController.deleteAccount', () => {
           id: 'u-1',
           username: 'testuser',
           email: 'u@test.com',
-          password: hashed,
+          password: '$2b$10$mockhash',
           profile_image: null,
         },
       ],
@@ -244,12 +251,13 @@ describe('accountController.deleteAccount', () => {
   });
 
   it('returns 200 and deletes the account when the password is correct', async () => {
-    const plainPassword = 'CorrectPass1';
-    const hashed = await bcrypt.hash(plainPassword, 10);
-
-    const req = authReq({ password: plainPassword });
+    const req = authReq({ password: 'CorrectPass1' });
     const res = mockRes();
     const next = mockNext();
+
+    // Mock bcrypt.compare to return true (password match)
+    const bcrypt = require('bcrypt');
+    (bcrypt.compare as jest.Mock).mockResolvedValueOnce(true);
 
     // First query: SELECT user
     (mockPool.query as jest.Mock)
@@ -259,7 +267,7 @@ describe('accountController.deleteAccount', () => {
             id: 'u-1',
             username: 'testuser',
             email: 'u@test.com',
-            password: hashed,
+            password: '$2b$10$mockhash',
             profile_image: null,
           },
         ],
