@@ -167,10 +167,10 @@ async function cleanupExpiredTokens() {
 }
 
 // Ejecutar cada día
-setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
+const cleanupIntervalId = setInterval(cleanupExpiredTokens, 24 * 60 * 60 * 1000);
 
 // Iniciar servidor
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`Servidor ejecutándose en el puerto ${PORT}`);
   logger.info(`Directorio de uploads: ${uploadsDir}`);
   logger.info(`Entorno: ${process.env.NODE_ENV || 'development'}`);
@@ -179,4 +179,22 @@ app.listen(PORT, () => {
   setupTrashCleanup();
   setupEmailScheduler();
 });
+
+async function shutdown(signal: string): Promise<void> {
+  logger.info(`Señal ${signal} recibida — iniciando apagado graceful`);
+  clearInterval(cleanupIntervalId);
+  server.close(() => {
+    logger.info('Servidor HTTP cerrado');
+  });
+  try {
+    await pool.end();
+    logger.info('Pool de PostgreSQL cerrado correctamente');
+  } catch (err) {
+    logger.error('Error al cerrar el pool de PostgreSQL', { err });
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
