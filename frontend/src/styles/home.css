@@ -28,12 +28,12 @@
   box-sizing: border-box;
 }
 
-body {
+/* Tipografía acotada al contenedor de Home (antes esto vivía en `body` y
+   filtraba fondo/fuente a toda la app tras visitar la landing). El fondo del
+   body lo gestiona el tema (--theme-background). */
+.home-container {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
-  background-color: var(--background-dark);
-  color: var(--white);
-  overflow-x: hidden;
 }
 
 body::-webkit-scrollbar {

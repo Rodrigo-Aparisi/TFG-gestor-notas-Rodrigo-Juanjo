@@ -1,22 +1,9 @@
 /* === GRUPOS - ESTILOS MODERNOS INSPIRADOS EN NOTES === */
 
-/* === RESET Y CONFIGURACIÓN BÁSICA === */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-}
-
-#root {
-  width: 85%;
-  min-height: 100vh;
-}
-
-* {
-  box-sizing: border-box;
-}
+/* NOTA: se eliminaron los resets globales (html, body, #root, *) que vivían
+   aquí. Filtraban a toda la app (sobre todo `#root { width: 85% }`, que
+   estrechaba el contenido en cualquier página tras visitar Grupos y dejaba
+   ver el fondo a los lados). Los resets globales están en App.css/index.css. */
 
 /* === CONTENEDOR PRINCIPAL === */
 .groups-layout {

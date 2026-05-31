@@ -299,7 +299,9 @@ button:hover {
 
 /* Contenido principal */
 .main-content {
-  margin-top: var(--header-height);
+  /* El header fijo mide --header-height (nav) + 1rem*2 de padding + 3px de
+     borde. Sumamos esos ~35px para que el contenido no quede tapado. */
+  margin-top: calc(var(--header-height) + 35px);
   padding: 20px;
   flex: 1;
   width: 100%;

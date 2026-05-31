@@ -1,19 +1,6 @@
-/* === RESET Y CONFIGURACIÓN BÁSICA === */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-}
-
-#root {
-  width: 85%;
-  min-height: 100vh;
-}
-
-* {
-  box-sizing: border-box;
-}
+/* NOTA: se eliminó el reset global (html, body, #root, *) que vivía aquí.
+   `#root { width: 85% }` se filtraba a toda la app y estrechaba el contenido
+   dejando una banda lateral. Los resets globales están en App.css/index.css. */
 
 /* === CONTENEDOR PRINCIPAL === */
 .notes-container {
