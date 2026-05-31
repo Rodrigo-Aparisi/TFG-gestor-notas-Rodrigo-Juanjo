@@ -82,13 +82,21 @@ app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads/group-note-images', express.static(path.join(__dirname, 'uploads/group-note-images')));
 
-// CORS: activo en desarrollo, en producción lo gestiona Nginx
-if (process.env.NODE_ENV !== 'production') {
-  app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true
-  }));
-}
+// CORS: always active; allowed origins controlled via ALLOWED_ORIGINS env var
+const rawOrigins = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigins = rawOrigins.split(',').map((o: string) => o.trim()).filter(Boolean);
+
+app.use(cors({
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests without Origin header (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: Origin "${origin}" not in allowed list`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 app.use(express.json());
 
