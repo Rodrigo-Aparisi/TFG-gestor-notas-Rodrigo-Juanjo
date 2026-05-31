@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreateGroupNoteData } from '../../types';
 
 interface CreateNoteModalProps {
@@ -12,14 +12,23 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
   newNote,
   setNewNote,
   onClose,
-  onCreateNote
+  onCreateNote,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cerrar con Escape, en consistencia con el resto de modales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.title.trim() || !newNote.content.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
       const success = await onCreateNote();
@@ -36,15 +45,11 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
       <div className="modal">
         <div className="modal-header">
           <h2>Crear Nueva Nota</h2>
-          <button 
-            className="close-modal-btn"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
+          <button className="close-modal-btn" onClick={onClose} disabled={isSubmitting}>
             &times;
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="note-title">Título</label>
@@ -52,34 +57,29 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({
               id="note-title"
               type="text"
               value={newNote.title}
-              onChange={e => setNewNote(prev => ({...prev, title: e.target.value}))}
+              onChange={e => setNewNote(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Título de la nota"
               required
               disabled={isSubmitting}
             />
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="note-content">Contenido</label>
             <textarea
               id="note-content"
               value={newNote.content}
-              onChange={e => setNewNote(prev => ({...prev, content: e.target.value}))}
+              onChange={e => setNewNote(prev => ({ ...prev, content: e.target.value }))}
               placeholder="Contenido de la nota"
               disabled={isSubmitting}
             />
           </div>
-          
+
           <div className="modal-actions">
-            <button 
-              type="button"
-              className="cancel-btn"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+            <button type="button" className="cancel-btn" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </button>
-            <button 
+            <button
               type="submit"
               className="create-btn"
               disabled={!newNote.title.trim() || !newNote.content.trim() || isSubmitting}
