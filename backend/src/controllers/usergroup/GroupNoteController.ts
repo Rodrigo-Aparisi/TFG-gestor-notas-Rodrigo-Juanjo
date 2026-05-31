@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
-import path from "path";
-import { RequestWithFile } from "../../middleware/upload";
+import { RequestWithFile, deleteImage } from "../../middleware/upload";
 import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
 import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
 
@@ -311,12 +310,7 @@ export class GroupNoteController {
         images
           .filter((imagePath: string) => imagePath && isGroupNoteImageUrl(imagePath))
           .map(async (imagePath: string) => {
-            const fullPath = path.join(__dirname, "..", "..", imagePath);
-            try {
-              await fs.promises.unlink(fullPath);
-            } catch (err: any) {
-              if (err.code !== 'ENOENT') throw err;
-            }
+            await deleteImage(imagePath);
           })
       );
 
@@ -486,12 +480,7 @@ export class GroupNoteController {
       // Delete file if it exists on server
       const imageUrl = images[index];
       if (imageUrl && isGroupNoteImageUrl(imageUrl)) {
-        const fullPath = path.join(__dirname, '..', '..', imageUrl);
-        try {
-          await fs.promises.unlink(fullPath);
-        } catch (err: any) {
-          if (err.code !== 'ENOENT') throw err;
-        }
+        await deleteImage(imageUrl);
       }
 
       // Update images array in database
