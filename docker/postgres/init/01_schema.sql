@@ -95,7 +95,7 @@ CREATE TABLE note_groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     color VARCHAR(50) DEFAULT '#f1c40f',
-    user_id UUID REFERENCES users(id),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     position INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -191,6 +191,8 @@ CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
 CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
 
+CREATE INDEX idx_note_groups_user_id ON note_groups(user_id);
+
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
 CREATE INDEX idx_notes_is_marked ON notes(is_marked);
@@ -236,6 +238,9 @@ CREATE TRIGGER update_group_notes_updated_at
 
 CREATE TRIGGER update_notes_updated_at
     BEFORE UPDATE ON notes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_note_groups_updated_at
+    BEFORE UPDATE ON note_groups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reminders_updated_at
     BEFORE UPDATE ON reminders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
