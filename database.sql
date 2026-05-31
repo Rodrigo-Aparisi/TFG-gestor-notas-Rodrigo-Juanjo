@@ -1,13 +1,33 @@
--- Crear la base de datos
-CREATE DATABASE IF NOT EXISTS olympus_scribe;
+-- Olympus Scribe — Schema inicial (ÚNICA fuente de verdad del esquema)
+--
+-- Este mismo fichero lo usan DOS caminos (sin copias que puedan divergir):
+--   1. Docker: docker-compose lo monta en /docker-entrypoint-initdb.d y lo
+--      ejecuta automáticamente al crear el contenedor por primera vez.
+--   2. Manual: `createdb olympus_scribe && psql -d olympus_scribe -f database.sql`
+--
+-- No incluye CREATE DATABASE: en Docker la crea POSTGRES_DB y en manual se crea
+-- antes con `createdb`. Los cambios incrementales posteriores van en
+-- backend/migrations/ (001, 002, 003, ...).
 
--- Conectar a la base de datos
-\c olympus_scribe;
-
--- Habilitar la extensión UUID
+-- Extensión UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Crear tabla de usuarios
+-- ============================================================
+-- Función compartida de updated_at (declarada primero porque
+-- la usan los triggers de todas las tablas)
+-- ============================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
+-- Tablas
+-- ============================================================
+
 CREATE TABLE users (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -18,7 +38,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear tabla de configuración de usuarios (settings)
 CREATE TABLE settings (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -29,9 +48,8 @@ CREATE TABLE settings (
     default_note_sort_direction VARCHAR(10) DEFAULT 'desc',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+);
 
--- Crear tabla de grupos de usuarios
 CREATE TABLE user_groups (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -41,17 +59,15 @@ CREATE TABLE user_groups (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear tabla de miembros de grupos
 CREATE TABLE group_members (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL DEFAULT 'member', -- 'owner', 'admin', 'member'
+    role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_group_member UNIQUE (group_id, user_id)
 );
 
--- Crear tabla para notas de grupo
 CREATE TABLE group_notes (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -66,56 +82,6 @@ CREATE TABLE group_notes (
     CONSTRAINT check_color_format_group_notes CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
 );
 
--- Crear índices para las nuevas tablas
-CREATE INDEX idx_user_groups_owner_id ON user_groups(owner_id);
-CREATE INDEX idx_group_members_group_id ON group_members(group_id);
-CREATE INDEX idx_group_members_user_id ON group_members(user_id);
-CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
-CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
-
--- Crear función para actualizar el timestamp de updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Crear triggers para actualizar updated_at automáticamente
-CREATE TRIGGER update_user_groups_updated_at
-    BEFORE UPDATE ON user_groups
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_group_notes_updated_at
-    BEFORE UPDATE ON group_notes
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Crear vista para notas de grupo con información del creador
-CREATE VIEW v_group_notes AS
-SELECT 
-    gn.id,
-    gn.title,
-    gn.content,
-    gn.user_id,
-    u.username AS created_by_username,
-    gn.group_id,
-    gn.is_pinned,
-    gn.color,
-    gn.images,
-    gn.created_at,
-    gn.updated_at,
-    ug.name AS group_name
-FROM group_notes gn
-JOIN users u ON gn.user_id = u.id
-JOIN user_groups ug ON gn.group_id = ug.id;
-
--- Crear un índice para mejorar el rendimiento en búsquedas por user_id
-CREATE INDEX idx_settings_user_id ON settings(user_id);
-
--- Crear tabla de notas
 CREATE TABLE notes (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -125,21 +91,20 @@ CREATE TABLE notes (
     is_marked BOOLEAN DEFAULT FALSE,
     color VARCHAR(7) DEFAULT NULL,
     images TEXT[] DEFAULT ARRAY[]::TEXT[],
+    is_deleted BOOLEAN DEFAULT FALSE,
+    deleted_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$'),
-    is_deleted BOOLEAN DEFAULT FALSE,
-    deleted_at TIMESTAMP DEFAULT NULL
+    CONSTRAINT check_color_format CHECK (color IS NULL OR color ~* '^#[0-9A-F]{6}$')
 );
 
--- Crear tabla de grupos de notas
 CREATE TABLE note_groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     color VARCHAR(50) DEFAULT '#f1c40f',
-    user_id UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     position INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -149,45 +114,39 @@ CREATE TABLE note_group_items (
     PRIMARY KEY (group_id, note_id)
 );
 
-
--- Crear tabla de estados de recordatorios
 CREATE TABLE reminder_status (
     id SMALLINT PRIMARY KEY,
     name VARCHAR(50) NOT NULL
 );
 
--- Insertar estados básicos
 INSERT INTO reminder_status (id, name) VALUES
     (1, 'pendiente'),
     (2, 'completado'),
     (3, 'cancelado');
 
--- Crear tabla de recordatorios (reminders)
 CREATE TABLE reminders (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     date_time TIMESTAMP NOT NULL,
-    has_time BOOLEAN DEFAULT false,
-    send_email BOOLEAN DEFAULT false,
+    has_time BOOLEAN DEFAULT FALSE,
+    send_email BOOLEAN DEFAULT FALSE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     status_id SMALLINT REFERENCES reminder_status(id) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear tabla de recordatorios recurrentes
 CREATE TABLE reminder_recurrence (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     reminder_id UUID REFERENCES reminders(id) ON DELETE CASCADE,
-    frequency VARCHAR(50) NOT NULL, -- 'daily', 'weekly', 'monthly', 'yearly'
+    frequency VARCHAR(50) NOT NULL CHECK (frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
     interval_value INTEGER NOT NULL DEFAULT 1,
-    end_date TIMESTAMP,
+    end_date TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '1 year'),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Crear tabla para notas compartidas con los nuevos campos de permisos
 CREATE TABLE shared_notes (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
@@ -200,77 +159,125 @@ CREATE TABLE shared_notes (
     CONSTRAINT unique_shared_note UNIQUE (note_id, shared_with_id)
 );
 
--- Crear todos los índices necesarios
+CREATE TABLE password_reset_tokens (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(100) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(500) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE revoked_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token VARCHAR(500) NOT NULL UNIQUE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    reason VARCHAR(100)
+);
+
+-- ============================================================
+-- Índices
+-- ============================================================
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_settings_user_id ON settings(user_id);
+
+CREATE INDEX idx_user_groups_owner_id ON user_groups(owner_id);
+CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX idx_group_notes_group_id ON group_notes(group_id);
+CREATE INDEX idx_group_notes_user_id ON group_notes(user_id);
+
+CREATE INDEX idx_note_groups_user_id ON note_groups(user_id);
+
 CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE INDEX idx_notes_is_pinned ON notes(is_pinned);
 CREATE INDEX idx_notes_is_marked ON notes(is_marked);
-CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_notes_created_at ON notes(created_at);
 CREATE INDEX idx_notes_updated_at ON notes(updated_at);
+CREATE INDEX idx_notes_images ON notes USING gin(images);
+CREATE INDEX IF NOT EXISTS idx_notes_active ON notes(user_id, updated_at DESC) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_notes_trash ON notes(user_id, deleted_at DESC) WHERE is_deleted = true;
+
 CREATE INDEX idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX idx_reminders_date_time ON reminders(date_time);
 CREATE INDEX idx_reminders_status ON reminders(status_id);
 CREATE INDEX idx_reminder_recurrence_reminder_id ON reminder_recurrence(reminder_id);
-CREATE INDEX idx_notes_images ON notes USING gin(images);
+
 CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
 CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
 CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
-CREATE INDEX idx_shared_notes_can_edit ON shared_notes(can_edit);
+CREATE INDEX IF NOT EXISTS idx_shared_notes_perms ON shared_notes(shared_with_id, can_edit) INCLUDE (note_id);
 
--- Crear triggers para actualizar updated_at automáticamente
+CREATE INDEX idx_password_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_tokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_password_tokens_expires_at ON password_reset_tokens(expires_at);
+
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_revoked_tokens_token ON revoked_tokens(token);
+CREATE INDEX idx_revoked_tokens_expires_at ON revoked_tokens(expires_at);
+
+-- ============================================================
+-- Triggers updated_at
+-- ============================================================
+
 CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_settings_updated_at
-    BEFORE UPDATE ON settings
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_groups_updated_at
+    BEFORE UPDATE ON user_groups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_group_notes_updated_at
+    BEFORE UPDATE ON group_notes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_notes_updated_at
-    BEFORE UPDATE ON notes
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON notes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_note_groups_updated_at
+    BEFORE UPDATE ON note_groups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reminders_updated_at
-    BEFORE UPDATE ON reminders
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON reminders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reminder_recurrence_updated_at
-    BEFORE UPDATE ON reminder_recurrence
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON reminder_recurrence FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_shared_notes_updated_at
-    BEFORE UPDATE ON shared_notes
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    BEFORE UPDATE ON shared_notes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Crear vista para recordatorios
+-- ============================================================
+-- Vistas
+-- ============================================================
+
 CREATE VIEW v_reminders AS
-SELECT 
-    r.id,
-    r.title,
-    r.description,
-    r.date_time,
-    r.has_time,
-    r.user_id,
-    r.status_id,
-    r.created_at,
-    r.updated_at,
-    rs.name as status,
-    rr.frequency as recurrence_frequency,
-    rr.interval_value as recurrence_interval,
-    rr.end_date as recurrence_end_date
+SELECT
+    r.id, r.title, r.description, r.date_time, r.has_time,
+    r.user_id, r.status_id, r.created_at, r.updated_at,
+    rs.name AS status,
+    rr.frequency AS recurrence_frequency,
+    rr.interval_value AS recurrence_interval,
+    rr.end_date AS recurrence_end_date
 FROM reminders r
 LEFT JOIN reminder_status rs ON r.status_id = rs.id
 LEFT JOIN reminder_recurrence rr ON r.id = rr.reminder_id;
 
--- Crear vista para notas compartidas con información de permisos
 CREATE OR REPLACE VIEW v_shared_notes AS
-SELECT 
+SELECT
     sn.id AS shared_note_id,
     sn.note_id,
     n.title,
@@ -290,67 +297,21 @@ JOIN notes n ON sn.note_id = n.id
 JOIN users owner ON sn.owner_id = owner.id
 JOIN users shared_with ON sn.shared_with_id = shared_with.id;
 
--- Script para actualizar una base de datos existente
-DO $$ 
-BEGIN
-    -- Añadir columna images si no existe
-    IF NOT EXISTS (
-        SELECT 1 
-        FROM information_schema.columns 
-        WHERE table_name = 'notes' AND column_name = 'images'
-    ) THEN
-        ALTER TABLE notes ADD COLUMN images TEXT[] DEFAULT ARRAY[]::TEXT[];
-    END IF;
-END $$;
+CREATE VIEW v_group_notes AS
+SELECT
+    gn.id, gn.title, gn.content, gn.user_id,
+    u.username AS created_by_username,
+    gn.group_id, gn.is_pinned, gn.color, gn.images,
+    gn.created_at, gn.updated_at,
+    ug.name AS group_name
+FROM group_notes gn
+JOIN users u ON gn.user_id = u.id
+JOIN user_groups ug ON gn.group_id = ug.id;
 
--- Inicializar la columna images con array vacío donde sea NULL
-UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
-
--- Inicializar la columna images con array vacío donde sea NULL
-UPDATE notes SET images = ARRAY[]::TEXT[] WHERE images IS NULL;
-
--- Crear tabla para tokens de recuperación de contraseña
-CREATE TABLE password_reset_tokens (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(100) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    used BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Crear índices para optimizar consultas
-CREATE INDEX idx_password_tokens_user_id ON password_reset_tokens(user_id);
-CREATE INDEX idx_password_tokens_token ON password_reset_tokens(token);
-CREATE INDEX idx_password_tokens_expires_at ON password_reset_tokens(expires_at);
-
--- Crear tabla para refresh tokens (JWT)
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(500) NOT NULL UNIQUE,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-
--- Crear tabla de tokens revocados (blacklist JWT)
-CREATE TABLE IF NOT EXISTS revoked_tokens (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    token VARCHAR(500) NOT NULL UNIQUE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    reason VARCHAR(100)
-);
-
-CREATE INDEX IF NOT EXISTS idx_revoked_tokens_token ON revoked_tokens(token);
-CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires_at ON revoked_tokens(expires_at);
-
+-- ============================================================
 -- Función de limpieza de tokens expirados
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION cleanup_expired_tokens()
 RETURNS void AS $$
 BEGIN
@@ -358,3 +319,7 @@ BEGIN
     DELETE FROM revoked_tokens WHERE expires_at < NOW();
 END;
 $$ LANGUAGE plpgsql;
+
+COMMENT ON TABLE refresh_tokens IS 'Stores valid refresh tokens for JWT authentication';
+COMMENT ON TABLE revoked_tokens IS 'Blacklist of revoked access tokens before expiration';
+COMMENT ON FUNCTION cleanup_expired_tokens() IS 'Removes expired tokens from both tables';

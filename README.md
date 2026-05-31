@@ -73,11 +73,14 @@ Crear `backend/.env` con las variables necesarias (ver sección [Variables de en
 
 ### 3. Inicializar la base de datos
 
-Ejecutar el script SQL de `database.sql` contra tu instancia de PostgreSQL para crear tablas, vistas y triggers.
+`database.sql` es la **única fuente del esquema** (el mismo archivo que Docker monta y ejecuta). Crea la base de datos y aplica el esquema:
 
 ```bash
-psql -U <usuario> -d <base_de_datos> -f database.sql
+createdb olympus_scribe
+psql -d olympus_scribe -f database.sql
 ```
+
+> El archivo no incluye `CREATE DATABASE` (en Docker la crea `POSTGRES_DB`). Los cambios incrementales posteriores al esquema base viven en `backend/migrations/`.
 
 ### 4. Configurar el frontend
 
