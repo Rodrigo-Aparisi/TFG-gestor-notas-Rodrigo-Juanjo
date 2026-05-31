@@ -1,0 +1,20 @@
+{
+  "name": "tfg-gestor-notas",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "backend/src/**/*.ts": [
+      "cd backend && npx prettier --write --ignore-unknown"
+    ],
+    "frontend/src/**/*.{ts,tsx}": [
+      "cd frontend && npx prettier --write --ignore-unknown"
+    ]
+  }
+}
