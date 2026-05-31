@@ -38,7 +38,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     const userResponse = {
       ...result.rows[0],
-      profile_image: getProfileImageUrl(result.rows[0].profile_image)
+      profile_image: getProfileImageUrl(result.rows[0].profile_image),
     };
 
     log.auth('Registro exitoso', userResponse.id, { username, email });
@@ -46,7 +46,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     res.status(201).json({
       success: true,
       message: 'Usuario creado exitosamente',
-      user: userResponse
+      user: userResponse,
     });
   } catch (error) {
     // Handle unique constraint violations
@@ -99,18 +99,14 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     // Generate access token (1 hour expiration)
-    const accessToken = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
-    );
+    const accessToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, {
+      expiresIn: '1h',
+    });
 
     // Generate refresh token (7 days expiration)
-    const refreshToken = jwt.sign(
-      { id: user.id, type: 'refresh' },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
+    const refreshToken = jwt.sign({ id: user.id, type: 'refresh' }, process.env.JWT_SECRET!, {
+      expiresIn: '7d',
+    });
 
     // Store refresh token in database
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -124,7 +120,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       username: user.username,
       email: user.email,
       profile_image: getProfileImageUrl(user.profile_image),
-      created_at: user.created_at
+      created_at: user.created_at,
     };
 
     // Get user settings
@@ -136,18 +132,27 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const settings = settingsResult.rows[0] || {
       theme: 'dark',
       notifications_enabled: true,
-      language: 'es'
+      language: 'es',
     };
 
     log.auth('Login exitoso', user.id, { email });
+
+    // Refresh token va en cookie HttpOnly (no en el body) para evitar exfiltración por XSS
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: SEVEN_DAYS_MS,
+      path: '/api/auth',
+    });
 
     res.json({
       success: true,
       message: 'Login exitoso',
       token: accessToken,
-      refreshToken,
       user: userResponse,
-      settings
+      settings,
     });
   } catch (error) {
     next(error);
@@ -169,9 +174,14 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
  * @throws {NotFoundError} 404 — Usuario asociado al token no existe (`USER_NOT_FOUND`)
  * @returns 200 con `{ success, message, token }` — nuevo access token (1h)
  */
-export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const refreshAccessToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { refreshToken } = req.body;
+    // Acepta cookie (preferente) o body (compatibilidad hacia atrás)
+    const refreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
 
     if (!refreshToken) {
       throw new UnauthorizedError('Refresh token requerido', 'MISSING_REFRESH_TOKEN');
@@ -196,10 +206,9 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
     }
 
     // Get user data
-    const userResult = await pool.query(
-      'SELECT id, username, email FROM users WHERE id = $1',
-      [decoded.id]
-    );
+    const userResult = await pool.query('SELECT id, username, email FROM users WHERE id = $1', [
+      decoded.id,
+    ]);
 
     if (userResult.rows.length === 0) {
       throw new NotFoundError('Usuario no encontrado', 'USER_NOT_FOUND');
@@ -208,18 +217,16 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
     const user = userResult.rows[0];
 
     // Generate new access token
-    const newAccessToken = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1h' }
-    );
+    const newAccessToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, {
+      expiresIn: '1h',
+    });
 
     logger.debug('Token renovado', { userId: user.id });
 
     res.json({
       success: true,
       message: 'Token renovado exitosamente',
-      token: newAccessToken
+      token: newAccessToken,
     });
   } catch (error) {
     next(error);
@@ -240,7 +247,8 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
  */
 export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { refreshToken } = req.body;
+    // Acepta cookie (preferente) o body (compatibilidad hacia atrás)
+    const refreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
     const token = req.headers.authorization?.split(' ')[1];
 
     // Revoke access token (add to blacklist)
@@ -266,9 +274,12 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
 
     log.auth('Logout exitoso', (req as Request & { user?: { id: string } }).user?.id);
 
+    // Limpiar la cookie del refresh token
+    res.clearCookie('refresh_token', { path: '/api/auth' });
+
     res.json({
       success: true,
-      message: 'Logout exitoso'
+      message: 'Logout exitoso',
     });
   } catch (error) {
     next(error);

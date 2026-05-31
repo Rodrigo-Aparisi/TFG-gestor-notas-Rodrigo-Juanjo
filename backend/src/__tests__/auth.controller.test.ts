@@ -52,11 +52,14 @@ describe('Auth Controller', () => {
   beforeEach(() => {
     mockReq = {
       body: {},
+      cookies: {},
       headers: {},
     };
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      cookie: jest.fn().mockReturnThis(),
+      clearCookie: jest.fn().mockReturnThis(),
     };
     mockNext = jest.fn();
 
@@ -142,14 +145,16 @@ describe('Auth Controller', () => {
       // Mock user query - returns user with 'password' field
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({
-          rows: [{
-            id: mockUser.id,
-            username: mockUser.username,
-            email: mockUser.email,
-            password: hashedPassword, // Controller expects 'password' not 'password_hash'
-            profile_image: mockUser.profile_image,
-            created_at: mockUser.created_at,
-          }],
+          rows: [
+            {
+              id: mockUser.id,
+              username: mockUser.username,
+              email: mockUser.email,
+              password: hashedPassword, // Controller expects 'password' not 'password_hash'
+              profile_image: mockUser.profile_image,
+              created_at: mockUser.created_at,
+            },
+          ],
           rowCount: 1,
         })
         // Mock refresh token INSERT
@@ -162,12 +167,16 @@ describe('Auth Controller', () => {
 
       await login(mockReq as Request, mockRes as Response, mockNext);
 
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true, sameSite: 'strict' })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           message: 'Login exitoso',
           token: expect.any(String),
-          refreshToken: expect.any(String),
           user: expect.objectContaining({
             email: loginData.email,
           }),
@@ -205,10 +214,12 @@ describe('Auth Controller', () => {
 
       // Mock user query with wrong password
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
-        rows: [{
-          ...mockUser,
-          password: wrongPasswordHash,
-        }],
+        rows: [
+          {
+            ...mockUser,
+            password: wrongPasswordHash,
+          },
+        ],
         rowCount: 1,
       });
 
@@ -240,14 +251,17 @@ describe('Auth Controller', () => {
     it('should refresh token successfully', async () => {
       const userId = 'test-user-id-123';
       const refreshToken = generateTestRefreshToken(userId);
-      mockReq.body = { refreshToken };
+      mockReq.body = {};
+      mockReq.cookies = { refresh_token: refreshToken };
 
       const mockUser = createTestUser({ id: userId });
 
       // Mock token query - token exists and is valid
       (mockPool.query as jest.Mock)
         .mockResolvedValueOnce({
-          rows: [{ token: refreshToken, user_id: userId, expires_at: new Date(Date.now() + 86400000) }],
+          rows: [
+            { token: refreshToken, user_id: userId, expires_at: new Date(Date.now() + 86400000) },
+          ],
           rowCount: 1,
         })
         // Mock user query
@@ -269,6 +283,7 @@ describe('Auth Controller', () => {
 
     it('should return error when refresh token is missing', async () => {
       mockReq.body = {};
+      mockReq.cookies = {};
 
       await refreshAccessToken(mockReq as Request, mockRes as Response, mockNext);
 
@@ -281,7 +296,8 @@ describe('Auth Controller', () => {
     });
 
     it('should return error when refresh token is invalid', async () => {
-      mockReq.body = { refreshToken: 'invalid-token' };
+      mockReq.body = {};
+      mockReq.cookies = { refresh_token: 'invalid-token' };
 
       await refreshAccessToken(mockReq as Request, mockRes as Response, mockNext);
 
@@ -296,7 +312,8 @@ describe('Auth Controller', () => {
     it('should return error when refresh token not in database', async () => {
       const userId = 'test-user-id-123';
       const refreshToken = generateTestRefreshToken(userId);
-      mockReq.body = { refreshToken };
+      mockReq.body = {};
+      mockReq.cookies = { refresh_token: refreshToken };
 
       // Mock token query - token not found
       (mockPool.query as jest.Mock).mockResolvedValueOnce({
@@ -321,7 +338,8 @@ describe('Auth Controller', () => {
       const accessToken = generateTestToken(userId);
       const refreshToken = generateTestRefreshToken(userId);
 
-      mockReq.body = { refreshToken };
+      mockReq.body = {};
+      mockReq.cookies = { refresh_token: refreshToken };
       mockReq.headers = { authorization: `Bearer ${accessToken}` };
 
       // Mock INSERT revoked token
