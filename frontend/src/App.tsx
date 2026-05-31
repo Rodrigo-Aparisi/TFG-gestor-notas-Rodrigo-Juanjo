@@ -7,6 +7,7 @@ import { accountService } from './services/accountService';
 import themeService from './services/themeService';
 import themeConfig from './config/themeConfig.json';
 import { authEvents, SESSION_EXPIRED_EVENT } from './utils/authEvents';
+import { clientLogger } from './utils/clientLogger';
 import Header from './components/Layout/Header';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
@@ -72,7 +73,7 @@ const ThemeLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           themeService.resetToDefault();
         }
       } catch (error) {
-        console.error('Error al cargar el tema:', error);
+        clientLogger.error('Error al cargar el tema', error);
         themeService.resetToDefault();
       }
     };
