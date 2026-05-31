@@ -7,7 +7,11 @@ describe('validateEnv', () => {
   });
 
   afterEach(() => {
-    process.env = { ...original };
+    // Restore by mutation instead of reference replacement
+    Object.keys(process.env).forEach(key => {
+      if (!(key in original)) delete process.env[key];
+    });
+    Object.assign(process.env, original);
   });
 
   it('throws when JWT_SECRET is missing', () => {

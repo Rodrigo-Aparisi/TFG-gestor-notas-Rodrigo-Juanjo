@@ -29,8 +29,9 @@ if (process.env.NODE_ENV !== 'test') {
   try {
     validateEnv();
   } catch (err) {
-    console.error('\n[STARTUP ERROR] Configuración de entorno inválida:');
-    console.error(err instanceof Error ? err.message : err);
+    logger.error('[STARTUP] Configuración de entorno inválida', {
+      error: err instanceof Error ? err.message : err,
+    });
     process.exit(1);
   }
 }
