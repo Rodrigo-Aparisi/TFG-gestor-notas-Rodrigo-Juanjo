@@ -12,7 +12,7 @@ const ALLOWED_NOTE_ORDER_COLUMNS = [
   'updated_at',
   'title',
   'is_pinned',
-  'color'
+  'color',
 ] as const;
 
 /**
@@ -20,8 +20,8 @@ const ALLOWED_NOTE_ORDER_COLUMNS = [
  */
 const ALLOWED_SORT_DIRECTIONS = ['ASC', 'DESC'] as const;
 
-type NoteOrderColumn = typeof ALLOWED_NOTE_ORDER_COLUMNS[number];
-type SortDirection = typeof ALLOWED_SORT_DIRECTIONS[number];
+type NoteOrderColumn = (typeof ALLOWED_NOTE_ORDER_COLUMNS)[number];
+type SortDirection = (typeof ALLOWED_SORT_DIRECTIONS)[number];
 
 /**
  * Safely builds an ORDER BY clause for note queries
@@ -34,21 +34,14 @@ type SortDirection = typeof ALLOWED_SORT_DIRECTIONS[number];
  * buildOrderByClause('title', 'ASC') // Returns: "title ASC, is_pinned DESC"
  * buildOrderByClause('invalid', 'ASC') // Returns: "is_pinned DESC, created_at DESC" (default)
  */
-export function buildOrderByClause(
-  field?: string,
-  direction?: string
-): string {
+export function buildOrderByClause(field?: string, direction?: string): string {
   // Validate and sanitize field
   const sanitizedField = field?.toLowerCase();
-  const isValidField = ALLOWED_NOTE_ORDER_COLUMNS.includes(
-    sanitizedField as NoteOrderColumn
-  );
+  const isValidField = ALLOWED_NOTE_ORDER_COLUMNS.includes(sanitizedField as NoteOrderColumn);
 
   // Validate and sanitize direction
   const sanitizedDirection = direction?.toUpperCase();
-  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(
-    sanitizedDirection as SortDirection
-  );
+  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(sanitizedDirection as SortDirection);
 
   // Default sorting: pinned first, then by creation date
   const defaultOrder = 'is_pinned DESC, created_at DESC';
@@ -73,14 +66,9 @@ export function buildOrderByClause(
 /**
  * Whitelist for group notes ORDER BY
  */
-const ALLOWED_GROUP_NOTE_ORDER_COLUMNS = [
-  'created_at',
-  'updated_at',
-  'title',
-  'color'
-] as const;
+const ALLOWED_GROUP_NOTE_ORDER_COLUMNS = ['created_at', 'updated_at', 'title', 'color'] as const;
 
-type GroupNoteOrderColumn = typeof ALLOWED_GROUP_NOTE_ORDER_COLUMNS[number];
+type GroupNoteOrderColumn = (typeof ALLOWED_GROUP_NOTE_ORDER_COLUMNS)[number];
 
 /**
  * Safely builds an ORDER BY clause for group note queries
@@ -89,19 +77,14 @@ type GroupNoteOrderColumn = typeof ALLOWED_GROUP_NOTE_ORDER_COLUMNS[number];
  * @param direction - Sort direction (ASC or DESC)
  * @returns Safe ORDER BY clause or default
  */
-export function buildGroupNoteOrderByClause(
-  field?: string,
-  direction?: string
-): string {
+export function buildGroupNoteOrderByClause(field?: string, direction?: string): string {
   const sanitizedField = field?.toLowerCase();
   const isValidField = ALLOWED_GROUP_NOTE_ORDER_COLUMNS.includes(
     sanitizedField as GroupNoteOrderColumn
   );
 
   const sanitizedDirection = direction?.toUpperCase();
-  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(
-    sanitizedDirection as SortDirection
-  );
+  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(sanitizedDirection as SortDirection);
 
   const defaultOrder = 'created_at DESC';
 
@@ -118,14 +101,9 @@ export function buildGroupNoteOrderByClause(
 /**
  * Whitelist for reminders ORDER BY
  */
-const ALLOWED_REMINDER_ORDER_COLUMNS = [
-  'created_at',
-  'updated_at',
-  'date_time',
-  'title'
-] as const;
+const ALLOWED_REMINDER_ORDER_COLUMNS = ['created_at', 'updated_at', 'date_time', 'title'] as const;
 
-type ReminderOrderColumn = typeof ALLOWED_REMINDER_ORDER_COLUMNS[number];
+type ReminderOrderColumn = (typeof ALLOWED_REMINDER_ORDER_COLUMNS)[number];
 
 /**
  * Safely builds an ORDER BY clause for reminder queries
@@ -134,19 +112,14 @@ type ReminderOrderColumn = typeof ALLOWED_REMINDER_ORDER_COLUMNS[number];
  * @param direction - Sort direction (ASC or DESC)
  * @returns Safe ORDER BY clause or default
  */
-export function buildReminderOrderByClause(
-  field?: string,
-  direction?: string
-): string {
+export function buildReminderOrderByClause(field?: string, direction?: string): string {
   const sanitizedField = field?.toLowerCase();
   const isValidField = ALLOWED_REMINDER_ORDER_COLUMNS.includes(
     sanitizedField as ReminderOrderColumn
   );
 
   const sanitizedDirection = direction?.toUpperCase();
-  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(
-    sanitizedDirection as SortDirection
-  );
+  const isValidDirection = ALLOWED_SORT_DIRECTIONS.includes(sanitizedDirection as SortDirection);
 
   const defaultOrder = 'date_time ASC, created_at DESC';
 
@@ -181,4 +154,44 @@ export function isSafeColumnName(columnName: string): boolean {
 export function escapeLikeValue(value: string): string {
   // Escape special characters in LIKE patterns: %, _, \
   return value.replace(/[%_\\]/g, '\\$&');
+}
+
+/**
+ * Construye la cláusula SET de un UPDATE parcial de forma segura.
+ *
+ * Recorre `fields` en orden de inserción, ignora los valores `undefined`
+ * (campos no enviados) y genera `columna = $N` con placeholders parametrizados.
+ * Los nombres de columna se validan con `isSafeColumnName` (los valores van
+ * siempre parametrizados, nunca interpolados).
+ *
+ * @param fields - Mapa columna -> valor. Las claves `undefined` se omiten.
+ * @param startIndex - Índice inicial del placeholder (por defecto 1).
+ * @returns `setClause` (p. ej. "title = $1, color = $2"), `values` en el mismo
+ *          orden, y `nextIndex` (siguiente placeholder libre, útil para el WHERE).
+ * @throws {Error} Si alguna columna a actualizar no es un identificador seguro.
+ *
+ * @example
+ * const { setClause, values, nextIndex } = buildPartialUpdate({ title, content });
+ * values.push(id);
+ * const q = `UPDATE notes SET ${setClause} WHERE id = $${nextIndex}`;
+ */
+export function buildPartialUpdate(
+  fields: Record<string, unknown>,
+  startIndex = 1
+): { setClause: string; values: unknown[]; nextIndex: number } {
+  const setParts: string[] = [];
+  const values: unknown[] = [];
+  let index = startIndex;
+
+  for (const [column, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    if (!isSafeColumnName(column)) {
+      throw new Error(`Nombre de columna inseguro en update parcial: ${column}`);
+    }
+    setParts.push(`${column} = $${index}`);
+    values.push(value);
+    index++;
+  }
+
+  return { setClause: setParts.join(', '), values, nextIndex: index };
 }
