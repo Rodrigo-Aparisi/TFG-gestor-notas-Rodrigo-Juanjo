@@ -30,10 +30,13 @@ interface SettingsProviderProps {
 
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   // Load settings from server when authenticated; reset to defaults when not
   useEffect(() => {
+    // Esperar al bootstrap silent refresh: si aún carga, el access token todavía
+    // no está en memoria y la llamada daría un 401 innecesario al recargar.
+    if (loading) return;
     if (!isAuthenticated) {
       setSettings(defaultSettings);
       return;
@@ -50,7 +53,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       }
     };
     loadFromServer();
-  }, [isAuthenticated]); // Reload when auth state changes
+  }, [isAuthenticated, loading]); // Reload when auth/bootstrap state changes
 
   const updateSettings = (updates: Partial<SettingsState>) => {
     setSettings(prev => ({ ...prev, ...updates }));
