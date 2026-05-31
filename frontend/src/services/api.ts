@@ -1,6 +1,6 @@
-import axios from "axios";
-import { authService } from "./auth";
-import { User, UpdateReminderData, CreateReminderData } from "../types";
+import axios from 'axios';
+import { authService } from './auth';
+import { User, UpdateReminderData, CreateReminderData } from '../types';
 
 // Interfaces para el servicio de cuenta
 interface UpdateUserData {
@@ -28,13 +28,14 @@ interface ShareNoteOptions {
 // Crear instancia de axios
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
+  withCredentials: true, // Envía cookies automáticamente (incluye refresh_token)
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
 // Interceptor para añadir el token
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(config => {
   const token = authService.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -51,29 +52,20 @@ function subscribeTokenRefresh(cb: (token: string) => void) {
 }
 
 function onTokenRefreshed(newToken: string) {
-  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers.forEach(cb => cb(newToken));
   refreshSubscribers = [];
 }
 
 // Interceptor para manejar errores y refresco automático de token
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      const refreshToken = authService.getRefreshToken();
-
-      // Sin refresh token → logout directo
-      if (!refreshToken) {
-        authService.logout();
-        window.location.href = "/login";
-        return Promise.reject(error);
-      }
-
       // Si ya hay un refresco en curso, encolar esta request
       if (isRefreshing) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
           subscribeTokenRefresh((newToken: string) => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             resolve(api(originalRequest));
@@ -94,7 +86,7 @@ api.interceptors.response.use(
         isRefreshing = false;
         refreshSubscribers = [];
         authService.logout();
-        window.location.href = "/login";
+        window.location.href = '/login';
         return Promise.reject(error);
       }
     }
@@ -107,10 +99,10 @@ api.interceptors.response.use(
 export const noteService = {
   getNotes: async () => {
     try {
-      const response = await api.get("notes");
+      const response = await api.get('notes');
       return response.data;
     } catch (error) {
-      console.error("Error fetching notes:", error);
+      console.error('Error fetching notes:', error);
       throw error;
     }
   },
@@ -118,10 +110,10 @@ export const noteService = {
   // Obtener notas de la papelera
   getTrashNotes: async () => {
     try {
-      const response = await api.get("notes/trash");
+      const response = await api.get('notes/trash');
       return response.data;
     } catch (error) {
-      console.error("Error fetching trash notes:", error);
+      console.error('Error fetching trash notes:', error);
       throw error;
     }
   },
@@ -131,46 +123,38 @@ export const noteService = {
       const response = await api.post(`notes/trash/${id}/restore`);
       return response.data;
     } catch (error) {
-      console.error("Error restoring note:", error);
+      console.error('Error restoring note:', error);
       throw error;
     }
   },
 
   emptyTrash: async () => {
     try {
-      const response = await api.delete("/trash/empty");
+      const response = await api.delete('/trash/empty');
       return response.data;
     } catch (error) {
-      console.error("Error emptying trash:", error);
+      console.error('Error emptying trash:', error);
       throw error;
     }
   },
 
-  createNote: async (noteData: {
-    title: string;
-    content: string;
-    images?: string[];
-  }) => {
+  createNote: async (noteData: { title: string; content: string; images?: string[] }) => {
     try {
-      const response = await api.post("notes", noteData);
+      const response = await api.post('notes', noteData);
       return response.data;
     } catch (error) {
-      console.error("Error creating note:", error);
+      console.error('Error creating note:', error);
       throw error;
     }
   },
 
-  shareNote: async (
-    noteId: string,
-    username: string,
-    options: ShareNoteOptions | boolean = {}
-  ) => {
+  shareNote: async (noteId: string, username: string, options: ShareNoteOptions | boolean = {}) => {
     const shareOptions: ShareNoteOptions =
-      typeof options === "boolean"
+      typeof options === 'boolean'
         ? { includeImages: options, canEdit: false }
         : { includeImages: true, canEdit: false, ...options };
 
-    const response = await api.post("notes/share", {
+    const response = await api.post('notes/share', {
       noteId,
       username,
       includeImages: shareOptions.includeImages,
@@ -194,62 +178,52 @@ export const noteService = {
 
   getSharedNotes: async () => {
     try {
-      const response = await api.get("notes/shared-notes");
+      const response = await api.get('notes/shared-notes');
 
       return response.data;
     } catch (error) {
-      console.error("Error fetching shared notes:", error);
+      console.error('Error fetching shared notes:', error);
       throw error;
     }
   },
 
-  updateNote: async (
-    id: string,
-    noteData: { title?: string; content?: string }
-  ) => {
+  updateNote: async (id: string, noteData: { title?: string; content?: string }) => {
     try {
       const response = await api.put(`notes/${id}`, noteData);
       if (!response.data) {
-        throw new Error("No se recibieron datos del servidor");
+        throw new Error('No se recibieron datos del servidor');
       }
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {
-          throw new Error("Nota no encontrada");
+          throw new Error('Nota no encontrada');
         } else if (error.response?.status === 500) {
-          throw new Error("Error del servidor al actualizar la nota");
+          throw new Error('Error del servidor al actualizar la nota');
         }
-        throw new Error(
-          error.response?.data?.error || "Error al actualizar la nota"
-        );
+        throw new Error(error.response?.data?.error || 'Error al actualizar la nota');
       }
-      throw new Error("Error inesperado al actualizar la nota");
+      throw new Error('Error inesperado al actualizar la nota');
     }
   },
 
-  updateSharedNote: async (
-    id: string,
-    noteData: { title?: string; content?: string }
-  ) => {
+  updateSharedNote: async (id: string, noteData: { title?: string; content?: string }) => {
     try {
       const response = await api.put(`notes/shared-notes/${id}`, noteData);
       if (!response.data) {
-        throw new Error("No se recibieron datos del servidor");
+        throw new Error('No se recibieron datos del servidor');
       }
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {
-          throw new Error("Nota no encontrada");
+          throw new Error('Nota no encontrada');
         } else if (error.response?.status === 500) {
-          throw new Error("Error del servidor al actualizar la nota");
+          throw new Error('Error del servidor al actualizar la nota');
         }
-        throw new Error(
-          error.response?.data?.error || "Error al actualizar la nota"
-        );
+        throw new Error(error.response?.data?.error || 'Error al actualizar la nota');
       }
-      throw new Error("Error inesperado al actualizar la nota");
+      throw new Error('Error inesperado al actualizar la nota');
     }
   },
 
@@ -257,22 +231,19 @@ export const noteService = {
     try {
       const response = await api.put(`notes/shared-notes/${id}`, { images });
       if (!response.data) {
-        throw new Error("No se recibieron datos del servidor");
+        throw new Error('No se recibieron datos del servidor');
       }
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {
-          throw new Error("Nota no encontrada");
+          throw new Error('Nota no encontrada');
         } else if (error.response?.status === 500) {
-          throw new Error("Error del servidor al actualizar imágenes");
+          throw new Error('Error del servidor al actualizar imágenes');
         }
-        throw new Error(
-          error.response?.data?.error ||
-            "Error al actualizar imágenes de la nota"
-        );
+        throw new Error(error.response?.data?.error || 'Error al actualizar imágenes de la nota');
       }
-      throw new Error("Error inesperado al actualizar imágenes de la nota");
+      throw new Error('Error inesperado al actualizar imágenes de la nota');
     }
   },
 
@@ -281,31 +252,31 @@ export const noteService = {
       const response = await api.get(`notes/users?query=${query}`);
       return response.data;
     } catch (error) {
-      console.error("Error al buscar usuarios:", error);
+      console.error('Error al buscar usuarios:', error);
       return { users: [] };
     }
   },
 
   searchGroupUsers: async (groupId: string, query: string) => {
-  try {
-    const response = await api.get(`/groups/${groupId}/search-users?q=${query}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error al buscar usuarios para el grupo:', error);
-    return { users: [] };
-  }
-},
+    try {
+      const response = await api.get(`/groups/${groupId}/search-users?q=${query}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al buscar usuarios para el grupo:', error);
+      return { users: [] };
+    }
+  },
 
   uploadNoteImage: async (formData: FormData) => {
     try {
-      const response = await api.post("notes/upload-image", formData, {
+      const response = await api.post('notes/upload-image', formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
       });
       return response;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error('Error uploading image:', error);
       throw error;
     }
   },
@@ -314,7 +285,7 @@ export const noteService = {
     try {
       await api.delete(`notes/${id}`);
     } catch (error) {
-      console.error("Error deleting note:", error);
+      console.error('Error deleting note:', error);
       throw error;
     }
   },
@@ -330,63 +301,56 @@ export const noteService = {
   },
 
   unmarkAllNotes: async () => {
-    const response = await api.post("notes/unmark-all");
+    const response = await api.post('notes/unmark-all');
     return response.data;
   },
 
-  createGroup: async (groupData: {
-    name: string;
-    color: string;
-    noteIds: string[];
-  }) => {
+  createGroup: async (groupData: { name: string; color: string; noteIds: string[] }) => {
     try {
-      const response = await api.post("/groups", groupData);
+      const response = await api.post('/groups', groupData);
       return response.data;
     } catch (error) {
-      console.error("Error creating group:", error);
+      console.error('Error creating group:', error);
       throw error;
     }
   },
 
   getGroups: async () => {
     try {
-      const response = await api.get("/groups");
+      const response = await api.get('/groups');
       return response.data;
     } catch (error) {
-      console.error("Error fetching groups:", error);
+      console.error('Error fetching groups:', error);
       throw error;
     }
   },
 
-  updateGroup: async (
-    groupId: string,
-    groupData: { name: string; color: string }
-  ) => {
+  updateGroup: async (groupId: string, groupData: { name: string; color: string }) => {
     try {
       const response = await api.put(`/groups/${groupId}`, groupData);
       return response.data;
     } catch (error) {
-      console.error("Error updating group:", error);
+      console.error('Error updating group:', error);
       throw error;
     }
   },
 
   reorderGroups: async (groupIds: string[]) => {
     try {
-      const response = await api.put("/groups/reorder", { groupIds });
+      const response = await api.put('/groups/reorder', { groupIds });
       return response.data;
     } catch (error) {
-      console.error("Error reordering groups:", error);
+      console.error('Error reordering groups:', error);
       throw error;
     }
   },
 
   addNoteToGroup: async (groupId: string, noteId: string) => {
     try {
-      const response = await api.post("/groups/add-note", { groupId, noteId });
+      const response = await api.post('/groups/add-note', { groupId, noteId });
       return response.data;
     } catch (error) {
-      console.error("Error adding note to group:", error);
+      console.error('Error adding note to group:', error);
       throw error;
     }
   },
@@ -396,7 +360,7 @@ export const noteService = {
       const response = await api.delete(`/groups/${groupId}/notes/${noteId}`);
       return response.data;
     } catch (error) {
-      console.error("Error removing note from group:", error);
+      console.error('Error removing note from group:', error);
       throw error;
     }
   },
@@ -406,22 +370,21 @@ export const noteService = {
       const response = await api.delete(`/groups/${groupId}`);
       return response.data;
     } catch (error) {
-      console.error("Error deleting group:", error);
+      console.error('Error deleting group:', error);
       throw error;
     }
   },
 
   getUserSortPreferences: async () => {
     try {
-      const response = await api.get("notes/sort-preferences");
+      const response = await api.get('notes/sort-preferences');
       return response.data;
     } catch (error) {
-      console.error("Error al obtener preferencias de ordenación:", error);
+      console.error('Error al obtener preferencias de ordenación:', error);
 
       // Crear un objeto de respuesta de respaldo con valores por defecto
-      const savedType = localStorage.getItem("notesSortType") || "date";
-      const savedDirection =
-        localStorage.getItem("notesSortDirection") || "desc";
+      const savedType = localStorage.getItem('notesSortType') || 'date';
+      const savedDirection = localStorage.getItem('notesSortDirection') || 'desc';
 
       return {
         success: true,
@@ -435,13 +398,13 @@ export const noteService = {
 
   saveUserSortPreferences: async (sortType: string, sortDirection: string) => {
     try {
-      const response = await api.post("notes/sort-preferences", {
+      const response = await api.post('notes/sort-preferences', {
         sortType,
         sortDirection,
       });
       return response.data;
     } catch (error) {
-      console.error("Error al guardar preferencias de ordenación:", error);
+      console.error('Error al guardar preferencias de ordenación:', error);
       throw error;
     }
   },
@@ -449,15 +412,9 @@ export const noteService = {
 
 // Servicios de calendario
 export const calendarService = {
-  getReminders: async ({
-    startDate,
-    endDate,
-  }: {
-    startDate: Date;
-    endDate: Date;
-  }) => {
+  getReminders: async ({ startDate, endDate }: { startDate: Date; endDate: Date }) => {
     try {
-      const response = await api.get("/reminders", {
+      const response = await api.get('/reminders', {
         params: {
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
@@ -465,7 +422,7 @@ export const calendarService = {
       });
       return response.data;
     } catch (error) {
-      console.error("Error en getReminders:", error);
+      console.error('Error en getReminders:', error);
       throw error;
     }
   },
@@ -479,10 +436,10 @@ export const calendarService = {
         sendEmail: data.sendEmail,
       };
 
-      const response = await api.post("/reminders", reminderData);
+      const response = await api.post('/reminders', reminderData);
       return response.data;
     } catch (error) {
-      console.error("Error creating reminder:", error);
+      console.error('Error creating reminder:', error);
       throw error;
     }
   },
@@ -492,7 +449,7 @@ export const calendarService = {
       const response = await api.put(`/reminders/${id}/status`, { statusId });
       return response.data;
     } catch (error) {
-      console.error("Error updating reminder status:", error);
+      console.error('Error updating reminder status:', error);
       throw error;
     }
   },
@@ -521,7 +478,7 @@ export const calendarService = {
       }
       return response.data;
     } catch (error) {
-      console.error("Error updating reminder:", error);
+      console.error('Error updating reminder:', error);
       throw error;
     }
   },
@@ -531,7 +488,7 @@ export const calendarService = {
       const response = await api.delete(`/reminders/${id}`);
       return response.data;
     } catch (error) {
-      console.error("Error deleting reminder:", error);
+      console.error('Error deleting reminder:', error);
       throw error;
     }
   },
@@ -541,91 +498,87 @@ export const calendarService = {
 export const accountService = {
   updateUser: async (userData: UpdateUserData): Promise<UpdateResponse> => {
     try {
-      const response = await api.put<UpdateResponse>(
-        "/account/update",
-        userData
-      );
+      const response = await api.put<UpdateResponse>('/account/update', userData);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          throw new Error("Contraseña actual incorrecta");
+          throw new Error('Contraseña actual incorrecta');
         } else if (error.response?.status === 404) {
-          throw new Error("Usuario no encontrado");
+          throw new Error('Usuario no encontrado');
         } else if (error.response?.status === 500) {
-          throw new Error("Error del servidor al actualizar el usuario");
+          throw new Error('Error del servidor al actualizar el usuario');
         }
-        throw new Error(
-          error.response?.data?.error || "Error al actualizar el usuario"
-        );
+        throw new Error(error.response?.data?.error || 'Error al actualizar el usuario');
       }
-      throw new Error("Error inesperado al actualizar el usuario");
+      throw new Error('Error inesperado al actualizar el usuario');
     }
   },
 
   updateUserProfileImage: async (formData: FormData): Promise<string> => {
     try {
       const response = await api.post<ProfileImageResponse>(
-        "/account/upload-profile-image",
+        '/account/upload-profile-image',
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
 
       if (!response.data || !response.data.profile_image) {
-        throw new Error("No se recibió la URL de la imagen");
+        throw new Error('No se recibió la URL de la imagen');
       }
 
       return response.data.profile_image;
     } catch (error) {
-      console.error("Error en updateUserProfileImage:", error);
+      console.error('Error en updateUserProfileImage:', error);
       if (axios.isAxiosError(error)) {
-        throw new Error(
-          error.response?.data?.message || "Error al subir la imagen"
-        );
+        throw new Error(error.response?.data?.message || 'Error al subir la imagen');
       }
-      throw new Error("Error inesperado al subir la imagen");
+      throw new Error('Error inesperado al subir la imagen');
     }
   },
 
   getProfile: async (): Promise<User> => {
     try {
-      const response = await api.get("/account/profile");
+      const response = await api.get('/account/profile');
       return response.data;
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error('Error fetching profile:', error);
       throw error;
     }
   },
 
   deleteAccount: async (password: string): Promise<void> => {
     try {
-      await api.delete("/account/delete", { data: { password } });
+      await api.delete('/account/delete', { data: { password } });
     } catch (error) {
-      console.error("Error deleting account:", error);
+      console.error('Error deleting account:', error);
       throw error;
     }
   },
 
   getUserSettings: async (userId: string) => {
     try {
-      const response = await api.get("/account/settings");
+      const response = await api.get('/account/settings');
       return response.data;
     } catch (error) {
-      console.error("Error fetching user settings:", error);
+      console.error('Error fetching user settings:', error);
       throw error;
     }
   },
 
-  updateUserSettings: async (userId: string, settings: Record<string, string | boolean | number>) => {
+  updateUserSettings: async (
+    userId: string,
+    settings: Record<string, string | boolean | number>
+  ) => {
     try {
-      const response = await api.put("/account/settings", settings);
+      const response = await api.put('/account/settings', settings);
       return response.data;
     } catch (error) {
-      console.error("Error updating user settings:", error);
+      console.error('Error updating user settings:', error);
       throw error;
     }
   },

@@ -2,6 +2,7 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { pool } from './database';
 import authRoutes from './routes/auth';
@@ -120,6 +121,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use('/api/health', healthRoutes); // sin rate limit — usada por healthchecks
 

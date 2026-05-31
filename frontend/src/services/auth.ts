@@ -27,7 +27,7 @@ interface UpdateUserData {
 
 interface AuthResponse {
   token: string;
-  refreshToken: string;
+  // refreshToken eliminado — ahora en cookie HttpOnly gestionada por el servidor
   user: User;
 }
 
@@ -41,18 +41,18 @@ export const authService = {
     try {
       const response = await api.post<AuthResponse>('/auth/login', credentials);
       if (response.data && response.data.token) {
-        const { token, refreshToken, user } = response.data;
+        const { token, user } = response.data;
 
-        // Guardar datos en localStorage
+        // Guardar datos en localStorage (refreshToken va en cookie HttpOnly — no se accede desde JS)
         localStorage.setItem('token', token);
-        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
       }
       return response.data;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error ?
-        (error as any).response?.data?.error || 'Error en el inicio de sesión' :
-        'Error en el inicio de sesión';
+      const errorMessage =
+        error instanceof Error && 'response' in error
+          ? (error as any).response?.data?.error || 'Error en el inicio de sesión'
+          : 'Error en el inicio de sesión';
       throw new Error(errorMessage);
     }
   },
@@ -62,9 +62,10 @@ export const authService = {
       const response = await api.post<AuthResponse>('/auth/register', userData);
       return response.data;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error ?
-        (error as any).response?.data?.error || 'Error en el registro' :
-        'Error en el registro';
+      const errorMessage =
+        error instanceof Error && 'response' in error
+          ? (error as any).response?.data?.error || 'Error en el registro'
+          : 'Error en el registro';
       throw new Error(errorMessage);
     }
   },
@@ -73,8 +74,8 @@ export const authService = {
     try {
       const response = await api.put<UpdateResponse>('/auth/update', userData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
 
       if (response.data.user) {
@@ -84,9 +85,10 @@ export const authService = {
 
       return response.data;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error ?
-        (error as any).response?.data?.error || 'Error al actualizar el usuario' :
-        'Error al actualizar el usuario';
+      const errorMessage =
+        error instanceof Error && 'response' in error
+          ? (error as any).response?.data?.error || 'Error al actualizar el usuario'
+          : 'Error al actualizar el usuario';
       throw new Error(errorMessage);
     }
   },
@@ -108,7 +110,7 @@ export const authService = {
   logout: () => {
     themeService.resetToDefault();
     localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+    // refreshToken ya no está en localStorage — se limpia con clearCookie en el backend
     localStorage.removeItem('user');
   },
 
@@ -135,14 +137,13 @@ export const authService = {
   },
 
   getRefreshToken: (): string | null => {
-    return localStorage.getItem('refreshToken');
+    // Refresh token ahora está en cookie HttpOnly gestionada por el servidor
+    return null;
   },
 
   refreshAccessToken: async (): Promise<string> => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) throw new Error('No refresh token');
-
-    const response = await api.post<{ token: string }>('/auth/refresh', { refreshToken });
+    // No necesita leer refreshToken de localStorage — la cookie se envía automáticamente
+    const response = await api.post<{ token: string }>('/auth/refresh', {});
     const newToken = response.data.token;
     localStorage.setItem('token', newToken);
     return newToken;
@@ -160,8 +161,7 @@ export const authService = {
     if (!token || !userStr) {
       themeService.resetToDefault();
     }
-  }
+  },
 };
-
 
 export default authService;
