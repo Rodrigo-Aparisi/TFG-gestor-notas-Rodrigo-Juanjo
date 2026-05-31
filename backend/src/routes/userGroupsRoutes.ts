@@ -2,7 +2,7 @@ import express from 'express';
 import { UserGroupController } from '../controllers/UserGroupController';
 import { authenticateToken } from '../middleware/auth';
 import { upload } from '../middleware/upload';
-import { handleMulterError } from '../config/multerConfigNotes';
+import { handleMulterError } from '../middleware/upload';
 import { validate } from '../middleware/validate';
 import {
   createGroupSchema,

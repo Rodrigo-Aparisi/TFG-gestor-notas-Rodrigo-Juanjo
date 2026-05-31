@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
 import { buildOrderByClause } from "../../utils/queryHelpers";
-import { RequestWithFile } from "../../config/multerConfig";
+import { RequestWithFile } from "../../middleware/upload";
 import { AppError, NotFoundError, BadRequestError } from "../../errors/AppError";
 import logger from "../../config/logger";
 

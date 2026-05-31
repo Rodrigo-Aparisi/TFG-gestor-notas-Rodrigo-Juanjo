@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { pool } from "../../database";
 import fs from "fs";
 import path from "path";
-import { groupNoteImageUpload, deleteImage, handleMulterError, RequestWithFile } from "../../config/multerConfig";
+import { RequestWithFile } from "../../middleware/upload";
 import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
 import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
 

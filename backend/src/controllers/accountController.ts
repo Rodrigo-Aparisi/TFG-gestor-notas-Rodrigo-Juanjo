@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
 import { getBaseServerUrl, getProfileImageUrl } from "../utils/urlHelpers";
 import { NotFoundError, UnauthorizedError, BadRequestError } from "../errors/AppError";
-import { RequestWithFile } from "../config/multerConfig";
+import { RequestWithFile } from "../middleware/upload";
 
 dotenv.config();
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { accountController } from '../controllers/accountController';
 import { authenticateToken } from '../middleware/auth';
-import { upload } from '../config/multerConfigPFP';
+import { profileImageUpload } from '../middleware/upload';
 import { Request, Response, NextFunction } from 'express';
 import { validate } from '../middleware/validate';
 import { updateUserSchema } from '../validation/schemas/user.schema';
@@ -40,7 +40,7 @@ router.put('/settings', (req: Request, res: Response, next: NextFunction) => {
 // Ruta para subir imagen de perfil
 router.post(
   '/upload-profile-image',
-  upload.single('image'),
+  profileImageUpload.single('image'),
   async (req: RequestWithFileAndUser, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
