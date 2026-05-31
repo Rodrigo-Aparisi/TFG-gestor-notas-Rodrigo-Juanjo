@@ -71,7 +71,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
  * @throws {BadRequestError} 400 — Faltan campos (`MISSING_FIELDS`)
  * @throws {NotFoundError} 404 — Correo no encontrado (`USER_NOT_FOUND`)
  * @throws {UnauthorizedError} 401 — Contraseña incorrecta (`INVALID_PASSWORD`)
- * @returns 200 con `{ success, message, token, refreshToken, user, settings }`
+ * @returns 200 con `{ success, message, token, user, settings }` — refreshToken en cookie HttpOnly
  */
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

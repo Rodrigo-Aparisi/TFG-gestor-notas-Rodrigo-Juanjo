@@ -4,6 +4,7 @@ import { themeService } from './themeService';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
+  withCredentials: true, // Send HttpOnly cookies (refresh_token) automatically
 });
 
 // Interfaces
