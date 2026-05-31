@@ -2218,15 +2218,18 @@ button.px-4.py-2.bg-red-500:hover {
   position: relative;
   transition: all 0.3s ease;
   font-weight: 500;
-  color: #eee !important;
+  /* Las pestañas NO son botones primarios: anular el fondo amarillo del estilo
+     global `button` y usar texto legible sobre el fondo oscuro. */
+  background: transparent !important;
+  color: #cfcfcf !important;
 }
 
 .tab:hover {
-  color: var(--dorado) !important;
+  color: #ffffff !important;
 }
 
 .tab.active {
-  color: #000;
+  color: var(--dorado) !important;
   border-bottom: 3px solid #f1c40f;
 }
 
