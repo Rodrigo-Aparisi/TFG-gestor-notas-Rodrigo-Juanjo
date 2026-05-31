@@ -91,6 +91,7 @@ app.use(cors({
     // Allow requests without Origin header (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    logger.warn('[CORS] Request rejected from unlisted origin', { origin });
     callback(new Error(`CORS: Origin "${origin}" not in allowed list`));
   },
   credentials: true,
