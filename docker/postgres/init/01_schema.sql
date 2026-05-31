@@ -56,7 +56,7 @@ CREATE TABLE group_members (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     group_id UUID REFERENCES user_groups(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL DEFAULT 'member',
+    role VARCHAR(20) NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_group_member UNIQUE (group_id, user_id)
 );
@@ -133,9 +133,9 @@ CREATE TABLE reminders (
 CREATE TABLE reminder_recurrence (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     reminder_id UUID REFERENCES reminders(id) ON DELETE CASCADE,
-    frequency VARCHAR(50) NOT NULL,
+    frequency VARCHAR(50) NOT NULL CHECK (frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
     interval_value INTEGER NOT NULL DEFAULT 1,
-    end_date TIMESTAMP,
+    end_date TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '1 year'),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -199,6 +199,8 @@ CREATE INDEX idx_notes_is_marked ON notes(is_marked);
 CREATE INDEX idx_notes_created_at ON notes(created_at);
 CREATE INDEX idx_notes_updated_at ON notes(updated_at);
 CREATE INDEX idx_notes_images ON notes USING gin(images);
+CREATE INDEX IF NOT EXISTS idx_notes_active ON notes(user_id, updated_at DESC) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_notes_trash ON notes(user_id, deleted_at DESC) WHERE is_deleted = true;
 
 CREATE INDEX idx_reminders_user_id ON reminders(user_id);
 CREATE INDEX idx_reminders_date_time ON reminders(date_time);
@@ -208,7 +210,7 @@ CREATE INDEX idx_reminder_recurrence_reminder_id ON reminder_recurrence(reminder
 CREATE INDEX idx_shared_notes_note_id ON shared_notes(note_id);
 CREATE INDEX idx_shared_notes_owner_id ON shared_notes(owner_id);
 CREATE INDEX idx_shared_notes_shared_with_id ON shared_notes(shared_with_id);
-CREATE INDEX idx_shared_notes_can_edit ON shared_notes(can_edit);
+CREATE INDEX IF NOT EXISTS idx_shared_notes_perms ON shared_notes(shared_with_id, can_edit) INCLUDE (note_id);
 
 CREATE INDEX idx_password_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX idx_password_tokens_token ON password_reset_tokens(token);
