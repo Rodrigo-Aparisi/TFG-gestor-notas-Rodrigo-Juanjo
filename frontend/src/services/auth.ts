@@ -6,6 +6,9 @@ import { tokenStore } from './tokenStore';
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
   withCredentials: true, // Send HttpOnly cookies (refresh_token) automatically
+  headers: {
+    'X-Requested-With': 'XMLHttpRequest', // Defensa CSRF: el backend la exige en métodos mutantes
+  },
 });
 
 // Interfaces

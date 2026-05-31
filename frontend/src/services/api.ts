@@ -32,6 +32,7 @@ const api = axios.create({
   withCredentials: true, // Envía cookies automáticamente (incluye refresh_token)
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest', // Defensa CSRF: el backend la exige en métodos mutantes
   },
 });
 

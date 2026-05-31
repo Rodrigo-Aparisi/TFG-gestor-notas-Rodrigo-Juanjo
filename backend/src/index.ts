@@ -16,6 +16,7 @@ import passwordRoutes from './routes/passwordRoutes';
 import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks';
 import { generalApiLimiter, uploadsLimiter } from './middleware/rateLimiter';
+import { requireXRequestedWith } from './middleware/csrf';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import healthRoutes from './routes/healthRoutes';
 import { logger } from './config/logger';
@@ -125,7 +126,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -136,6 +137,9 @@ app.use('/api/health', healthRoutes); // sin rate limit — usada por healthchec
 
 // Apply rate limiting to all API routes
 app.use('/api', generalApiLimiter);
+
+// Defensa CSRF: exige X-Requested-With en métodos mutantes de la API
+app.use('/api', requireXRequestedWith);
 
 app.use(
   '/uploads',
