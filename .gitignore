@@ -6,6 +6,11 @@ node_modules/
 
 # testing
 /coverage
+**/coverage/
+
+# OCR training data (no usado por el código; ~48MB)
+backend/tessdata/
+backend/*.traineddata
 
 # production
 /build

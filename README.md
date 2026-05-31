@@ -128,26 +128,41 @@ npm run build
 
 ### Backend — `backend/.env`
 
+Copia `backend/.env.example` a `backend/.env` y rellena los valores. Las variables están validadas con Zod al arrancar (`src/config/env.ts`): si falta alguna obligatoria, el servidor no arranca.
+
 ```env
-# Base de datos
-DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/olympus_scribe
-
-# Autenticación JWT
-JWT_SECRET=tu_secreto_jwt_muy_largo_y_aleatorio
-
 # Servidor
 PORT=3001
 NODE_ENV=development
 
-# Email (Nodemailer)
-EMAIL_HOST=smtp.example.com
-EMAIL_PORT=587
-EMAIL_USER=noreply@example.com
-EMAIL_PASS=contraseña_email
-EMAIL_FROM=Olympus Scribe <noreply@example.com>
+# Base de datos (variables individuales, no una URL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=tu_usuario_db
+DB_PASSWORD=tu_contraseña_db
+DB_NAME=olympus_scribe
 
-# URL pública del servidor (para construir links en emails y URLs de imágenes)
-SERVER_URL=http://localhost:3001
+# Autenticación JWT (mínimo 32 caracteres; genera uno seguro con:
+#   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+JWT_SECRET=tu_secreto_jwt_de_al_menos_32_caracteres
+
+# CORS (lista separada por comas; tiene prioridad sobre FRONTEND_URL)
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# Email (Gmail con app password: https://myaccount.google.com/apppasswords)
+EMAIL_USER=tu_email@gmail.com
+EMAIL_APP_PASSWORD=tu_app_password_de_gmail
+
+# URLs públicas (para construir links en emails y URLs de imágenes)
+APP_URL=http://localhost:3000
+APP_URL_2=http://localhost:3001
+
+# Logging y pool de PostgreSQL (opcionales)
+LOG_LEVEL=info
+PG_POOL_MAX=10
+PG_IDLE_TIMEOUT=30000
+PG_CONN_TIMEOUT=2000
 ```
 
 ### Frontend — `frontend/.env`
@@ -197,8 +212,9 @@ TFG-gestor-notas-Rodrigo-Juanjo/
 │       ├── types/           # Interfaces TypeScript globales
 │       └── utils/           # exportHelpers, sanitize
 ├── docs/
-│   ├── api.md               # Documentación de la API REST
-│   └── architecture.md      # Arquitectura y decisiones de diseño
+│   ├── architecture.md      # Arquitectura técnica y decisiones de diseño
+│   ├── documentation.md     # Referencia de la API REST y guía funcional
+│   └── pending-tasks.md     # Tareas pendientes y deuda técnica
 └── database.sql             # Schema PostgreSQL completo
 ```
 
@@ -216,8 +232,11 @@ docker compose up -d
 
 ## Documentación adicional
 
-- [Documentación de la API REST](docs/api.md)
-- [Arquitectura y decisiones de diseño](docs/architecture.md)
+- [Arquitectura técnica](docs/architecture.md)
+- [Referencia de la API y guía funcional](docs/documentation.md)
+- [Tareas pendientes y deuda técnica](docs/pending-tasks.md)
+- [Cómo contribuir](CONTRIBUTING.md)
+- [Política de seguridad](SECURITY.md)
 
 ---
 
