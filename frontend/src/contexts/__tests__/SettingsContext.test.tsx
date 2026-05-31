@@ -9,6 +9,12 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsProvider, useSettings, SettingsState } from '../SettingsContext';
 
+// SettingsContext now calls useAuth() to guard API calls.
+// Provide a minimal mock so tests don't need a full AuthProvider.
+jest.mock('../AuthContext', () => ({
+  useAuth: () => ({ isAuthenticated: false, user: null, token: null }),
+}));
+
 // Test component that uses the settings context
 const TestComponent: React.FC = () => {
   const { settings, updateSettings, resetSettings } = useSettings();
@@ -19,10 +25,7 @@ const TestComponent: React.FC = () => {
       <span data-testid="defaultNoteSort">{settings.defaultNoteSort}</span>
       <span data-testid="defaultPage">{settings.defaultPage}</span>
       <span data-testid="confirmDelete">{settings.confirmDelete ? 'yes' : 'no'}</span>
-      <button
-        data-testid="change-theme-btn"
-        onClick={() => updateSettings({ theme: 'light' })}
-      >
+      <button data-testid="change-theme-btn" onClick={() => updateSettings({ theme: 'light' })}>
         Change Theme
       </button>
       <button
@@ -43,10 +46,7 @@ const TestComponent: React.FC = () => {
       >
         Toggle Confirm
       </button>
-      <button
-        data-testid="reset-btn"
-        onClick={resetSettings}
-      >
+      <button data-testid="reset-btn" onClick={resetSettings}>
         Reset
       </button>
       <button
