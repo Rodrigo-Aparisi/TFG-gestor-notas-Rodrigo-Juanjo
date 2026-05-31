@@ -1,14 +1,14 @@
-import { Request, Response, NextFunction } from "express";
-import { pool } from "../database";
-import bcrypt from "bcrypt";
-import { QueryResult } from "pg";
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
-import { safeDeleteFile, extractSafeRelativePath } from "../utils/pathHelpers";
-import { getBaseServerUrl, getProfileImageUrl } from "../utils/urlHelpers";
-import { NotFoundError, UnauthorizedError, BadRequestError } from "../errors/AppError";
-import { RequestWithFile } from "../middleware/upload";
+import { Request, Response, NextFunction } from 'express';
+import { pool } from '../database';
+import bcrypt from 'bcrypt';
+import { QueryResult } from 'pg';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+import { safeDeleteFile, extractSafeRelativePath } from '../utils/pathHelpers';
+import { getBaseServerUrl, getProfileImageUrl } from '../utils/urlHelpers';
+import { NotFoundError, UnauthorizedError, BadRequestError } from '../errors/AppError';
+import { RequestWithFile } from '../middleware/upload';
 
 dotenv.config();
 
@@ -20,17 +20,17 @@ export const accountController = {
   ): Promise<void> => {
     try {
       if (!req.file) {
-        return next(new BadRequestError("No se ha proporcionado ninguna imagen"));
+        return next(new BadRequestError('No se ha proporcionado ninguna imagen'));
       }
 
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const baseUrl = getBaseServerUrl();
       const imageUrl = `/uploads/profile-images/${req.file.filename}`;
       const fullImageUrl = getProfileImageUrl(imageUrl) || `${baseUrl}${imageUrl}`;
 
       // Mover esta consulta aquí, antes de usarla
       const previousImageResult: QueryResult = await pool.query(
-        "SELECT profile_image FROM users WHERE id = $1",
+        'SELECT profile_image FROM users WHERE id = $1',
         [userId]
       );
 
@@ -42,7 +42,7 @@ export const accountController = {
         const safePath = extractSafeRelativePath(previousImagePath, '/uploads/');
 
         if (safePath) {
-          const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+          const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
           await safeDeleteFile(safePath, uploadsDir);
         } else {
           console.warn(`Path inseguro detectado en DB: ${previousImagePath}`);
@@ -60,16 +60,16 @@ export const accountController = {
         // Corregir la ruta para eliminar la imagen en caso de error
         const uploadedImagePath = path.join(
           __dirname,
-          "..",
-          "config",
-          "uploads",
-          "profile-images",
+          '..',
+          'config',
+          'uploads',
+          'profile-images',
           req.file.filename
         );
         if (fs.existsSync(uploadedImagePath)) {
           await fs.promises.unlink(uploadedImagePath);
         }
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       // Construir el objeto de respuesta
@@ -79,7 +79,7 @@ export const accountController = {
       };
 
       res.json({
-        message: "Imagen de perfil actualizada correctamente",
+        message: 'Imagen de perfil actualizada correctamente',
         profile_image: fullImageUrl,
         user: userResponse,
       });
@@ -88,10 +88,10 @@ export const accountController = {
       if (req.file) {
         const uploadedImagePath = path.join(
           __dirname,
-          "..",
-          "config",
-          "uploads",
-          "profile-images",
+          '..',
+          'config',
+          'uploads',
+          'profile-images',
           req.file.filename
         );
         if (fs.existsSync(uploadedImagePath)) {
@@ -107,41 +107,37 @@ export const accountController = {
       const userId = req.user!.id;
       const { username, email, currentPassword, newPassword } = req.body;
 
-      const userResult: QueryResult = await pool.query(
-        "SELECT * FROM users WHERE id = $1",
-        [userId]
-      );
+      const userResult: QueryResult = await pool.query('SELECT * FROM users WHERE id = $1', [
+        userId,
+      ]);
 
       if (userResult.rows.length === 0) {
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       const user = userResult.rows[0];
 
       // Verificar la contraseña actual
-      const isPasswordValid = await bcrypt.compare(
-        currentPassword,
-        user.password
-      );
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
       if (!isPasswordValid) {
-        return next(new UnauthorizedError("Contraseña actual incorrecta"));
+        return next(new UnauthorizedError('Contraseña actual incorrecta'));
       }
 
       // Preparar la consulta de actualización
-      let query = "UPDATE users SET username = $1, email = $2";
+      let query = 'UPDATE users SET username = $1, email = $2';
       let values = [username, email];
 
       if (newPassword) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        query += ", password = $3";
+        query += ', password = $3';
         values.push(hashedPassword);
       }
 
       query +=
-        ", updated_at = NOW() WHERE id = $" +
+        ', updated_at = NOW() WHERE id = $' +
         (values.length + 1) +
-        " RETURNING id, username, email, profile_image";
+        ' RETURNING id, username, email, profile_image';
       values.push(userId);
 
       const result: QueryResult = await pool.query(query, values);
@@ -153,7 +149,7 @@ export const accountController = {
       };
 
       res.json({
-        message: "Usuario actualizado exitosamente",
+        message: 'Usuario actualizado exitosamente',
         user: userResponse,
       });
     } catch (error) {
@@ -166,12 +162,12 @@ export const accountController = {
       const userId = req.user!.id;
 
       const result: QueryResult = await pool.query(
-        "SELECT id, username, email, profile_image, created_at FROM users WHERE id = $1",
+        'SELECT id, username, email, profile_image, created_at FROM users WHERE id = $1',
         [userId]
       );
 
       if (result.rows.length === 0) {
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       // Construir respuesta con URL completa de la imagen si existe
@@ -191,34 +187,33 @@ export const accountController = {
       const userId = req.user!.id;
       const { password } = req.body;
 
-      const userResult: QueryResult = await pool.query(
-        "SELECT * FROM users WHERE id = $1",
-        [userId]
-      );
+      const userResult: QueryResult = await pool.query('SELECT * FROM users WHERE id = $1', [
+        userId,
+      ]);
 
       if (userResult.rows.length === 0) {
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       const user = userResult.rows[0];
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        return next(new UnauthorizedError("Contraseña incorrecta"));
+        return next(new UnauthorizedError('Contraseña incorrecta'));
       }
 
       // Eliminar la imagen de perfil si existe usando safeDeleteFile
       if (user.profile_image) {
         const safePath = extractSafeRelativePath(user.profile_image, '/uploads/');
         if (safePath) {
-          const uploadsDir = path.join(__dirname, "..", "uploads");
+          const uploadsDir = path.join(__dirname, '..', 'uploads');
           await safeDeleteFile(safePath, uploadsDir);
         }
       }
 
-      await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
 
-      res.json({ message: "Cuenta eliminada exitosamente" });
+      res.json({ message: 'Cuenta eliminada exitosamente' });
     } catch (error) {
       next(error);
     }
@@ -228,16 +223,15 @@ export const accountController = {
     try {
       const userId = req.user!.id;
 
-      const result: QueryResult = await pool.query(
-        "SELECT * FROM settings WHERE user_id = $1",
-        [userId]
-      );
+      const result: QueryResult = await pool.query('SELECT * FROM settings WHERE user_id = $1', [
+        userId,
+      ]);
 
       if (result.rows.length === 0) {
         const defaultSettings = {
-          theme: "dark",
+          theme: 'dark',
           notifications_enabled: true,
-          language: "es",
+          language: 'es',
         };
 
         const newSettingsResult: QueryResult = await pool.query(
@@ -268,7 +262,7 @@ export const accountController = {
 
       // Verificar si existe la configuración
       const checkResult: QueryResult = await pool.query(
-        "SELECT * FROM settings WHERE user_id = $1",
+        'SELECT * FROM settings WHERE user_id = $1',
         [userId]
       );
 
@@ -279,12 +273,7 @@ export const accountController = {
           `INSERT INTO settings (user_id, theme, notifications_enabled, language)
                      VALUES ($1, $2, $3, $4)
                      RETURNING *`,
-          [
-            userId,
-            theme || "dark",
-            notifications_enabled || true,
-            language || "es",
-          ]
+          [userId, theme || 'dark', notifications_enabled || true, language || 'es']
         );
       } else {
         result = await pool.query(

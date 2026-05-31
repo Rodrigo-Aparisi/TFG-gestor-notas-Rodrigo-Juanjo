@@ -63,12 +63,7 @@ function handleJWTError(error: Error): AppError {
 /**
  * Main error handler middleware
  */
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
   let error: AppError;
 
   // Convert known error types to AppError
@@ -81,11 +76,7 @@ export function errorHandler(
     error = handleDatabaseError(err as Error & { code?: string });
   } else {
     // Unknown error - wrap it
-    error = new AppError(
-      isProduction ? 'Error interno del servidor' : err.message,
-      500,
-      false
-    );
+    error = new AppError(isProduction ? 'Error interno del servidor' : err.message, 500, false);
   }
 
   // Log the error
@@ -133,7 +124,7 @@ export function errorHandler(
  * Usage: router.get('/path', asyncHandler(async (req, res) => { ... }))
  */
 export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
 ) {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);

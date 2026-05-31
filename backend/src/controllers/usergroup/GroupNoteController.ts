@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from "express";
-import { pool } from "../../database";
-import fs from "fs";
-import { RequestWithFile, deleteImage } from "../../middleware/upload";
-import { getGroupNoteImageUrl, isGroupNoteImageUrl } from "../../utils/urlHelpers";
-import { NotFoundError, ForbiddenError, BadRequestError } from "../../errors/AppError";
+import { Request, Response, NextFunction } from 'express';
+import { pool } from '../../database';
+import fs from 'fs';
+import { RequestWithFile, deleteImage } from '../../middleware/upload';
+import { getGroupNoteImageUrl, isGroupNoteImageUrl } from '../../utils/urlHelpers';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../../errors/AppError';
 
 /**
  * Controller for Group Notes operations
@@ -30,7 +30,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        return next(new ForbiddenError("No tienes acceso a este grupo"));
+        return next(new ForbiddenError('No tienes acceso a este grupo'));
       }
 
       // Get group notes
@@ -61,8 +61,8 @@ export class GroupNoteController {
       const userId = req.user!.id;
       const { title, content, images = [] } = req.body;
 
-      if (!title || title.trim() === "") {
-        return next(new BadRequestError("El título es obligatorio"));
+      if (!title || title.trim() === '') {
+        return next(new BadRequestError('El título es obligatorio'));
       }
 
       // Verify user is a member
@@ -79,7 +79,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        return next(new ForbiddenError("No tienes acceso a este grupo"));
+        return next(new ForbiddenError('No tienes acceso a este grupo'));
       }
 
       // Create the note
@@ -105,7 +105,7 @@ export class GroupNoteController {
       const username = userResult.rows[0].username;
 
       res.status(201).json({
-        message: "Nota creada correctamente",
+        message: 'Nota creada correctamente',
         note: {
           ...note,
           created_by_username: username,
@@ -137,7 +137,7 @@ export class GroupNoteController {
       const isMember = memberCheckResult.rows[0].is_member;
 
       if (!isMember) {
-        return next(new ForbiddenError("No tienes acceso a este grupo"));
+        return next(new ForbiddenError('No tienes acceso a este grupo'));
       }
 
       // Get the note
@@ -154,7 +154,7 @@ export class GroupNoteController {
       );
 
       if (result.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       res.json({ note: result.rows[0] });
@@ -178,7 +178,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -189,18 +189,18 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          return next(new ForbiddenError("No tienes acceso a este grupo"));
+          return next(new ForbiddenError('No tienes acceso a este grupo'));
         }
 
         const role = roleCheckResult.rows[0].role;
-        if (role !== "owner" && role !== "admin") {
-          return next(new ForbiddenError("No tienes permisos para editar esta nota"));
+        if (role !== 'owner' && role !== 'admin') {
+          return next(new ForbiddenError('No tienes permisos para editar esta nota'));
         }
       }
 
       // Build update query
-      let query = "UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP";
-      const values = [];
+      let query = 'UPDATE group_notes SET updated_at = CURRENT_TIMESTAMP';
+      const values: unknown[] = [];
       let paramCount = 1;
 
       if (title !== undefined) {
@@ -231,7 +231,7 @@ export class GroupNoteController {
       const updateResult = await pool.query(query, values);
 
       if (updateResult.rows.length === 0) {
-        return next(new NotFoundError("No se pudo actualizar la nota"));
+        return next(new NotFoundError('No se pudo actualizar la nota'));
       }
 
       // Get complete updated note with username
@@ -248,7 +248,7 @@ export class GroupNoteController {
       );
 
       res.json({
-        message: "Nota actualizada correctamente",
+        message: 'Nota actualizada correctamente',
         note: getNoteResult.rows[0],
       });
     } catch (error) {
@@ -273,7 +273,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -287,12 +287,12 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          return next(new ForbiddenError("No tienes acceso a este grupo"));
+          return next(new ForbiddenError('No tienes acceso a este grupo'));
         }
 
         const role = roleCheckResult.rows[0].role;
-        if (role !== "owner" && role !== "admin") {
-          return next(new ForbiddenError("No tienes permisos para eliminar esta nota"));
+        if (role !== 'owner' && role !== 'admin') {
+          return next(new ForbiddenError('No tienes permisos para eliminar esta nota'));
         }
       }
 
@@ -323,7 +323,7 @@ export class GroupNoteController {
         [noteId]
       );
 
-      res.json({ message: "Nota eliminada correctamente" });
+      res.json({ message: 'Nota eliminada correctamente' });
     } catch (error) {
       next(error);
     }
@@ -346,7 +346,7 @@ export class GroupNoteController {
       );
 
       if (noteCheckResult.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       // Verify user is creator or has admin/owner permissions
@@ -360,12 +360,12 @@ export class GroupNoteController {
         );
 
         if (roleCheckResult.rows.length === 0) {
-          return next(new ForbiddenError("No tienes acceso a este grupo"));
+          return next(new ForbiddenError('No tienes acceso a este grupo'));
         }
 
         const role = roleCheckResult.rows[0].role;
-        if (role !== "owner" && role !== "admin") {
-          return next(new ForbiddenError("No tienes permisos para modificar esta nota"));
+        if (role !== 'owner' && role !== 'admin') {
+          return next(new ForbiddenError('No tienes permisos para modificar esta nota'));
         }
       }
 
@@ -395,8 +395,8 @@ export class GroupNoteController {
 
       res.json({
         message: updateResult.rows[0].is_pinned
-          ? "Nota marcada como importante"
-          : "Nota desmarcada",
+          ? 'Nota marcada como importante'
+          : 'Nota desmarcada',
         note: getNoteResult.rows[0],
       });
     } catch (error) {
@@ -405,25 +405,29 @@ export class GroupNoteController {
   }
 
   // Upload group note image
-  async uploadGroupNoteImage(req: RequestWithFile, res: Response, next: NextFunction): Promise<void> {
+  async uploadGroupNoteImage(
+    req: RequestWithFile,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       if (!req.file) {
-        return next(new BadRequestError("No se ha proporcionado ninguna imagen"));
+        return next(new BadRequestError('No se ha proporcionado ninguna imagen'));
       }
 
       // Build relative URL for the image
       const imageUrl = getGroupNoteImageUrl(req.file.filename);
 
       res.json({
-        message: "Imagen subida correctamente",
+        message: 'Imagen subida correctamente',
         data: {
           imageUrl: imageUrl,
         },
       });
     } catch (error) {
       if (req.file) {
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error("Error eliminando archivo temporal:", err);
+        fs.unlink(req.file.path, err => {
+          if (err) console.error('Error eliminando archivo temporal:', err);
         });
       }
       next(error);
@@ -447,14 +451,14 @@ export class GroupNoteController {
       );
 
       if (noteResult.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       const note = noteResult.rows[0];
       const images = note.images || [];
 
       if (index < 0 || index >= images.length) {
-        return next(new BadRequestError("Índice de imagen inválido"));
+        return next(new BadRequestError('Índice de imagen inválido'));
       }
 
       // Verify permissions (note creator or group admin/owner)
@@ -474,7 +478,7 @@ export class GroupNoteController {
       }
 
       if (!hasPermission) {
-        return next(new ForbiddenError("No tienes permiso para eliminar esta imagen"));
+        return next(new ForbiddenError('No tienes permiso para eliminar esta imagen'));
       }
 
       // Delete file if it exists on server
@@ -487,14 +491,11 @@ export class GroupNoteController {
       const updatedImages = [...images];
       updatedImages.splice(index, 1);
 
-      await pool.query(
-        `UPDATE group_notes SET images = $1 WHERE id = $2`,
-        [updatedImages, noteId]
-      );
+      await pool.query(`UPDATE group_notes SET images = $1 WHERE id = $2`, [updatedImages, noteId]);
 
       res.json({
         success: true,
-        message: "Imagen eliminada correctamente"
+        message: 'Imagen eliminada correctamente',
       });
     } catch (error) {
       next(error);

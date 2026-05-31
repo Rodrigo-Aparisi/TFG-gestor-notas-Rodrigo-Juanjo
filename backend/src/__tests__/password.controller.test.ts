@@ -96,7 +96,7 @@ describe('passwordController', () => {
         .mockResolvedValueOnce({ rows: [{ id: 'user-id-1', username: 'testuser' }], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      mockEmailService.sendPasswordResetEmail.mockResolvedValueOnce(undefined);
+      mockEmailService.sendPasswordResetEmail.mockResolvedValueOnce(true);
 
       await passwordController.requestReset(req, res as Response);
 

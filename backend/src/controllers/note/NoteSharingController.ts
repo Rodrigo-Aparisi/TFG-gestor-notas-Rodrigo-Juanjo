@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import { pool } from "../../database";
-import { NotFoundError, BadRequestError, ForbiddenError } from "../../errors/AppError";
+import { Request, Response, NextFunction } from 'express';
+import { pool } from '../../database';
+import { NotFoundError, BadRequestError, ForbiddenError } from '../../errors/AppError';
 
 /**
  * Controller for Note Sharing operations
@@ -9,73 +9,65 @@ import { NotFoundError, BadRequestError, ForbiddenError } from "../../errors/App
 export class NoteSharingController {
   async shareNote(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {
-        noteId,
-        username,
-        includeImages = true,
-        canEdit = false,
-      } = req.body;
+      const { noteId, username, includeImages = true, canEdit = false } = req.body;
       const ownerId = req.user!.id;
 
       // Validate input
       if (!noteId || !username) {
-        return next(new BadRequestError("Se requieren noteId y username"));
+        return next(new BadRequestError('Se requieren noteId y username'));
       }
 
       // Verify note exists and belongs to current user
-      const note = await pool.query(
-        "SELECT * FROM notes WHERE id = $1 AND user_id = $2",
-        [noteId, ownerId]
-      );
+      const note = await pool.query('SELECT * FROM notes WHERE id = $1 AND user_id = $2', [
+        noteId,
+        ownerId,
+      ]);
 
       if (note.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada o no tienes permiso"));
+        return next(new NotFoundError('Nota no encontrada o no tienes permiso'));
       }
 
       // Find target user
-      const targetUser = await pool.query(
-        "SELECT id FROM users WHERE username = $1",
-        [username]
-      );
+      const targetUser = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
 
       if (targetUser.rows.length === 0) {
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       const sharedWithId = targetUser.rows[0].id;
 
       // Prevent sharing with self
       if (sharedWithId === ownerId) {
-        return next(new BadRequestError("No puedes compartir una nota contigo mismo"));
+        return next(new BadRequestError('No puedes compartir una nota contigo mismo'));
       }
 
       // Check if already shared
       const existingShare = await pool.query(
-        "SELECT * FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2",
+        'SELECT * FROM shared_notes WHERE note_id = $1 AND shared_with_id = $2',
         [noteId, sharedWithId]
       );
 
       if (existingShare.rows.length > 0) {
         // Update existing share permissions
         await pool.query(
-          "UPDATE shared_notes SET can_edit = $1, include_images = $2, updated_at = CURRENT_TIMESTAMP WHERE note_id = $3 AND shared_with_id = $4",
+          'UPDATE shared_notes SET can_edit = $1, include_images = $2, updated_at = CURRENT_TIMESTAMP WHERE note_id = $3 AND shared_with_id = $4',
           [canEdit, includeImages, noteId, sharedWithId]
         );
 
         res.status(200).json({
           success: true,
-          message: "Permisos de nota compartida actualizados",
+          message: 'Permisos de nota compartida actualizados',
         });
         return;
       }
 
       // Create new share
       await pool.query(
-        "INSERT INTO shared_notes (note_id, owner_id, shared_with_id, can_edit, include_images) VALUES ($1, $2, $3, $4, $5)",
+        'INSERT INTO shared_notes (note_id, owner_id, shared_with_id, can_edit, include_images) VALUES ($1, $2, $3, $4, $5)',
         [noteId, ownerId, sharedWithId, canEdit, includeImages]
       );
 
-      res.status(200).json({ success: true, message: "Nota compartida exitosamente" });
+      res.status(200).json({ success: true, message: 'Nota compartida exitosamente' });
     } catch (error) {
       next(error);
     }
@@ -112,36 +104,41 @@ export class NoteSharingController {
     }
   }
 
-  async updateSharedNotePermissions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateSharedNotePermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       const { username, canEdit, includeImages } = req.body;
       const ownerId = req.user!.id;
 
       // Find target user
-      const targetUser = await pool.query(
-        "SELECT id FROM users WHERE username = $1",
-        [username]
-      );
+      const targetUser = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
 
       if (targetUser.rows.length === 0) {
-        return next(new NotFoundError("Usuario no encontrado"));
+        return next(new NotFoundError('Usuario no encontrado'));
       }
 
       const sharedWithId = targetUser.rows[0].id;
 
       // Verify current user is the owner
       const isOwner = await pool.query(
-        "SELECT 1 FROM shared_notes WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3",
+        'SELECT 1 FROM shared_notes WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3',
         [id, ownerId, sharedWithId]
       );
 
       if (isOwner.rows.length === 0) {
-        return next(new ForbiddenError("No tienes permiso para modificar los permisos de esta nota compartida"));
+        return next(
+          new ForbiddenError(
+            'No tienes permiso para modificar los permisos de esta nota compartida'
+          )
+        );
       }
 
       // Build update query dynamically
-      let updateQuery = "UPDATE shared_notes SET updated_at = CURRENT_TIMESTAMP";
+      let updateQuery = 'UPDATE shared_notes SET updated_at = CURRENT_TIMESTAMP';
       const queryParams: (string | boolean)[] = [id, ownerId, sharedWithId];
       let paramIndex = 4;
 
@@ -157,11 +154,11 @@ export class NoteSharingController {
         paramIndex++;
       }
 
-      updateQuery += " WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3";
+      updateQuery += ' WHERE note_id = $1 AND owner_id = $2 AND shared_with_id = $3';
 
       await pool.query(updateQuery, queryParams);
 
-      res.json({ message: "Permisos actualizados exitosamente" });
+      res.json({ message: 'Permisos actualizados exitosamente' });
     } catch (error) {
       next(error);
     }
@@ -184,12 +181,12 @@ export class NoteSharingController {
       );
 
       if (hasPermission.rows.length === 0) {
-        return next(new ForbiddenError("No tienes permiso para editar esta nota"));
+        return next(new ForbiddenError('No tienes permiso para editar esta nota'));
       }
 
       // Build update query — only title and content are editable by shared users
-      const updateFields = [];
-      const values = [];
+      const updateFields: string[] = [];
+      const values: unknown[] = [];
       let paramCount = 1;
 
       if (title !== undefined) {
@@ -205,7 +202,7 @@ export class NoteSharingController {
       }
 
       if (updateFields.length === 0) {
-        return next(new BadRequestError("No hay campos para actualizar"));
+        return next(new BadRequestError('No hay campos para actualizar'));
       }
 
       updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -213,7 +210,7 @@ export class NoteSharingController {
 
       const query = `
       UPDATE notes
-      SET ${updateFields.join(", ")}
+      SET ${updateFields.join(', ')}
       WHERE id = $${paramCount}
       RETURNING *
     `;
@@ -221,7 +218,7 @@ export class NoteSharingController {
       const result = await pool.query(query, values);
 
       if (result.rows.length === 0) {
-        return next(new NotFoundError("Nota no encontrada"));
+        return next(new NotFoundError('Nota no encontrada'));
       }
 
       res.json({
@@ -237,8 +234,8 @@ export class NoteSharingController {
     try {
       const { query } = req.query;
 
-      if (!query || typeof query !== "string" || query.length < 2) {
-        return next(new BadRequestError("La consulta debe tener al menos 2 caracteres"));
+      if (!query || typeof query !== 'string' || query.length < 2) {
+        return next(new BadRequestError('La consulta debe tener al menos 2 caracteres'));
       }
 
       // Search users by username prefix
