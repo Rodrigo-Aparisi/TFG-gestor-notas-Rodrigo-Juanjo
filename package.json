@@ -11,10 +11,10 @@
   },
   "lint-staged": {
     "backend/src/**/*.ts": [
-      "cd backend && npx prettier --write --ignore-unknown"
+      "backend/node_modules/.bin/prettier --write --ignore-unknown"
     ],
     "frontend/src/**/*.{ts,tsx}": [
-      "cd frontend && npx prettier --write --ignore-unknown"
+      "frontend/node_modules/.bin/prettier --write --ignore-unknown"
     ]
   }
 }

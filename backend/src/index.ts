@@ -16,6 +16,7 @@ import { setupTrashCleanup } from './utils/cleanupTasks';
 import { setupEmailScheduler } from './utils/emailTasks';
 import { generalApiLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import healthRoutes from './routes/healthRoutes';
 import { logger } from './config/logger';
 import helmet from 'helmet';
 import fs from 'fs';
@@ -45,23 +46,25 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Security headers with Helmet
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
     },
-  },
-  crossOriginEmbedderPolicy: false, // Allow embedding images
-  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
-}));
+    crossOriginEmbedderPolicy: false, // Allow embedding images
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resources
+  })
+);
 
 // Crear directorios necesarios si no existen
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -85,50 +88,72 @@ if (!fs.existsSync(groupNoteImagesDir)) {
 
 app.use('/note-images', express.static(path.join(__dirname, 'uploads/note-images')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/group-note-images', express.static(path.join(__dirname, 'uploads/group-note-images')));
+app.use(
+  '/uploads/group-note-images',
+  express.static(path.join(__dirname, 'uploads/group-note-images'))
+);
 
 // CORS: always active; allowed origins controlled via ALLOWED_ORIGINS env var
-const rawOrigins = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000';
-const allowedOrigins = rawOrigins.split(',').map((o: string) => o.trim()).filter(Boolean);
+const rawOrigins =
+  process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigins = rawOrigins
+  .split(',')
+  .map((o: string) => o.trim())
+  .filter(Boolean);
 
-app.use(cors({
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Allow requests without Origin header (mobile apps, curl, server-to-server)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    logger.warn('[CORS] Request rejected from unlisted origin', { origin });
-    callback(new Error(`CORS: Origin "${origin}" not in allowed list`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
+      // Allow requests without Origin header (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      logger.warn('[CORS] Request rejected from unlisted origin', { origin });
+      callback(new Error(`CORS: Origin "${origin}" not in allowed list`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 app.use(express.json());
+
+app.use('/api/health', healthRoutes); // sin rate limit — usada por healthchecks
 
 // Apply rate limiting to all API routes
 app.use('/api', generalApiLimiter);
 
-app.use('/uploads', (err: Error & { code?: string }, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err && err.code === 'EACCES') {
-    logger.error('Error de permisos en el sistema de archivos', { error: err.message });
-    return res.status(500).json({
-      success: false,
-      error: { message: 'Error de permisos al acceder a los archivos' }
-    });
+app.use(
+  '/uploads',
+  (
+    err: Error & { code?: string },
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    if (err && err.code === 'EACCES') {
+      logger.error('Error de permisos en el sistema de archivos', { error: err.message });
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Error de permisos al acceder a los archivos' },
+      });
+    }
+    if (err && err.code === 'ENOENT') {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Imagen no encontrada' },
+      });
+    }
+    next(err);
   }
-  if (err && err.code === 'ENOENT') {
-    return res.status(404).json({
-      success: false,
-      error: { message: 'Imagen no encontrada' }
-    });
-  }
-  next(err);
-});
+);
 
 // Configurar rutas
-app.use('/api/auth', authRoutes);     // Rutas de autenticación
-app.use('/api/notes', notesRoutes);   // Rutas de notas
+app.use('/api/auth', authRoutes); // Rutas de autenticación
+app.use('/api/notes', notesRoutes); // Rutas de notas
 app.use('/api/groups', groupRoutes);
 app.use('/api/user-groups', userGroupRoutes);
 app.use('/api/account', accountRoutes);
@@ -162,7 +187,9 @@ async function cleanupExpiredTokens() {
       logger.info(`Tokens expirados eliminados: ${result.rowCount}`);
     }
   } catch (error) {
-    logger.error('Error al limpiar tokens', { error: error instanceof Error ? error.message : 'Unknown' });
+    logger.error('Error al limpiar tokens', {
+      error: error instanceof Error ? error.message : 'Unknown',
+    });
   }
 }
 
@@ -197,4 +224,3 @@ async function shutdown(signal: string): Promise<void> {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
-
