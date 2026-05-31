@@ -47,14 +47,18 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Security headers with Helmet
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        // 'unsafe-inline' sólo en desarrollo (Tailwind/CRA lo necesita en dev)
+        styleSrc: isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'blob:'],
+        // Eliminar data: (exfiltración); mantener blob: (imágenes locales)
+        imgSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'"],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
@@ -62,8 +66,10 @@ app.use(
         frameSrc: ["'none'"],
       },
     },
-    crossOriginEmbedderPolicy: false, // Allow embedding images
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resources
+    // HSTS: 1 año, subdominios, preload — sólo en producción
+    hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
