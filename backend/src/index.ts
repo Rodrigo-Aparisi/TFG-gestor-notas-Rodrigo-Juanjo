@@ -23,6 +23,18 @@ import fs from 'fs';
 // Configurar variables de entorno
 dotenv.config();
 
+// Validate environment variables before starting the server
+if (process.env.NODE_ENV !== 'test') {
+  const { validateEnv } = require('./config/env');
+  try {
+    validateEnv();
+  } catch (err) {
+    console.error('\n[STARTUP ERROR] Configuración de entorno inválida:');
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
+}
+
 // Crear aplicación Express
 const app = express();
 
