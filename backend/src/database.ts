@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { logger } from './config/logger';
 
 dotenv.config();
 
@@ -20,13 +21,12 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  // Use console.error here because logger may not be initialized yet at module load
-  console.error('Unexpected error on idle PostgreSQL client', err.message);
+  logger.error('Unexpected error on idle PostgreSQL client', { message: err.message });
 });
 
 pool.connect((_err, _client, release) => {
   if (_err) {
-    console.error('Error al conectar a la base de datos:', _err.message);
+    logger.error('Error al conectar a la base de datos', { message: _err.message });
     return;
   }
   release();

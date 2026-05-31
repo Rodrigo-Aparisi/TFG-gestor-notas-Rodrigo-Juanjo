@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { logger } from '../config/logger';
 
 /**
  * Path Security Helpers
@@ -33,7 +34,7 @@ export function validateSafePath(
 
     // Check if the resolved path starts with the allowed directory
     if (!absolutePath.startsWith(absoluteAllowedDir)) {
-      console.warn(
+      logger.warn(
         `Path traversal attempt detected: "${filePath}" escapes "${allowedDir}"`
       );
       return null;
@@ -41,7 +42,7 @@ export function validateSafePath(
 
     // Additional check: ensure no .. remains in normalized path
     if (normalizedPath.includes('..')) {
-      console.warn(
+      logger.warn(
         `Path traversal attempt detected: "${filePath}" contains ".."`
       );
       return null;
@@ -49,7 +50,7 @@ export function validateSafePath(
 
     return absolutePath;
   } catch (error) {
-    console.error('Error validating path:', error);
+    logger.error('Error validating path:', error);
     return null;
   }
 }
@@ -72,7 +73,7 @@ export async function safeDeleteFile(
     const safePath = validateSafePath(filePath, allowedDir);
 
     if (!safePath) {
-      console.warn(`Refusing to delete unsafe path: ${filePath}`);
+      logger.warn(`Refusing to delete unsafe path: ${filePath}`);
       return false;
     }
 
@@ -86,7 +87,7 @@ export async function safeDeleteFile(
       throw err;
     }
   } catch (error) {
-    console.error(`Error deleting file: ${filePath}`, error);
+    logger.error(`Error deleting file: ${filePath}`, error);
     return false;
   }
 }
@@ -105,19 +106,19 @@ export async function safeDeleteFile(
 export function isSafeFilename(filename: string): boolean {
   // Check for any path separators (Unix or Windows)
   if (filename.includes('/') || filename.includes('\\')) {
-    console.warn(`Unsafe filename detected: ${filename}`);
+    logger.warn(`Unsafe filename detected: ${filename}`);
     return false;
   }
 
   // Check for hidden files or special names
   if (filename.startsWith('.') || filename === '.' || filename === '..') {
-    console.warn(`Suspicious filename detected: ${filename}`);
+    logger.warn(`Suspicious filename detected: ${filename}`);
     return false;
   }
 
   // Check for null bytes (common in path traversal attacks)
   if (filename.includes('\0')) {
-    console.warn(`Null byte detected in filename: ${filename}`);
+    logger.warn(`Null byte detected in filename: ${filename}`);
     return false;
   }
 
@@ -160,7 +161,7 @@ export function extractSafeRelativePath(
 
   // Validate that result doesn't contain path traversal
   if (relativePath.includes('..') || relativePath.includes('\0')) {
-    console.warn(`Path traversal detected in DB path: ${dbPath}`);
+    logger.warn(`Path traversal detected in DB path: ${dbPath}`);
     return null;
   }
 

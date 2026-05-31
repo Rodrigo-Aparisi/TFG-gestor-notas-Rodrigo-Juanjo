@@ -12,6 +12,33 @@ import path from 'path';
 const { combine, timestamp, printf, colorize, json, errors } = winston.format;
 
 /**
+ * List of keys whose values must never appear in logs.
+ */
+const SENSITIVE_KEYS = [
+  'password', 'currentpassword', 'newpassword', 'confirmpassword',
+  'token', 'accesstoken', 'refreshtoken', 'authorization',
+  'jwt_secret', 'email_app_password', 'secret',
+];
+
+/**
+ * Winston format that replaces sensitive field values with [REDACTED].
+ * Applied before all other formats so no transport ever sees the raw value.
+ */
+const redactSensitive = winston.format((info) => {
+  const redact = (obj: Record<string, unknown>): void => {
+    for (const key of Object.keys(obj)) {
+      if (SENSITIVE_KEYS.includes(key.toLowerCase())) {
+        obj[key] = '[REDACTED]';
+      } else if (obj[key] !== null && typeof obj[key] === 'object') {
+        redact(obj[key] as Record<string, unknown>);
+      }
+    }
+  };
+  redact(info as unknown as Record<string, unknown>);
+  return info;
+});
+
+/**
  * Custom log format for development (readable in console)
  */
 const devFormat = printf(({ level, message, timestamp, ...meta }) => {
@@ -73,6 +100,7 @@ if (isProduction) {
  */
 export const logger = winston.createLogger({
   level: logLevel,
+  format: redactSensitive(),
   defaultMeta: { service: 'olympus-scribe' },
   transports,
   // Don't exit on handled exceptions
