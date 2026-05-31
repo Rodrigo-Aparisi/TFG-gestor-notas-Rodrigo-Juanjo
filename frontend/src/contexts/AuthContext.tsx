@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
+import { authService } from '../services/auth';
+import { tokenStore } from '../services/tokenStore';
 
 interface AuthContextType {
   user: User | null;
@@ -19,20 +21,21 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Initialize state from localStorage
+  // user es el marcador de sesión persistente; sobrevive a recargas.
   const [user, setUserState] = useState<User | null>(() => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const [token, setTokenState] = useState<string | null>(() => {
-    return localStorage.getItem('token');
-  });
+  // El access token vive solo en memoria (tokenStore) + este estado React.
+  const [token, setTokenState] = useState<string | null>(() => tokenStore.get());
 
-  const [loading] = useState(false);
+  // loading = true mientras corre el bootstrap silent refresh al arrancar.
+  const [loading, setLoading] = useState<boolean>(() => Boolean(localStorage.getItem('user')));
 
-  // isAuthenticated is derived directly from token to prevent desync
-  const isAuthenticated = Boolean(token);
+  // isAuthenticated se deriva del marcador de sesión, no del token (que en
+  // una recarga aún no se ha repoblado en memoria).
+  const isAuthenticated = Boolean(user);
 
   // setUser function
   const setUser = (newUser: User) => {
@@ -40,10 +43,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  // setToken function
+  // setToken function: memoria + estado React (NO localStorage)
   const setToken = (newToken: string) => {
     setTokenState(newToken);
-    localStorage.setItem('token', newToken);
+    tokenStore.set(newToken);
   };
 
   // updateUserProfile function
@@ -59,9 +62,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUserState(null);
     setTokenState(null);
-    localStorage.removeItem('token');
+    tokenStore.clear();
     localStorage.removeItem('user');
   };
+
+  // Bootstrap silent refresh: al arrancar, si hay sesión previa (user en
+  // localStorage) repuebla el access token en memoria usando la cookie HttpOnly.
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      if (!localStorage.getItem('user')) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const newToken = await authService.refreshAccessToken();
+        if (!cancelled) setTokenState(newToken);
+      } catch {
+        if (!cancelled) {
+          // Refresh inválido/expirado: limpiar sesión.
+          setUserState(null);
+          tokenStore.clear();
+          localStorage.removeItem('user');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value: AuthContextType = {
     user,

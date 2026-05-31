@@ -1,13 +1,26 @@
 /**
  * AuthContext Tests
  *
- * Tests for the authentication context provider and useAuth hook
+ * Tests for the authentication context provider and useAuth hook.
+ * El access token vive en memoria (tokenStore), no en localStorage; al montar,
+ * el provider hace un silent refresh contra la cookie si hay marcador `user`.
  */
 
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from '../AuthContext';
+import { tokenStore } from '../../services/tokenStore';
+
+// El bootstrap del provider llama a authService.refreshAccessToken(); lo mockeamos
+// para no hacer llamadas reales y controlar el resultado del silent refresh.
+jest.mock('../../services/auth', () => ({
+  authService: {
+    refreshAccessToken: jest.fn(),
+  },
+}));
+import { authService } from '../../services/auth';
+const mockRefresh = authService.refreshAccessToken as jest.Mock;
 
 // Test component that uses the auth context
 const TestComponent: React.FC = () => {
@@ -42,8 +55,11 @@ const TestComponent: React.FC = () => {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
     localStorage.clear();
+    tokenStore.clear();
+    mockRefresh.mockReset();
+    // Por defecto, sin sesión válida en el servidor.
+    mockRefresh.mockRejectedValue(new Error('no session'));
   });
 
   it('should provide default values when not authenticated', () => {
@@ -56,6 +72,8 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('authenticated')).toHaveTextContent('no');
     expect(screen.getByTestId('user')).toHaveTextContent('none');
     expect(screen.getByTestId('token')).toHaveTextContent('none');
+    // Sin marcador de sesión, no se intenta refrescar.
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 
   it('should update user and token when setUser and setToken are called', async () => {
@@ -74,7 +92,7 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('token')).toHaveTextContent('test-token-123');
   });
 
-  it('should persist user and token to localStorage', async () => {
+  it('should keep the access token in memory (tokenStore), not localStorage', async () => {
     const user = userEvent.setup();
 
     render(
@@ -85,7 +103,8 @@ describe('AuthContext', () => {
 
     await user.click(screen.getByTestId('login-btn'));
 
-    expect(localStorage.getItem('token')).toBe('test-token-123');
+    expect(tokenStore.get()).toBe('test-token-123');
+    expect(localStorage.getItem('token')).toBeNull();
     expect(JSON.parse(localStorage.getItem('user') || '{}')).toMatchObject({
       username: 'testuser',
     });
@@ -100,17 +119,15 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    // Login first
     await user.click(screen.getByTestId('login-btn'));
     expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
 
-    // Then logout
     await user.click(screen.getByTestId('logout-btn'));
 
     expect(screen.getByTestId('authenticated')).toHaveTextContent('no');
     expect(screen.getByTestId('user')).toHaveTextContent('none');
     expect(screen.getByTestId('token')).toHaveTextContent('none');
-    expect(localStorage.getItem('token')).toBeNull();
+    expect(tokenStore.get()).toBeNull();
     expect(localStorage.getItem('user')).toBeNull();
   });
 
@@ -123,11 +140,9 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    // Login first
     await user.click(screen.getByTestId('login-btn'));
     expect(screen.getByTestId('user')).toHaveTextContent('testuser');
 
-    // Update profile
     await user.click(screen.getByTestId('update-profile-btn'));
 
     expect(screen.getByTestId('user')).toHaveTextContent('updated-user');
@@ -136,13 +151,12 @@ describe('AuthContext', () => {
     });
   });
 
-  it('should restore auth state from localStorage', () => {
-    // Set up localStorage before rendering
-    localStorage.setItem('token', 'saved-token');
+  it('repopulates the access token via silent refresh when a user marker exists', async () => {
     localStorage.setItem(
       'user',
       JSON.stringify({ id: 'user-2', username: 'saveduser', email: 'saved@example.com' })
     );
+    mockRefresh.mockResolvedValue('refreshed-token');
 
     render(
       <AuthProvider>
@@ -150,13 +164,36 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
+    // El marcador `user` mantiene la sesión autenticada de inmediato.
     expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     expect(screen.getByTestId('user')).toHaveTextContent('saveduser');
-    expect(screen.getByTestId('token')).toHaveTextContent('saved-token');
+
+    // Tras el bootstrap, el token queda repoblado en memoria.
+    expect(await screen.findByText('refreshed-token')).toBeInTheDocument();
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the session when the silent refresh fails', async () => {
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ id: 'user-3', username: 'staleuser', email: 'stale@example.com' })
+    );
+    mockRefresh.mockRejectedValue(new Error('expired'));
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    // Tras fallar el refresh, la sesión se limpia.
+    await waitFor(() => expect(screen.getByTestId('authenticated')).toHaveTextContent('no'));
+    expect(screen.getByTestId('user')).toHaveTextContent('none');
+    expect(localStorage.getItem('user')).toBeNull();
+    expect(tokenStore.get()).toBeNull();
   });
 
   it('should throw error when useAuth is used outside provider', () => {
-    // Suppress console.error for this test
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => {
